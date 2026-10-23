@@ -45,17 +45,13 @@ export function SiteHeader() {
     };
   }, []);
 
-  // While the phone menu is open the page behind it doesn't scroll, and
-  // data-menu="open" lets the bottom contact bar step aside.
+  // While the phone menu is open the page behind it doesn't scroll.
   useEffect(() => {
     if (!mobileOpen) return;
-    const root = document.documentElement;
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
-    root.dataset.menu = "open";
     return () => {
       document.body.style.overflow = overflow;
-      delete root.dataset.menu;
     };
   }, [mobileOpen]);
 

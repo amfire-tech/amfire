@@ -22,7 +22,7 @@ export default async function StartPage({ searchParams }: PageProps<"/start">) {
           <Eyebrow>Free · no obligation</Eyebrow>
           <h1 className="mt-3 text-[1.75rem] leading-tight font-semibold tracking-tight sm:mt-4 sm:text-4xl">{FREE_DEMO.title}</h1>
           <p className="mt-3 text-fg/75">{FREE_DEMO.summary}</p>
-          <div className="relative mt-5 overflow-hidden rounded-card bg-ink p-4 text-white sm:mt-6 sm:p-5">
+          <div className="shine mt-5 rounded-card bg-ink p-4 text-white sm:mt-6 sm:p-5">
             <div aria-hidden className="bg-brand absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl" />
             <div className="relative flex gap-4">
               <span className="bg-brand grid size-10 shrink-0 place-items-center rounded-full text-ink">

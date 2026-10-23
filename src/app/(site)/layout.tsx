@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PhoneIcon, WhatsAppIcon } from "@/components/contact";
 import { OfferBar } from "@/components/demo-offer";
-import { MobileActionBar } from "@/components/mobile-action-bar";
 import { SiteHeader } from "@/components/site-header";
 import { Container, Logo } from "@/components/ui";
 import { contact, site } from "@/config/site";
@@ -78,7 +77,6 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
           <span>Examples on this site are illustrative scenarios, not client case studies.</span>
         </Container>
       </footer>
-      <MobileActionBar />
     </>
   );
 }

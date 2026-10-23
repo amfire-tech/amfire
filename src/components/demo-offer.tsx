@@ -53,7 +53,7 @@ export function OfferBar({ path }: { path?: string }) {
             </p>
             <Link
               href="/start"
-              className="bg-brand inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold text-ink hover:brightness-105 sm:text-[13px]"
+              className="bg-brand shine inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold text-ink shadow-[0_6px_18px_-6px_rgba(255,95,60,0.8)] hover:brightness-105 sm:text-[13px]"
             >
               <span>Claim {OFFER} off →</span>
             </Link>

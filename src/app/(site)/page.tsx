@@ -56,12 +56,15 @@ export default function HomePage() {
                 See how it works for businesses like yours
               </Link>
             </div>
-            <p className="mt-3 flex items-start justify-center gap-2 text-sm text-muted sm:mt-4 sm:items-center sm:justify-start">
-              <GiftIcon className="mt-0.5 shrink-0 text-signal sm:mt-0" />
+            <Link
+              href="/start"
+              className="bg-brand shine mt-3 flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm text-ink shadow-[0_10px_30px_-12px_rgba(255,69,58,0.8)] sm:mt-4 sm:inline-flex sm:rounded-full"
+            >
+              <GiftIcon className="shrink-0" />
               <span>
-                Book a free demo and get <strong className="font-semibold text-fg">flat <Money amounts={DEMO_OFFER.amount} /> off</strong> any plan.
+                Book a free demo and get <strong className="font-bold">flat <Money amounts={DEMO_OFFER.amount} /> off</strong> any plan.
               </span>
-            </p>
+            </Link>
           </div>
           <ModeShowcase />
         </Container>

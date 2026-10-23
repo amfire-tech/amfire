@@ -66,8 +66,7 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
                   </p>
                   <p
                     className={cx(
-                      "mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold",
-                      featured ? "bg-white/10 text-flame" : "bg-signal/10 text-signal",
+                      "bg-brand shine mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-sm font-semibold text-ink shadow-[0_8px_24px_-10px_rgba(255,69,58,0.75)]",
                     )}
                   >
                     <GiftIcon />

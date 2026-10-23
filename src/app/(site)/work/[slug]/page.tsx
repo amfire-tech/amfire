@@ -85,7 +85,7 @@ export default async function ExamplePage({ params }: PageProps<"/work/[slug]">)
                   <p className="font-semibold">
                     {f.step}
                     {f.human && (
-                      <span className="ml-2 rounded-full bg-[#fff6ed] px-2 py-0.5 align-middle text-[10px] font-semibold text-[#9a3412] uppercase dark:bg-[#3a1d0a] dark:text-[#fdba74]">
+                      <span className="ml-2 rounded-full bg-[#fff6ed] px-2 py-0.5 align-middle text-[10px] font-semibold text-[#9a3412] uppercase">
                         A person decides
                       </span>
                     )}

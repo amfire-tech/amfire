@@ -19,8 +19,6 @@ export function ReelStage({ start, play }: { start: number; play: boolean }) {
   const [scale, setScale] = useState(1);
 
   useEffect(() => {
-    // The real site components inside follow the page theme; the reel is always light.
-    document.documentElement.dataset.theme = "light";
     const fit = () => setScale(Math.min(innerWidth / REEL.width, innerHeight / REEL.height));
     const id = requestAnimationFrame(fit);
     addEventListener("resize", fit);

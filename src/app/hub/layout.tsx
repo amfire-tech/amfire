@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
 import { WhatsAppIcon } from "@/components/contact";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Container, Logo } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { requireActor } from "@/lib/session";
@@ -39,7 +38,6 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
             >
               <WhatsAppIcon className="size-5" />
             </a>
-            <ThemeToggle />
             <form action={signOut}>
               <button className="px-1 py-2 text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
             </form>

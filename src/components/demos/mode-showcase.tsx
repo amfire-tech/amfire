@@ -31,7 +31,7 @@ export function ModeShowcase() {
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <div aria-hidden className="bg-brand absolute -inset-6 -z-10 animate-float rounded-[3rem] opacity-20 blur-3xl dark:opacity-25" />
+      <div aria-hidden className="bg-brand absolute -inset-6 -z-10 animate-float rounded-[3rem] opacity-20 blur-3xl" />
       <div className="rounded-[1.75rem] bg-surface p-3 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.5)] ring-1 ring-line">
         <div role="tablist" aria-label="What AMFIRE does" className="grid grid-cols-3 gap-1 rounded-2xl bg-subtle p-1">
           {MODES.map((m, i) => (
@@ -144,7 +144,7 @@ function AutomateStory() {
     <>
       <Problem who="fabric wholesaler, Surat">“Three people spend all day re-typing WhatsApp orders into Tally.”</Problem>
       <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="rounded-xl rounded-tl-sm bg-[#d9fdd3] px-3 py-2 text-[#111] dark:bg-[#005c4b] dark:text-[#e9edef]">
+        <span className="rounded-xl rounded-tl-sm bg-[#d9fdd3] px-3 py-2 text-[#111]">
           Design 4521 – 40 thaan 🙏
         </span>
         <span aria-hidden className="text-muted">→</span>

@@ -16,7 +16,6 @@ import type { Proposal } from "@/db/schema";
 import { GiftIcon, OfferBar, PromoCode } from "@/components/demo-offer";
 import { ProposalDocument } from "@/components/proposal-document";
 import { SiteHeader } from "@/components/site-header";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   BulletList,
   Card,
@@ -406,7 +405,6 @@ function HubFrame({ children }: { children: ReactNode }) {
           </span>
           <div className="flex items-center gap-4 text-sm">
             <span className="hidden text-muted sm:inline">Talk to a person</span>
-            <ThemeToggle />
             <span className="text-muted">Sign out</span>
           </div>
         </Container>

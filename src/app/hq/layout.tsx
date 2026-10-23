@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { Logo } from "@/components/ui";
 import { requireStaffActor } from "@/lib/session";
 import { HqNav } from "./nav";
@@ -19,7 +18,6 @@ export default async function HqLayout({ children }: LayoutProps<"/hq">) {
               <Logo className="h-6" /> <span className="text-sm font-medium text-muted">HQ</span>
             </Link>
             <div className="flex items-center gap-3 lg:hidden">
-              <ThemeToggle />
               <form action={signOut}>
               <button className="px-1 py-2 text-sm text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
               </form>
@@ -33,7 +31,6 @@ export default async function HqLayout({ children }: LayoutProps<"/hq">) {
               <form action={signOut}>
                 <button className="text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
               </form>
-              <ThemeToggle />
             </div>
           </div>
         </div>

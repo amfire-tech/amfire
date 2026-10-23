@@ -59,8 +59,8 @@ export function AutomateDemo() {
               <p className="text-xs text-white/70">Retailer · Ahmedabad</p>
             </div>
           </div>
-          <div className="flex flex-1 flex-col gap-2 bg-[#efe7dd] p-3 text-sm text-[#111] dark:bg-[#0b141a] dark:text-[#e9edef]">
-            <div className="max-w-[85%] self-start rounded-xl rounded-tl-sm bg-white px-3 py-2 shadow-sm dark:bg-[#202c33]">
+          <div className="flex flex-1 flex-col gap-2 bg-[#efe7dd] p-3 text-sm text-[#111]">
+            <div className="max-w-[85%] self-start rounded-xl rounded-tl-sm bg-white px-3 py-2 shadow-sm">
               Namaste 🙏 Order:
               <br />
               Design 4521 – 40 thaan
@@ -71,7 +71,7 @@ export function AutomateDemo() {
               <span className="mt-1 block text-right text-[10px] opacity-60">10:38 AM</span>
             </div>
             {step >= 5 && (
-              <div className="max-w-[85%] animate-rise self-end rounded-xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 shadow-sm dark:bg-[#005c4b]">
+              <div className="max-w-[85%] animate-rise self-end rounded-xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2 shadow-sm">
                 Order confirmed ✅ SV-1187
                 <br />
                 {inr(TOTAL)} incl. GST · dispatch tomorrow by 11 AM.
@@ -110,7 +110,7 @@ export function AutomateDemo() {
                   <span className="min-w-0">
                     <span className="block text-sm font-medium">
                       {s.title}
-                      {s.human && <span className="ml-2 rounded-full bg-[#fff6ed] px-2 py-0.5 text-[10px] font-semibold text-[#9a3412] uppercase dark:bg-[#3a1d0a] dark:text-[#fdba74]">Human</span>}
+                      {s.human && <span className="ml-2 rounded-full bg-[#fff6ed] px-2 py-0.5 text-[10px] font-semibold text-[#9a3412] uppercase">Human</span>}
                     </span>
                     <span className="block text-xs text-muted">{s.detail}</span>
                   </span>

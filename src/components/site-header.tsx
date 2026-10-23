@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
-import { ThemeToggle } from "./theme-toggle";
 import { ButtonLink, Logo, cx } from "./ui";
 
 const LINKS = [
@@ -111,7 +110,6 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           <Link href="/login" className="hidden rounded-full px-3 py-2 text-sm text-fg/75 hover:bg-subtle sm:inline-flex">
             Sign in
           </Link>

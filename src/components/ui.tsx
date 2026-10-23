@@ -1,6 +1,6 @@
 // Shared UI primitives used by the website, AMFIRE HQ and the Client Hub.
 // Colours use semantic tokens (page, surface, subtle, fg, muted, line) so
-// every component works in light and dark mode.
+// the whole platform shares one light palette.
 
 import Image from "next/image";
 import Link from "next/link";
@@ -13,18 +13,13 @@ export function cx(...classes: (string | false | null | undefined)[]) {
 // --- Brand -----------------------------------------------------------------
 
 /**
- * The AMFIRE logo (from the supplied artwork). Switches to the white-ink
- * version in dark mode; `inverse` forces it for always-dark sections.
+ * The AMFIRE logo (from the supplied artwork). `inverse` uses the white-ink
+ * version for always-dark sections.
  */
 export function Logo({ className = "h-7", inverse, priority }: { className?: string; inverse?: boolean; priority?: boolean }) {
   const common = { width: 1200, height: 325, priority, sizes: "200px" } as const;
   if (inverse) return <Image src="/brand/amfire-logo-inverse.png" alt="AMFIRE" {...common} className={cx("w-auto", className)} />;
-  return (
-    <>
-      <Image src="/brand/amfire-logo.png" alt="AMFIRE" {...common} className={cx("w-auto dark:hidden", className)} />
-      <Image src="/brand/amfire-logo-inverse.png" alt="" aria-hidden {...common} className={cx("hidden w-auto dark:block", className)} />
-    </>
-  );
+  return <Image src="/brand/amfire-logo.png" alt="AMFIRE" {...common} className={cx("w-auto", className)} />;
 }
 
 // --- Buttons ---------------------------------------------------------------
@@ -186,9 +181,9 @@ export function Notice({
 }) {
   const tones = {
     info: "bg-subtle text-fg",
-    warning: "bg-[#fff6ed] text-[#7a2e0e] ring-1 ring-inset ring-[#fdba74]/60 dark:bg-[#3a1d0a] dark:text-[#fed7aa] dark:ring-[#9a3412]/60",
-    success: "bg-[#ecfdf3] text-[#05603a] ring-1 ring-inset ring-[#6ce9a6]/60 dark:bg-[#0b2a1b] dark:text-[#a6f4c5] dark:ring-[#067647]/60",
-    error: "bg-[#fef3f2] text-[#912018] ring-1 ring-inset ring-[#fda29b]/60 dark:bg-[#3b1210] dark:text-[#fecdca] dark:ring-[#b42318]/60",
+    warning: "bg-[#fff6ed] text-[#7a2e0e] ring-1 ring-inset ring-[#fdba74]/60",
+    success: "bg-[#ecfdf3] text-[#05603a] ring-1 ring-inset ring-[#6ce9a6]/60",
+    error: "bg-[#fef3f2] text-[#912018] ring-1 ring-inset ring-[#fda29b]/60",
   };
   return (
     <div role={tone === "error" ? "alert" : "status"} className={cx("rounded-xl px-4 py-3 text-sm", tones[tone])}>
@@ -239,10 +234,10 @@ const STATUS: Record<string, { label: string; tone: "neutral" | "info" | "warn" 
 
 const TONES = {
   neutral: "bg-subtle text-muted",
-  info: "bg-[#eff4ff] text-[#1d3fa3] dark:bg-[#1d2b55] dark:text-[#b3c7ff]",
-  warn: "bg-[#fff6ed] text-[#9a3412] dark:bg-[#3a1d0a] dark:text-[#fdba74]",
-  good: "bg-[#ecfdf3] text-[#05603a] dark:bg-[#0b2a1b] dark:text-[#6ce9a6]",
-  bad: "bg-[#fef3f2] text-[#b42318] dark:bg-[#3b1210] dark:text-[#fda29b]",
+  info: "bg-[#eff4ff] text-[#1d3fa3]",
+  warn: "bg-[#fff6ed] text-[#9a3412]",
+  good: "bg-[#ecfdf3] text-[#05603a]",
+  bad: "bg-[#fef3f2] text-[#b42318]",
   brand: "bg-fg text-page",
 };
 

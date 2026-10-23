@@ -43,3 +43,6 @@ next-env.d.ts
 
 # local embedded database
 .data/
+
+# Original, uncropped founder photos (only the square crops are published)
+public/team/navanish.jpeg

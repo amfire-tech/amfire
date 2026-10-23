@@ -5,7 +5,8 @@ import { INDUSTRIES, SERVICES } from "@/knowledge/catalog";
 import { EXAMPLES } from "@/knowledge/examples";
 
 export const metadata: Metadata = {
-  title: "Industries",
+  title: "Software & Automation for Manufacturing, Distribution, Textiles and More",
+  alternates: { canonical: "/industries" },
   description: "Common problems AMFIRE helps solve across Indian industries — manufacturing, distribution, textiles, D2C, healthcare, education and more.",
 };
 

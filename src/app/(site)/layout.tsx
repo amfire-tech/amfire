@@ -1,14 +1,17 @@
 import Link from "next/link";
+import { Analytics } from "@/components/analytics";
 import { PhoneIcon, WhatsAppIcon } from "@/components/contact";
 import { OfferBar } from "@/components/demo-offer";
+import { JsonLd } from "@/components/json-ld";
 import { SiteHeader } from "@/components/site-header";
 import { Container, Logo } from "@/components/ui";
 import { contact, site } from "@/config/site";
+import { organizationJsonLd } from "@/config/structured-data";
 import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
 
 const COMPANY = [
   { href: "/how-we-work", label: "How we work" },
-  { href: "/work", label: "Examples" },
+  { href: "/work", label: "Our work" },
   { href: "/industries", label: "Industries" },
   { href: "/about", label: "About" },
 ];
@@ -16,6 +19,8 @@ const COMPANY = [
 export default function SiteLayout({ children }: LayoutProps<"/">) {
   return (
     <>
+      <JsonLd data={organizationJsonLd()} />
+      <Analytics />
       <a
         href="#main"
         className="sr-only z-50 rounded-full bg-fg px-4 py-2 text-page focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
@@ -64,6 +69,13 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
             <a href={contact.whatsapp()} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 py-1.5 underline-offset-4 hover:text-white hover:underline">
               <WhatsAppIcon /> WhatsApp us
             </a>
+            {site.profiles
+              .filter((u) => u.includes("linkedin.com/company"))
+              .map((u) => (
+                <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="inline-block py-1.5 underline-offset-4 hover:text-white hover:underline">
+                  Follow AMFIRE on LinkedIn
+                </a>
+              ))}
             <p className="mt-2 text-xs text-white/50">{site.availability.hours}</p>
             <p className="mt-4">
               <Link href="/login" className="inline-block py-1.5 hover:text-white">
@@ -74,7 +86,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
         </Container>
         <Container className="relative flex flex-col gap-2 border-t border-white/10 py-6 text-xs text-white/40 sm:flex-row sm:justify-between">
           <span>© {new Date().getFullYear()} AMFIRE</span>
-          <span>Examples on this site are illustrative scenarios, not client case studies.</span>
+          <span>Case studies are real client projects. Examples marked illustrative are scenarios, not client work.</span>
         </Container>
       </footer>
     </>

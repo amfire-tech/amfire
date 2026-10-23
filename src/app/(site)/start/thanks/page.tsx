@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { LeadConversion } from "@/components/analytics-client";
 import { WhatsAppIcon } from "@/components/contact";
 import { GiftIcon, PromoCode } from "@/components/demo-offer";
 import { BulletList, ButtonLink, Card, Container, PathBadge, buttonClass } from "@/components/ui";
@@ -18,6 +19,7 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
   return (
     <div className="bg-subtle">
       <Container className="max-w-3xl py-12 sm:py-16">
+        {result && typeof ref === "string" && <LeadConversion bookingRef={ref} path={rec?.path} />}
         <p className="text-sm font-medium text-muted">Received</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
           Thank you{result ? `, ${result.firstName}` : ""}.

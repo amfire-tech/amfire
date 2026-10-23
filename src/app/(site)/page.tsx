@@ -1,7 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { AutomateDemo } from "@/components/demos/automate-demo";
 import { HireVsAmfire } from "@/components/demos/hire-vs-amfire";
 import { ModeShowcase } from "@/components/demos/mode-showcase";
+import { CaseStudyCard } from "@/components/case-study-card";
 import { ExampleCard } from "@/components/example-card";
 import { FreeDemoSection } from "@/components/free-demo";
 import { GiftIcon } from "@/components/demo-offer";
@@ -10,6 +12,7 @@ import { PricingSection } from "@/components/pricing-section";
 import { StoryTabs } from "@/components/story-tabs";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, SwipeRow } from "@/components/ui";
 import { FREE_DEMO, HIRING, INDUSTRIES, SERVICES, SERVICE_DETAILS, TOOLS, type ServicePathId } from "@/knowledge/catalog";
+import { CASE_STUDIES } from "@/knowledge/case-studies";
 import { EXAMPLES } from "@/knowledge/examples";
 import { Money } from "@/components/currency";
 import { DEMO_OFFER, STARTING_PRICE } from "@/knowledge/pricing";
@@ -19,6 +22,17 @@ const THREE_HIRES = { INR: 3 * HIRING.salary.INR.fresher * 100, USD: 3 * HIRING.
 import { site } from "@/config/site";
 
 const PATHS = Object.keys(SERVICES) as ServicePathId[];
+
+// Search engines and link previews read these; lead with what people search for, not the tagline.
+const TITLE = "AMFIRE — Custom Software, Business Automation & IT Partner in India";
+const DESCRIPTION =
+  "Custom software, WhatsApp-to-Tally and GST automation, and a managed website, SEO and IT team for one monthly fee — for Indian businesses. Book a free 30-minute demo.";
+
+export const metadata: Metadata = {
+  title: { absolute: TITLE },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+};
 
 const TRANSPARENCY = [
   { term: "We're available", value: site.availability.hours },
@@ -83,6 +97,27 @@ export default function HomePage() {
                 </li>
               ))}
             </ul>
+          </div>
+        </Container>
+      </section>
+
+      {/* Delivered work — real proof before illustrative stories */}
+      <section>
+        <Container className="py-14 sm:py-24">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <SectionHeading
+              eyebrow="Our work"
+              title="Live projects, built by AMFIRE"
+              description="From an AI platform used by schools to a premium website for a smart-garden brand — open them and see for yourself."
+            />
+            <Link href="/work" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold">
+              All our work <Arrow />
+            </Link>
+          </div>
+          <div className="mt-8 grid gap-5 sm:mt-12 lg:grid-cols-2">
+            {CASE_STUDIES.map((c) => (
+              <CaseStudyCard key={c.slug} study={c} />
+            ))}
           </div>
         </Container>
       </section>

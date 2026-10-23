@@ -4,19 +4,28 @@ import { notFound } from "next/navigation";
 import { ExampleCard } from "@/components/example-card";
 import { Arrow, ButtonLink, CheckList, Chip, Container, Eyebrow, Notice, cx } from "@/components/ui";
 import { SERVICES, SERVICE_DETAILS } from "@/knowledge/catalog";
+import { CASE_STUDIES, caseStudyBySlug } from "@/knowledge/case-studies";
 import { EXAMPLES, exampleBySlug, examplesFor } from "@/knowledge/examples";
+import { CaseStudyView } from "./case-study";
 
+// /work/{slug} serves both real case studies and illustrative examples.
 export function generateStaticParams() {
-  return EXAMPLES.map((e) => ({ slug: e.slug }));
+  return [...CASE_STUDIES, ...EXAMPLES].map((e) => ({ slug: e.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/work/[slug]">): Promise<Metadata> {
-  const e = exampleBySlug((await params).slug);
-  return e ? { title: e.title, description: e.situation } : {};
+  const { slug } = await params;
+  const study = caseStudyBySlug(slug);
+  if (study) return { title: `${study.client} case study — ${study.title}`, description: study.summary, alternates: { canonical: `/work/${slug}` } };
+  const e = exampleBySlug(slug);
+  return e ? { title: e.title, description: e.situation, alternates: { canonical: `/work/${e.slug}` } } : {};
 }
 
 export default async function ExamplePage({ params }: PageProps<"/work/[slug]">) {
-  const example = exampleBySlug((await params).slug);
+  const { slug } = await params;
+  const study = caseStudyBySlug(slug);
+  if (study) return <CaseStudyView study={study} />;
+  const example = exampleBySlug(slug);
   if (!example) notFound();
   const related = examplesFor(example.path).filter((e) => e.slug !== example.slug);
 

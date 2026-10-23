@@ -15,7 +15,9 @@ export const metadata: Metadata = {
   title: { default: `${site.name} — ${site.tagline}`, template: `%s · ${site.name}` },
   description: site.description,
   metadataBase: new URL(site.url),
-  openGraph: { siteName: site.name, images: ["/brand/amfire-logo.png"], locale: "en_IN", type: "website" },
+  // The share image comes from app/opengraph-image.tsx.
+  openGraph: { siteName: site.name, locale: "en_IN", type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

@@ -8,7 +8,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { ButtonLink, Logo, cx } from "./ui";
 
 const LINKS = [
-  { href: "/work", label: "Examples" },
+  { href: "/work", label: "Our work" },
   { href: "/industries", label: "Industries" },
   { href: "/about", label: "About" },
 ];

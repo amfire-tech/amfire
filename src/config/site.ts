@@ -7,7 +7,15 @@ export const site = {
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@amfire.in",
   // Mobile for calls and WhatsApp, as shown to visitors (Indian format).
   contactPhone: process.env.NEXT_PUBLIC_CONTACT_PHONE ?? "+91 93730 10143",
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  // Canonical address for links, the sitemap and structured data. On Vercel, the production domain is used if this isn't set.
+  url:
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000"),
+  // Public profiles (LinkedIn company page and so on), listed in structured data so search engines connect them to the site.
+  profiles: (process.env.NEXT_PUBLIC_SOCIAL_PROFILES ?? "https://www.linkedin.com/company/amfire-ai/")
+    .split(",")
+    .map((u) => u.trim())
+    .filter(Boolean),
   // Published availability — keep these true; they are promises to clients.
   availability: {
     hours: "Monday to Saturday, 10 AM – 7 PM IST",

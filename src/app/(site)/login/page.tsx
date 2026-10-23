@@ -9,7 +9,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   const { next, error } = await searchParams;
   return (
     <div className="bg-subtle">
-      <Container className="max-w-md py-16 sm:py-24">
+      <Container className="max-w-md py-12 sm:py-24">
         <div className="rounded-card bg-surface p-6 ring-1 ring-line sm:p-8">
           <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
           <p className="mt-2 text-sm text-muted">For AMFIRE clients and team members. No password needed.</p>

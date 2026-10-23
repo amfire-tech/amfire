@@ -32,7 +32,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       onClick={toggle}
       aria-label={`Switch to ${next} mode`}
       title={`Switch to ${next} mode`}
-      className={`grid size-10 place-items-center rounded-full text-fg/80 ring-1 ring-line transition hover:bg-subtle hover:text-fg ${className ?? ""}`}
+      className={`grid size-11 place-items-center sm:size-10 rounded-full text-fg/80 ring-1 ring-line transition hover:bg-subtle hover:text-fg ${className ?? ""}`}
     >
       {theme === "dark" ? (
         <svg aria-hidden viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">

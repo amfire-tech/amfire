@@ -15,7 +15,7 @@ const ITEMS = [
 export function HqNav() {
   const pathname = usePathname();
   return (
-    <nav aria-label="HQ" className="-mx-1 flex gap-1 overflow-x-auto lg:mx-0 lg:flex-col">
+    <nav aria-label="HQ" className="-mx-4 flex gap-1 overflow-x-auto px-4 [scrollbar-width:none] lg:mx-0 lg:flex-col lg:px-0 [&::-webkit-scrollbar]:hidden">
       {ITEMS.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (
@@ -24,7 +24,7 @@ export function HqNav() {
             href={item.href}
             aria-current={active ? "page" : undefined}
             className={cx(
-              "rounded-xl px-3 py-2 text-sm whitespace-nowrap",
+              "shrink-0 rounded-xl px-3 py-2.5 text-sm whitespace-nowrap lg:py-2",
               active ? "bg-fg font-medium text-page" : "text-fg/75 hover:bg-subtle hover:text-fg",
             )}
           >

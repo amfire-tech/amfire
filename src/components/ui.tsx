@@ -4,7 +4,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { Children, type ComponentProps, type ReactNode } from "react";
 
 export function cx(...classes: (string | false | null | undefined)[]) {
   return classes.filter(Boolean).join(" ");
@@ -80,6 +80,25 @@ export function Arrow({ className }: { className?: string }) {
 
 export function Container({ className, ...props }: ComponentProps<"div">) {
   return <div className={cx("mx-auto w-full max-w-6xl px-4 sm:px-6", className)} {...props} />;
+}
+
+/**
+ * Cards in a row you swipe through on phones (the next card peeks in), and a
+ * plain grid from tablet width up. Keeps long card lists from filling the screen.
+ */
+export function SwipeRow({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cx(
+        "-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-3 overflow-x-auto px-4 pb-3 [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 [&::-webkit-scrollbar]:hidden",
+        className,
+      )}
+    >
+      {Children.map(children, (child) => (
+        <div className="w-[85%] max-w-sm shrink-0 snap-start sm:w-auto sm:max-w-none">{child}</div>
+      ))}
+    </div>
+  );
 }
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
@@ -329,7 +348,7 @@ export function Table({ children }: { children: ReactNode }) {
 // --- Forms -------------------------------------------------------------------
 
 export const inputClass =
-  "block w-full rounded-xl bg-surface px-3.5 py-2.5 text-fg ring-1 ring-inset ring-fg/15 placeholder:text-fg/40 focus:ring-2 focus:ring-signal focus:outline-none aria-[invalid=true]:ring-danger";
+  "block w-full rounded-xl bg-surface px-3.5 py-3 text-fg ring-1 max-sm:text-base sm:py-2.5 ring-inset ring-fg/15 placeholder:text-fg/40 focus:ring-2 focus:ring-signal focus:outline-none aria-[invalid=true]:ring-danger";
 
 export function Field({
   label,

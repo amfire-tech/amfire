@@ -24,7 +24,7 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
   const paths = only ? [only] : PATHS;
   return (
     <section id="pricing" className="scroll-mt-20 border-t border-line bg-subtle">
-      <Container className="py-20 sm:py-24">
+      <Container className="py-14 sm:py-24">
         <div className={cx("max-w-2xl", !only && "mx-auto text-center")}>
           <p className="text-xs font-semibold tracking-[0.2em] text-muted uppercase">Pricing</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
@@ -44,14 +44,14 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
           </div>
         </div>
 
-        <div className={cx("mt-12 grid gap-5", only ? "max-w-xl" : "lg:grid-cols-3")}>
+        <div className={cx("mt-8 grid gap-4 sm:mt-12 sm:gap-5", only ? "max-w-xl" : "lg:grid-cols-3")}>
           {paths.map((p) => {
             const featured = !only && p === "operate";
             return (
               <article
                 key={p}
                 className={cx(
-                  "relative flex flex-col overflow-hidden rounded-[1.5rem] p-7",
+                  "relative flex flex-col overflow-hidden rounded-[1.5rem] p-6 sm:p-7",
                   featured ? "bg-ink text-white ring-1 ring-ink" : "bg-surface ring-1 ring-line",
                 )}
               >
@@ -59,7 +59,7 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
                 <div className="relative">
                   <p className="text-xs font-semibold tracking-widest uppercase opacity-60">{SERVICES[p].tagline}</p>
                   <h3 className="mt-3 text-2xl font-semibold">{SERVICES[p].name}</h3>
-                  <p className="mt-6 text-sm opacity-70">Starts from</p>
+                  <p className="mt-5 text-sm opacity-70 sm:mt-6">Starts from</p>
                   <p className="text-4xl font-semibold tracking-tight">
                     <Money amounts={STARTING_PRICE[p]} />
                     {p === "operate" && <span className="text-base font-medium opacity-70"> /month</span>}
@@ -82,13 +82,13 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
                   </div>
                 </div>
                 <div className="relative mt-auto pt-8">
-                  <ButtonLink href={`/start?goal=${SERVICE_DETAILS[p].goal}`} variant={featured || only ? "primary" : "secondary"} className="w-full">
+                  <ButtonLink href={`/start?goal=${SERVICE_DETAILS[p].goal}`} variant={featured || only ? "primary" : "secondary"} className="w-full whitespace-normal text-center">
                     <span>
                       {FREE_DEMO.cta} · save <Money amounts={DEMO_OFFER.amount} />
                     </span>
                   </ButtonLink>
                   {!only && (
-                    <Link href={`/services/${p}`} className="mt-3 block text-center text-sm opacity-70 hover:opacity-100">
+                    <Link href={`/services/${p}`} className="mt-1 block py-2.5 text-center text-sm opacity-70 hover:opacity-100">
                       About {SERVICES[p].name} →
                     </Link>
                   )}

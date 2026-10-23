@@ -13,7 +13,7 @@ export default function IndustriesPage() {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <Container className="py-16 sm:py-20">
+        <Container className="py-12 sm:py-20">
           <Eyebrow>Industries</Eyebrow>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
             The problems are familiar. <span className="text-brand">The fix fits your industry.</span>
@@ -38,9 +38,9 @@ export default function IndustriesPage() {
               {examples.length > 0 && (
                 <div className="mt-auto space-y-1.5 pt-6">
                   {examples.map((e) => (
-                    <Link key={e.slug} href={`/work/${e.slug}`} className="flex min-w-0 items-center gap-1.5 text-sm font-medium hover:underline">
+                    <Link key={e.slug} href={`/work/${e.slug}`} className="flex min-w-0 items-baseline gap-2 py-1 text-sm font-medium hover:underline">
                       <span className="shrink-0 text-xs text-muted uppercase">{SERVICES[e.path].name}</span>
-                      <span className="truncate">{e.title}</span>
+                      <span>{e.title}</span>
                     </Link>
                   ))}
                 </div>
@@ -50,7 +50,7 @@ export default function IndustriesPage() {
         })}
       </Container>
       <section className="bg-ink text-white">
-        <Container className="flex flex-col items-start gap-6 py-16 md:flex-row md:items-center md:justify-between">
+        <Container className="flex flex-col items-start gap-6 py-12 sm:py-16 md:flex-row md:items-center md:justify-between">
           <h2 className="max-w-xl text-2xl font-semibold tracking-tight">Your industry isn&apos;t listed? The approach is the same — start with the problem.</h2>
           <ButtonLink href="/start" size="lg">
             Book a free demo <Arrow />

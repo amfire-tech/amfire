@@ -19,14 +19,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
-  ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
 };
 
-// Applies the saved or system theme before first paint, so there is no flash.
-const themeScript = `(function(){try{var t=localStorage.getItem('theme');if(t!=='light'&&t!=='dark'){t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}document.documentElement.dataset.theme=t}catch(e){document.documentElement.dataset.theme='light'}})()`;
+// Light by default; dark only when the visitor chose it with the toggle. Runs before first paint, so there is no flash.
+const themeScript = `(function(){var t='light';try{if(localStorage.getItem('theme')==='dark')t='dark'}catch(e){}document.documentElement.dataset.theme=t})()`;
 
 // Applies the visitor's price currency before first paint: their choice from the currency switch,
 // or on a first visit rupees in India (by time zone) and US dollars elsewhere. A first-visit guess

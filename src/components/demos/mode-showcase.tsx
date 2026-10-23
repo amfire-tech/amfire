@@ -52,15 +52,21 @@ export function ModeShowcase() {
             </button>
           ))}
         </div>
-        <div className="relative mt-3 h-[340px] overflow-hidden rounded-2xl bg-subtle ring-1 ring-line">
+        {/* All panels share one grid cell, so the card is as tall as the tallest story
+            on every screen size and never jumps or crops while it cycles. */}
+        <div className="mt-3 grid rounded-2xl bg-subtle ring-1 ring-line">
           {MODES.map((m, i) => (
             <div
               key={m.id}
               role="tabpanel"
               id={`mode-panel-${m.id}`}
               aria-labelledby={`mode-tab-${m.id}`}
-              hidden={active !== i}
-              className="absolute inset-0 flex animate-rise flex-col gap-3 p-4"
+              aria-hidden={active !== i}
+              inert={active !== i}
+              className={cx(
+                "col-start-1 row-start-1 flex flex-col gap-3 p-3 sm:p-4",
+                active === i ? "animate-rise" : "invisible",
+              )}
             >
               <p className="text-xs font-semibold tracking-widest text-muted uppercase">{m.tagline}</p>
               {m.id === "build" && <BuildStory />}
@@ -102,10 +108,10 @@ function BuildStory() {
           <span className="text-muted">₹8,400</span>
         </div>
         <ol className="mt-2 flex items-center gap-1.5">
-          {["Placed", "Approved", "Invoiced", "Dispatched", "Delivered"].map((s, i) => (
-            <li key={s} className="flex-1">
+          {["Placed", "Approved", "Invoiced", "Shipped", "Delivered"].map((s, i) => (
+            <li key={s} className="min-w-0 flex-1">
               <span className={cx("block h-1.5 rounded-full", i < 4 ? "bg-brand" : "bg-line")} />
-              <span className="mt-1 block truncate text-[10px] text-muted">{s}</span>
+              <span className="mt-1 block text-[10px] leading-tight text-muted max-[380px]:text-[9px]">{s}</span>
             </li>
           ))}
         </ol>
@@ -120,9 +126,9 @@ function OperateStory() {
   return (
     <>
       <Problem who="showroom owner, Nagpur">“Website is old, Google shows wrong timings, nobody posts on Instagram.”</Problem>
-      <ul className="grid grid-cols-2 gap-1.5 rounded-xl bg-surface p-3 text-xs ring-1 ring-line">
+      <ul className="grid grid-cols-2 gap-x-2 gap-y-1.5 rounded-xl bg-surface p-3 text-xs ring-1 ring-line">
         {items.map((i) => (
-          <li key={i} className="flex items-center gap-1.5">
+          <li key={i} className="flex items-start gap-1.5 leading-snug">
             <span aria-hidden className="text-success">✓</span>
             {i}
           </li>
@@ -137,8 +143,8 @@ function AutomateStory() {
   return (
     <>
       <Problem who="fabric wholesaler, Surat">“Three people spend all day re-typing WhatsApp orders into Tally.”</Problem>
-      <div className="flex items-center gap-2 text-xs">
-        <span className="max-w-[60%] rounded-xl rounded-tl-sm bg-[#d9fdd3] px-3 py-2 text-[#111] dark:bg-[#005c4b] dark:text-[#e9edef]">
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <span className="rounded-xl rounded-tl-sm bg-[#d9fdd3] px-3 py-2 text-[#111] dark:bg-[#005c4b] dark:text-[#e9edef]">
           Design 4521 – 40 thaan 🙏
         </span>
         <span aria-hidden className="text-muted">→</span>

@@ -51,7 +51,7 @@ export function AutomateDemo() {
     <DemoFrame label="Automate demo · WhatsApp order to Tally" note="Sample data. No real customer or system is involved.">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         {/* WhatsApp chat */}
-        <div className="flex min-h-[360px] flex-col overflow-hidden rounded-2xl ring-1 ring-line">
+        <div className="flex min-h-[220px] flex-col overflow-hidden rounded-2xl ring-1 ring-line lg:min-h-[360px]">
           <div className="flex items-center gap-3 bg-[#075e54] px-4 py-3 text-white">
             <span className="grid size-8 place-items-center rounded-full bg-white/20 text-sm font-semibold">PT</span>
             <div className="leading-tight">
@@ -120,7 +120,7 @@ export function AutomateDemo() {
           </ol>
 
           {/* Output panel */}
-          <div className="min-h-[148px] rounded-xl bg-subtle p-4 text-sm ring-1 ring-line" aria-live="polite">
+          <div className="min-h-[148px] overflow-x-auto rounded-xl bg-subtle p-3 text-sm ring-1 ring-line sm:p-4" aria-live="polite">
             {step === 0 && <p className="text-muted">Press “Next step” to follow the order through.</p>}
             {step === 1 && (
               <table className="w-full text-left text-xs">

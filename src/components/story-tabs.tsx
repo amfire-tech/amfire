@@ -14,7 +14,8 @@ export function StoryTabs({ stories }: { stories: Item[] }) {
 
   return (
     <div>
-      <div role="tablist" aria-label="Stories by service" className="grid gap-2 sm:grid-cols-3">
+      {/* Phones: a compact three-way switch with the tagline under it; larger screens: three cards. */}
+      <div role="tablist" aria-label="Stories by service" className="grid grid-cols-3 gap-1 rounded-2xl bg-surface p-1 ring-1 ring-line sm:gap-2 sm:bg-transparent sm:p-0 sm:ring-0">
         {stories.map((s, i) => (
           <button
             key={s.path}
@@ -24,16 +25,17 @@ export function StoryTabs({ stories }: { stories: Item[] }) {
             aria-controls="story-panel"
             onClick={() => setActive(i)}
             className={cx(
-              "rounded-2xl px-5 py-4 text-left ring-1 transition",
-              active === i ? "bg-fg text-page ring-fg" : "bg-surface ring-line hover:ring-fg/30",
+              "min-h-11 rounded-xl px-2 py-2.5 text-center transition sm:rounded-2xl sm:px-5 sm:py-4 sm:text-left sm:ring-1",
+              active === i ? "bg-fg text-page sm:ring-fg" : "text-fg/75 hover:text-fg sm:bg-surface sm:ring-line sm:hover:ring-fg/30",
             )}
           >
             <span className="block text-sm font-semibold">{s.name}</span>
-            <span className={cx("block text-xs", active === i ? "opacity-70" : "text-muted")}>{s.tagline}</span>
+            <span className={cx("hidden text-xs sm:block", active === i ? "opacity-70" : "text-muted")}>{s.tagline}</span>
           </button>
         ))}
       </div>
-      <div role="tabpanel" id="story-panel" aria-labelledby={`story-tab-${current.path}`} className="mt-5 animate-rise" key={current.path}>
+      <p className="mt-3 text-center text-sm text-muted sm:hidden">{current.tagline}</p>
+      <div role="tabpanel" id="story-panel" aria-labelledby={`story-tab-${current.path}`} className="mt-4 animate-rise sm:mt-5" key={current.path}>
         <ServiceStory story={current.story} />
       </div>
     </div>

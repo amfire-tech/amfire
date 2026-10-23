@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { signOut } from "@/app/actions/auth";
+import { WhatsAppIcon } from "@/components/contact";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Container, Logo } from "@/components/ui";
 import { contact, site } from "@/config/site";
@@ -17,7 +18,7 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
           <Link href="/hub" className="flex items-center gap-2" aria-label="Client Hub home">
             <Logo className="h-6" /> <span className="hidden text-sm font-medium text-muted sm:inline">Client Hub</span>
           </Link>
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center gap-2 text-sm sm:gap-4">
             {actor.internalRole && (
               <Link href="/hq" className="hidden text-muted hover:text-fg sm:inline">
                 Go to HQ
@@ -29,9 +30,18 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
             <a href={contact.whatsapp()} target="_blank" rel="noopener noreferrer" className="hidden text-muted hover:text-fg sm:inline">
               WhatsApp {site.contactPhone}
             </a>
+            <a
+              href={contact.whatsapp()}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`WhatsApp AMFIRE on ${site.contactPhone}`}
+              className="grid size-11 place-items-center rounded-full text-[#128c4b] ring-1 ring-line sm:hidden"
+            >
+              <WhatsAppIcon className="size-5" />
+            </a>
             <ThemeToggle />
             <form action={signOut}>
-              <button className="text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
+              <button className="px-1 py-2 text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
             </form>
           </div>
         </Container>

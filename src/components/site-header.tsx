@@ -45,13 +45,27 @@ export function SiteHeader() {
     };
   }, []);
 
+  // While the phone menu is open the page behind it doesn't scroll, and
+  // data-menu="open" lets the bottom contact bar step aside.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const root = document.documentElement;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+    root.dataset.menu = "open";
+    return () => {
+      document.body.style.overflow = overflow;
+      delete root.dataset.menu;
+    };
+  }, [mobileOpen]);
+
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-page/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="AMFIRE home" className="shrink-0">
-          <Logo className="h-7" priority />
+        <Link href="/" aria-label="AMFIRE home" className="shrink-0 py-2">
+          <Logo className="h-6 sm:h-7" priority />
         </Link>
 
         <nav aria-label="Main" className="hidden items-center gap-1 lg:flex">
@@ -110,7 +124,7 @@ export function SiteHeader() {
           </ButtonLink>
           <button
             type="button"
-            className="grid size-10 place-items-center rounded-full ring-1 ring-line lg:hidden"
+            className="grid size-11 place-items-center rounded-full ring-1 ring-line lg:hidden"
             aria-expanded={mobileOpen}
             aria-controls="mobile-menu"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
@@ -124,21 +138,25 @@ export function SiteHeader() {
       </div>
 
       {mobileOpen && (
-        <nav id="mobile-menu" aria-label="Mobile" className="animate-rise border-t border-line bg-page px-4 pt-3 pb-6 lg:hidden">
+        <nav
+          id="mobile-menu"
+          aria-label="Mobile"
+          className="max-h-[calc(100dvh-4rem)] animate-rise overflow-y-auto overscroll-contain border-t border-line bg-page px-4 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] lg:hidden"
+        >
           <p className="px-3 pt-2 text-xs font-semibold tracking-widest text-muted uppercase">Services</p>
           {PATHS.map((p) => (
-            <Link key={p} href={`/services/${p}`} className="block rounded-xl px-3 py-2.5 hover:bg-subtle">
+            <Link key={p} href={`/services/${p}`} className="block rounded-xl px-3 py-3 hover:bg-subtle active:bg-subtle">
               <span className="font-medium">{SERVICES[p].name}</span>
               <span className="block text-xs text-muted">{SERVICES[p].tagline}</span>
             </Link>
           ))}
           <div className="my-2 border-t border-line" />
           {[...LINKS, { href: "/how-we-work", label: "How we work" }, { href: "/login", label: "Sign in" }].map((item) => (
-            <Link key={item.href} href={item.href} className="block rounded-xl px-3 py-2.5 hover:bg-subtle">
+            <Link key={item.href} href={item.href} className="block rounded-xl px-3 py-3 font-medium hover:bg-subtle active:bg-subtle">
               {item.label}
             </Link>
           ))}
-          <ButtonLink href="/start" className="mt-3 w-full">
+          <ButtonLink href="/start" size="lg" className="mt-4 w-full">
             Book free demo
           </ButtonLink>
         </nav>

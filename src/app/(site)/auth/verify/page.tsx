@@ -11,7 +11,7 @@ export default async function VerifyPage({ searchParams }: PageProps<"/auth/veri
   const params = await searchParams;
   return (
     <div className="bg-subtle">
-      <Container className="max-w-md py-16 sm:py-24">
+      <Container className="max-w-md py-12 sm:py-24">
         <form action={completeSignIn} className="rounded-card bg-surface p-6 text-center ring-1 ring-line sm:p-8">
           {/* Local fallback uses `token`; Supabase magic links use `token_hash` + `type`. */}
           <input type="hidden" name="token" value={str(params.token)} />

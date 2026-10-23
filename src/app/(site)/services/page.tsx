@@ -15,7 +15,7 @@ export default function ServicesPage() {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <Container className="py-16 sm:py-20">
+        <Container className="py-12 sm:py-20">
           <Eyebrow>Services</Eyebrow>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-5xl">
             Three ways to help. <span className="text-brand">One partner</span> for all of them.

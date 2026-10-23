@@ -16,7 +16,7 @@ export function ServiceStory({ story, compact }: { story: Story; compact?: boole
 
   return (
     <div className="overflow-hidden rounded-[1.5rem] bg-surface ring-1 ring-line">
-      <div className="flex flex-col gap-4 border-b border-line p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+      <div className="flex flex-col gap-4 border-b border-line p-5 sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <div className="min-w-0">
           <p className="text-xs font-semibold tracking-widest text-muted uppercase">
             Example story · {story.owner}, {story.where}
@@ -34,7 +34,7 @@ export function ServiceStory({ story, compact }: { story: Story; compact?: boole
           <li
             key={b.label}
             className={cx(
-              "relative border-line p-6 sm:p-7",
+              "relative flex gap-4 border-line p-5 sm:block sm:p-7",
               i > 0 && "border-t sm:border-t-0",
               i % 2 === 1 && "sm:border-l",
               i >= 2 && "sm:border-t lg:border-t-0",
@@ -44,14 +44,16 @@ export function ServiceStory({ story, compact }: { story: Story; compact?: boole
           >
             <span
               className={cx(
-                "grid size-8 place-items-center rounded-full text-sm font-bold",
+                "grid size-8 shrink-0 place-items-center rounded-full text-sm font-bold",
                 b.tone === "amfire" ? "bg-brand text-ink" : b.tone === "result" ? "bg-success/15 text-success" : "bg-subtle text-muted ring-1 ring-line",
               )}
             >
               {i + 1}
             </span>
-            <p className={cx("mt-4 text-xs font-semibold tracking-widest uppercase", b.tone === "amfire" ? "text-white/60" : "text-muted")}>{b.label}</p>
-            <p className={cx("mt-2 text-sm leading-relaxed", b.tone === "amfire" ? "text-white/90" : "text-fg/85")}>{b.body}</p>
+            <div className="min-w-0">
+              <p className={cx("mt-1.5 text-xs font-semibold tracking-widest uppercase sm:mt-4", b.tone === "amfire" ? "text-white/60" : "text-muted")}>{b.label}</p>
+              <p className={cx("mt-1.5 text-sm leading-relaxed sm:mt-2", b.tone === "amfire" ? "text-white/90" : "text-fg/85")}>{b.body}</p>
+            </div>
           </li>
         ))}
       </ol>

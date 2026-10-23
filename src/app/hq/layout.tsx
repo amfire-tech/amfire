@@ -21,7 +21,7 @@ export default async function HqLayout({ children }: LayoutProps<"/hq">) {
             <div className="flex items-center gap-3 lg:hidden">
               <ThemeToggle />
               <form action={signOut}>
-              <button className="text-sm text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
+              <button className="px-1 py-2 text-sm text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
               </form>
             </div>
           </div>

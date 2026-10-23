@@ -19,7 +19,7 @@ export default function AboutPage() {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <Container className="py-16 sm:py-24">
+        <Container className="py-12 sm:py-24">
           <Eyebrow>About AMFIRE</Eyebrow>
           <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
             A technology partner with a <span className="text-brand">remarkably simple</span> way of working.
@@ -32,7 +32,7 @@ export default function AboutPage() {
         </Container>
       </section>
       <section className="border-y border-line bg-subtle">
-        <Container className="py-20">
+        <Container className="py-14 sm:py-20">
           <h2 className="text-3xl font-semibold tracking-tight">What we believe</h2>
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {PRINCIPLES.map((p, i) => (
@@ -47,7 +47,7 @@ export default function AboutPage() {
       </section>
       <section className="relative overflow-hidden bg-ink text-white">
         <div aria-hidden className="bg-brand absolute -bottom-32 left-1/3 h-72 w-[36rem] rounded-full opacity-25 blur-3xl" />
-        <Container className="relative flex flex-col items-start gap-6 py-20 md:flex-row md:items-center md:justify-between">
+        <Container className="relative flex flex-col items-start gap-6 py-14 sm:py-20 md:flex-row md:items-center md:justify-between">
           <h2 className="max-w-xl text-3xl font-semibold tracking-tight">Let&apos;s make your business simpler to run.</h2>
           <ButtonLink href="/start" size="lg">
             Book a free demo <Arrow />

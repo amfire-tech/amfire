@@ -11,7 +11,7 @@ import { ForCurrency } from "@/components/currency";
 import { ExampleCard } from "@/components/example-card";
 import { PricingSection } from "@/components/pricing-section";
 import { ServiceStory } from "@/components/service-story";
-import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading } from "@/components/ui";
+import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, SwipeRow } from "@/components/ui";
 import { FREE_DEMO, SERVICES, SERVICE_DETAILS, type ServicePathId } from "@/knowledge/catalog";
 import { examplesFor } from "@/knowledge/examples";
 import { STARTING_PRICE } from "@/knowledge/pricing";
@@ -61,7 +61,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
     <>
       {/* Hero */}
       <section className="relative isolate overflow-hidden">
-        <Container className="grid gap-12 py-16 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+        <Container className="grid gap-8 py-12 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12">
           <div>
             <Eyebrow>
               {service.name} · {service.tagline}
@@ -74,7 +74,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
               </ButtonLink>
             </div>
           </div>
-          <div className="rounded-[1.5rem] bg-surface p-7 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] ring-1 ring-line">
+          <div className="rounded-[1.5rem] bg-surface p-5 shadow-[0_30px_80px_-40px_rgba(0,0,0,0.4)] ring-1 ring-line sm:p-7">
             <p className="text-sm font-semibold">This is for you if…</p>
             <div className="mt-4">
               <CheckList items={detail.signs} />
@@ -85,7 +85,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
       {/* The story */}
       <section className="border-y border-line bg-subtle">
-        <Container className="py-20">
+        <Container className="py-14 sm:py-20">
           <SectionHeading eyebrow="A story you might recognise" title={`How ${service.name} works for a real business problem`} />
           <div className="mt-10">
             <ServiceStory story={detail.story} />
@@ -95,8 +95,8 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
       {/* Free offer */}
       <section>
-        <Container className="py-16">
-          <div className="relative overflow-hidden rounded-[1.5rem] p-8 ring-2 ring-flame sm:p-10">
+        <Container className="py-12 sm:py-16">
+          <div className="relative overflow-hidden rounded-[1.5rem] p-6 ring-2 ring-flame sm:p-10">
             <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-15 blur-3xl" />
             <div className="relative grid gap-6 lg:grid-cols-[1.4fr_auto] lg:items-center">
               <div>
@@ -114,14 +114,16 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
       {/* What you get */}
       <section className="border-y border-line bg-subtle">
-        <Container className="py-20">
+        <Container className="py-14 sm:py-20">
           <SectionHeading eyebrow="What's included" title={detail.deliverablesTitle} description={service.description} />
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-3 sm:mt-12 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
             {detail.deliverables.map((d, i) => (
-              <div key={d.title} className="rounded-card bg-surface p-6 ring-1 ring-line">
-                <span className="text-brand text-sm font-bold">{String(i + 1).padStart(2, "0")}</span>
-                <h3 className="mt-3 font-semibold">{d.title}</h3>
-                <p className="mt-2 text-sm text-muted">{d.body}</p>
+              <div key={d.title} className="flex gap-4 rounded-card bg-surface p-4 ring-1 ring-line sm:block sm:p-6">
+                <span className="text-brand shrink-0 pt-0.5 text-sm font-bold">{String(i + 1).padStart(2, "0")}</span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold sm:mt-3">{d.title}</h3>
+                  <p className="mt-1 text-sm text-muted sm:mt-2">{d.body}</p>
+                </div>
               </div>
             ))}
           </div>
@@ -131,7 +133,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
       {/* Operate: hiring comparison · Automate: manual work cost */}
       {path === "operate" && (
         <section>
-          <Container className="py-20">
+          <Container className="py-14 sm:py-20">
             <SectionHeading
               eyebrow="Hire a team or partner with AMFIRE?"
               title="Compare the cost of an in-house tech team"
@@ -151,7 +153,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
       )}
       {path === "automate" && (
         <section>
-          <Container className="py-20">
+          <Container className="py-14 sm:py-20">
             <SectionHeading
               eyebrow="Quick estimate"
               title="What is this manual work costing you today?"
@@ -166,14 +168,16 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
       {/* Steps */}
       <section className={path === "build" ? "" : "border-t border-line"}>
-        <Container className="py-20">
+        <Container className="py-14 sm:py-20">
           <SectionHeading eyebrow="How it works" title={`Working with us on ${service.name}`} />
-          <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <ol className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4">
             {detail.steps.map((s, i) => (
-              <li key={s.title} className="relative rounded-card bg-surface p-6 ring-1 ring-line">
-                <span className="bg-brand grid size-9 place-items-center rounded-full text-sm font-bold text-ink">{i + 1}</span>
-                <h3 className="mt-4 font-semibold">{s.title}</h3>
-                <p className="mt-1.5 text-sm text-muted">{s.body}</p>
+              <li key={s.title} className="relative flex gap-4 rounded-card bg-surface p-4 ring-1 ring-line sm:block sm:p-6">
+                <span className="bg-brand grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold text-ink">{i + 1}</span>
+                <div className="min-w-0">
+                  <h3 className="font-semibold sm:mt-4">{s.title}</h3>
+                  <p className="mt-1 text-sm text-muted sm:mt-1.5">{s.body}</p>
+                </div>
               </li>
             ))}
           </ol>
@@ -182,7 +186,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
       {/* Demo */}
       <section id="demo" className="scroll-mt-20 border-t border-line bg-subtle">
-        <Container className="py-20">
+        <Container className="py-14 sm:py-20">
           <SectionHeading eyebrow="Interactive demo" title={demo.title} description={demo.body} />
           <div className="mt-10">{demo.demo}</div>
         </Container>
@@ -190,23 +194,23 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
       {/* Examples */}
       <section>
-        <Container className="py-20">
+        <Container className="py-14 sm:py-20">
           <SectionHeading
             eyebrow="Examples"
             title={`${service.name} in Indian businesses`}
             description="Illustrative engagements based on common situations — not client case studies."
           />
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          <SwipeRow className="mt-8 sm:mt-10">
             {examples.map((e) => (
               <ExampleCard key={e.slug} example={e} />
             ))}
-          </div>
+          </SwipeRow>
         </Container>
       </section>
 
       {/* FAQ */}
       <section className="border-t border-line">
-        <Container className="grid gap-12 py-20 lg:grid-cols-[0.8fr_1.2fr]">
+        <Container className="grid gap-10 py-14 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
           <div>
             <h2 className="text-3xl font-semibold tracking-tight">Questions owners ask</h2>
             <p className="mt-3 text-muted">Anything else? Ask us during your free demo.</p>
@@ -221,12 +225,12 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
           </div>
           <div className="divide-y divide-line border-y border-line">
             {detail.faqs.map((f) => (
-              <details key={f.q} className="group py-4">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium [&::-webkit-details-marker]:hidden">
+              <details key={f.q} className="group py-1">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-4 py-3 font-medium [&::-webkit-details-marker]:hidden">
                   {f.q}
                   <span aria-hidden className="text-xl text-muted transition group-open:rotate-45">+</span>
                 </summary>
-                <p className="mt-2 text-muted">{f.a}</p>
+                <p className="pb-4 text-muted">{f.a}</p>
               </details>
             ))}
           </div>

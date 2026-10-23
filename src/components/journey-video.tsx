@@ -111,7 +111,8 @@ export function JourneyVideo() {
             muted
             loop
             playsInline
-            preload="auto"
+            // Only the poster and size up front: the 12 MB film loads when it scrolls into view (mobile data).
+            preload="metadata"
             poster={`/media/client-journey-poster.jpg?v=${journey.version ?? ""}`}
             disablePictureInPicture
             tabIndex={0}
@@ -137,7 +138,7 @@ export function JourneyVideo() {
               type="button"
               onClick={() => seek(i)}
               aria-current={current === i ? "step" : undefined}
-              className={cx("flex h-full w-full gap-3 rounded-xl px-3 py-2.5 text-left transition", current === i ? "bg-subtle ring-1 ring-line" : "hover:bg-subtle")}
+              className={cx("flex h-full w-full gap-3 rounded-xl px-3 py-3 text-left transition sm:py-2.5", current === i ? "bg-subtle ring-1 ring-line" : "hover:bg-subtle")}
             >
               <span
                 className={cx(

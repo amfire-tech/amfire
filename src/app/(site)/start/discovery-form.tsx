@@ -68,9 +68,9 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   return (
-    <form action={action} noValidate className="rounded-card bg-surface p-5 ring-1 ring-line sm:p-8">
+    <form action={action} noValidate className="rounded-card bg-surface p-4 ring-1 ring-line sm:p-8">
       {/* Progress */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <p className="text-sm text-muted">
           Step {step + 1} of {STEPS.length} · {STEPS[step]}
         </p>
@@ -97,7 +97,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
       {/* Step 1 — goal */}
       <fieldset hidden={step !== 0} aria-describedby={errors.goal ? "goal-error" : undefined}>
         <legend>
-          <h2 ref={step === 0 ? headingRef : undefined} tabIndex={-1} className="text-xl font-semibold sm:text-2xl">
+          <h2 ref={step === 0 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
             What would you most like to improve?
           </h2>
         </legend>
@@ -133,7 +133,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
 
       {/* Step 2 — business */}
       <div hidden={step !== 1}>
-        <h2 ref={step === 1 ? headingRef : undefined} tabIndex={-1} className="text-xl font-semibold sm:text-2xl">
+        <h2 ref={step === 1 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
           A little about your business
         </h2>
         <div className="mt-6 grid gap-6">
@@ -162,7 +162,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
 
       {/* Step 3 — problem */}
       <div hidden={step !== 2}>
-        <h2 ref={step === 2 ? headingRef : undefined} tabIndex={-1} className="text-xl font-semibold sm:text-2xl">
+        <h2 ref={step === 2 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
           Describe the problem in your own words
         </h2>
         <div className="mt-6 grid gap-6">
@@ -198,7 +198,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
 
       {/* Step 4 — contact */}
       <div hidden={step !== 3}>
-        <h2 ref={step === 3 ? headingRef : undefined} tabIndex={-1} className="text-xl font-semibold sm:text-2xl">
+        <h2 ref={step === 3 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
           Where should we call you for your free demo?
         </h2>
         <p className="mt-2 text-sm text-muted">
@@ -284,20 +284,20 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
       </div>
 
       {/* Navigation — one primary action per step */}
-      <div className="mt-10 flex items-center justify-between gap-3 border-t border-line pt-6">
+      <div className="mt-8 flex items-center justify-between gap-3 border-t border-line pt-5 sm:mt-10 sm:pt-6">
         {step > 0 ? (
-          <Button type="button" variant="ghost" onClick={back}>
+          <Button type="button" variant="ghost" size="lg" onClick={back} className="px-3 sm:px-7">
             ← Back
           </Button>
         ) : (
           <span />
         )}
         {step < STEPS.length - 1 ? (
-          <Button type="button" onClick={next}>
+          <Button type="button" size="lg" onClick={next} className="flex-1 sm:flex-none">
             Continue
           </Button>
         ) : (
-          <SubmitButton pendingLabel="Booking…">
+          <SubmitButton pendingLabel="Booking…" size="lg" className="flex-1 whitespace-normal text-center leading-tight sm:flex-none">
             <span>
               Book my free demo · get <Money amounts={DEMO_OFFER.amount} /> off
             </span>
@@ -335,7 +335,7 @@ function ChoiceGroup({
         {options.map((o) => (
           <label
             key={o.id}
-            className="cursor-pointer rounded-full px-4 py-2 text-sm ring-1 ring-line transition hover:ring-fg/30 has-[:checked]:bg-ink has-[:checked]:text-white has-[:checked]:ring-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-signal"
+            className="cursor-pointer rounded-full px-4 py-2.5 text-sm ring-1 ring-line transition hover:ring-fg/30 has-[:checked]:bg-ink has-[:checked]:text-white has-[:checked]:ring-fg has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-signal"
           >
             <input type="radio" name={name} value={o.id} checked={values[name] === o.id} onChange={() => set(name, o.id)} className="sr-only" />
             {o.label}

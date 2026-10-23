@@ -43,12 +43,12 @@ export default function HowWeWorkPage() {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <Container className="py-16 sm:py-20">
+        <Container className="py-12 sm:py-20">
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">How we work</h1>
           <p className="mt-4 max-w-2xl text-lg text-fg/70">Clear steps, written agreements and a shared place to see exactly where things stand.</p>
         </Container>
       </section>
-      <Container className="py-16">
+      <Container className="py-12 sm:py-16">
         <ol className="relative grid gap-10 border-l border-line pl-8 sm:pl-10">
           {STAGES.map((s, i) => (
             <li key={s.title} className="relative">
@@ -61,7 +61,7 @@ export default function HowWeWorkPage() {
         </ol>
       </Container>
       <section className="bg-ink text-white">
-        <Container className="py-16">
+        <Container className="py-12 sm:py-16">
           <h2 className="text-2xl font-semibold tracking-tight">What you can count on</h2>
           <div className="mt-8 grid gap-6 md:grid-cols-3">
             {PROMISES.map((p) => (

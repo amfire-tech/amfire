@@ -7,7 +7,7 @@ export function ExampleCard({ example }: { example: Example }) {
   return (
     <Link
       href={`/work/${example.slug}`}
-      className="group flex h-full flex-col rounded-card bg-surface p-6 ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.35)] hover:ring-fg/25"
+      className="group flex h-full flex-col rounded-card bg-surface p-5 ring-1 sm:p-6 ring-line transition hover:-translate-y-0.5 hover:shadow-[0_24px_60px_-30px_rgba(0,0,0,0.35)] hover:ring-fg/25"
     >
       <div className="flex items-center justify-between gap-3 text-xs">
         <span className="font-semibold tracking-wide text-muted uppercase">{SERVICES[example.path].name}</span>

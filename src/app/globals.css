@@ -90,6 +90,24 @@
   color: transparent;
 }
 
+@layer base {
+  /* Grid children may shrink below their content's width, so one long
+     unbreakable line (a truncated label, a nowrap button) can't push a column
+     wider than the phone screen. */
+  .grid > * {
+    min-width: 0;
+  }
+
+  /* Phones: comfortable tap targets and no grey flash on tap. */
+  a,
+  button,
+  label,
+  summary {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }

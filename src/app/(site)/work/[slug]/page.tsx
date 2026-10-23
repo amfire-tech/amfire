@@ -126,7 +126,7 @@ export default async function ExamplePage({ params }: PageProps<"/work/[slug]">)
 
       {related.length > 0 && (
         <section className="border-t border-line bg-subtle">
-          <Container className="py-16">
+          <Container className="py-12 sm:py-16">
             <h2 className="text-2xl font-semibold tracking-tight">More {SERVICES[example.path].name} examples</h2>
             <div className="mt-8 grid gap-5 md:grid-cols-2">
               {related.map((e) => (

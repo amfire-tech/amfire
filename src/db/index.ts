@@ -10,6 +10,11 @@ const MIGRATIONS = path.join(process.cwd(), "drizzle");
 
 const globalForDb = globalThis as unknown as { __amfireDb?: Promise<DB> };
 
+/** DATABASE_URL, or POSTGRES_URL as set by the Supabase ↔ Vercel integration. */
+export function databaseUrl(): string | undefined {
+  return process.env.DATABASE_URL ?? process.env.POSTGRES_URL;
+}
+
 /**
  * One shared connection pool per server instance.
  * - DATABASE_URL set  → PostgreSQL (Supabase in staging / production).
@@ -26,7 +31,7 @@ export function getDb(): Promise<DB> {
 }
 
 async function connect(): Promise<DB> {
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
   if (url) {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");

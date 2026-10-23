@@ -6,6 +6,7 @@ import { SubmitButton } from "@/components/forms";
 import { Button, Field, Notice, cx, inputClass } from "@/components/ui";
 import { BUSINESS_TYPES, CALL_TIMES, GOALS, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
 import { Money } from "@/components/currency";
+import { track } from "@/lib/analytics";
 import { DEMO_OFFER } from "@/knowledge/pricing";
 
 const STEPS = ["Your goal", "Your business", "The problem", "Book your demo"] as const;
@@ -64,7 +65,12 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
     return Object.keys(e).length === 0;
   }
 
-  const next = () => validate(step) && setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  const next = () => {
+    if (!validate(step)) return;
+    // One event per completed step shows where people drop out of the booking form.
+    track("discovery_step", { step: step + 1, step_name: STEPS[step], goal: values.goal });
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  };
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   return (

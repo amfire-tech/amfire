@@ -8,7 +8,8 @@ import { DEMO_OFFER } from "@/knowledge/pricing";
 import { DiscoveryForm } from "./discovery-form";
 
 export const metadata: Metadata = {
-  title: FREE_DEMO.title,
+  title: `${FREE_DEMO.title} — 30 Minutes, No Obligation`,
+  alternates: { canonical: "/start" },
   description: FREE_DEMO.summary,
 };
 

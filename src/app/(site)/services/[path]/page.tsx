@@ -9,9 +9,11 @@ import { OperateDemo } from "@/components/demos/operate-demo";
 import { SavingsCalculator } from "@/components/demos/savings-calculator";
 import { ForCurrency } from "@/components/currency";
 import { ExampleCard } from "@/components/example-card";
+import { JsonLd } from "@/components/json-ld";
 import { PricingSection } from "@/components/pricing-section";
 import { ServiceStory } from "@/components/service-story";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, SwipeRow } from "@/components/ui";
+import { serviceJsonLd } from "@/config/structured-data";
 import { FREE_DEMO, SERVICES, SERVICE_DETAILS, type ServicePathId } from "@/knowledge/catalog";
 import { examplesFor } from "@/knowledge/examples";
 import { STARTING_PRICE } from "@/knowledge/pricing";
@@ -37,6 +39,13 @@ const DEMOS: Record<ServicePathId, { title: string; body: string; demo: ReactNod
   },
 };
 
+// Page titles written for search: what the service is called by people looking for it.
+const SEO_TITLES: Record<ServicePathId, string> = {
+  build: "Custom Software & App Development for Businesses",
+  operate: "Managed IT, Website, SEO & Digital Marketing — Monthly Plan",
+  automate: "Business Automation — WhatsApp Orders to Tally, GST & Payments",
+};
+
 export function generateStaticParams() {
   return PATHS.map((path) => ({ path }));
 }
@@ -44,7 +53,11 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/services/[path]">): Promise<Metadata> {
   const { path } = await params;
   if (!isPath(path)) return {};
-  return { title: `${SERVICES[path].name} — ${SERVICES[path].tagline}`, description: `${SERVICE_DETAILS[path].headline} ${SERVICES[path].description}` };
+  return {
+    title: SEO_TITLES[path],
+    description: `${SERVICE_DETAILS[path].headline} ${SERVICES[path].description}`,
+    alternates: { canonical: `/services/${path}` },
+  };
 }
 
 export default async function ServicePage({ params }: PageProps<"/services/[path]">) {
@@ -59,6 +72,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
 
   return (
     <>
+      <JsonLd data={serviceJsonLd(path, SEO_TITLES[path])} />
       {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <Container className="grid gap-8 py-12 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-12">

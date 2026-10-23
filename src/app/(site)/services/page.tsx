@@ -5,8 +5,10 @@ import { Arrow, CheckList, Container, Eyebrow } from "@/components/ui";
 import { SERVICES, SERVICE_DETAILS, type ServicePathId } from "@/knowledge/catalog";
 
 export const metadata: Metadata = {
-  title: "Services",
-  description: "Build, Operate and Automate — software made for your problem, your tech team without hiring, and manual work done automatically.",
+  title: "Software Development, Managed IT & Automation Services",
+  description:
+    "Build, Operate and Automate — custom software for your problem, a managed tech and marketing team without hiring, and manual work like Tally entry done automatically.",
+  alternates: { canonical: "/services" },
 };
 
 const PATHS = Object.keys(SERVICES) as ServicePathId[];

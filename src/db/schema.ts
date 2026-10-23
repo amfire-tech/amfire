@@ -2,8 +2,7 @@ import {
   boolean,
   integer,
   jsonb,
-  pgEnum,
-  pgTable,
+  pgSchema,
   primaryKey,
   text,
   timestamp,
@@ -17,30 +16,34 @@ import {
 // problem twice after becoming a client.
 // ---------------------------------------------------------------------------
 
+// Everything lives in its own "app" schema so it can share a Supabase database
+// with other apps without table-name clashes.
+export const appSchema = pgSchema("app");
+
 const id = () => uuid("id").primaryKey().defaultRandom();
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
 
 // --- Identity & organisations ----------------------------------------------
 
-export const orgKind = pgEnum("org_kind", ["internal", "client"]);
-export const memberRole = pgEnum("member_role", ["owner", "staff", "client_admin", "client_member"]);
+export const orgKind = appSchema.enum("org_kind", ["internal", "client"]);
+export const memberRole = appSchema.enum("member_role", ["owner", "staff", "client_admin", "client_member"]);
 
-export const organizations = pgTable("organizations", {
+export const organizations = appSchema.table("organizations", {
   id: id(),
   name: text("name").notNull(),
   kind: orgKind("kind").notNull(),
   createdAt: createdAt(),
 });
 
-export const users = pgTable("users", {
+export const users = appSchema.table("users", {
   id: id(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   createdAt: createdAt(),
 });
 
-export const memberships = pgTable(
+export const memberships = appSchema.table(
   "memberships",
   {
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
@@ -51,7 +54,7 @@ export const memberships = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.orgId] })],
 );
 
-export const loginTokens = pgTable("login_tokens", {
+export const loginTokens = appSchema.table("login_tokens", {
   id: id(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
@@ -60,7 +63,7 @@ export const loginTokens = pgTable("login_tokens", {
   createdAt: createdAt(),
 });
 
-export const sessions = pgTable("sessions", {
+export const sessions = appSchema.table("sessions", {
   id: id(),
   userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
@@ -70,7 +73,7 @@ export const sessions = pgTable("sessions", {
 
 // --- Leads & discovery -----------------------------------------------------
 
-export const leadStatus = pgEnum("lead_status", [
+export const leadStatus = appSchema.enum("lead_status", [
   "new",
   "qualified",
   "disqualified",
@@ -79,7 +82,7 @@ export const leadStatus = pgEnum("lead_status", [
   "lost",
 ]);
 
-export const leads = pgTable(
+export const leads = appSchema.table(
   "leads",
   {
     id: id(),
@@ -114,10 +117,10 @@ export const leads = pgTable(
 
 // --- Agent work ------------------------------------------------------------
 
-export const agentRunStatus = pgEnum("agent_run_status", ["running", "succeeded", "failed"]);
+export const agentRunStatus = appSchema.enum("agent_run_status", ["running", "succeeded", "failed"]);
 
 /** Every agent invocation is recorded with its inputs, outputs and cost. */
-export const agentRuns = pgTable("agent_runs", {
+export const agentRuns = appSchema.table("agent_runs", {
   id: id(),
   role: text("role").notNull(),
   engine: text("engine").notNull(), // "rules" | "gemini"
@@ -137,11 +140,11 @@ export const agentRuns = pgTable("agent_runs", {
   finishedAt: timestamp("finished_at", { withTimezone: true }),
 });
 
-export const servicePath = pgEnum("service_path", ["build", "operate", "automate"]);
-export const recommendationStatus = pgEnum("recommendation_status", ["proposed", "accepted", "rejected"]);
+export const servicePath = appSchema.enum("service_path", ["build", "operate", "automate"]);
+export const recommendationStatus = appSchema.enum("recommendation_status", ["proposed", "accepted", "rejected"]);
 
 /** A recommendation is a proposal from an agent — never a commitment. */
-export const recommendations = pgTable("recommendations", {
+export const recommendations = appSchema.table("recommendations", {
   id: id(),
   leadId: uuid("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
   agentRunId: uuid("agent_run_id").references(() => agentRuns.id),
@@ -161,7 +164,7 @@ export const recommendations = pgTable("recommendations", {
 
 // --- Proposals -------------------------------------------------------------
 
-export const proposalStatus = pgEnum("proposal_status", ["draft", "sent", "accepted", "declined", "withdrawn"]);
+export const proposalStatus = appSchema.enum("proposal_status", ["draft", "sent", "accepted", "declined", "withdrawn"]);
 
 export type ProposalMilestone = {
   title: string;
@@ -171,7 +174,7 @@ export type ProposalMilestone = {
   amount: number;
 };
 
-export const proposals = pgTable("proposals", {
+export const proposals = appSchema.table("proposals", {
   id: id(),
   leadId: uuid("lead_id").notNull().references(() => leads.id, { onDelete: "cascade" }),
   recommendationId: uuid("recommendation_id").references(() => recommendations.id),
@@ -205,17 +208,17 @@ export const proposals = pgTable("proposals", {
 
 // --- Delivery --------------------------------------------------------------
 
-export const projectStatus = pgEnum("project_status", ["active", "on_hold", "completed"]);
-export const milestoneStatus = pgEnum("milestone_status", [
+export const projectStatus = appSchema.enum("project_status", ["active", "on_hold", "completed"]);
+export const milestoneStatus = appSchema.enum("milestone_status", [
   "not_started",
   "in_progress",
   "awaiting_approval",
   "blocked",
   "done",
 ]);
-export const taskStatus = pgEnum("task_status", ["todo", "doing", "blocked", "done"]);
+export const taskStatus = appSchema.enum("task_status", ["todo", "doing", "blocked", "done"]);
 
-export const projects = pgTable("projects", {
+export const projects = appSchema.table("projects", {
   id: id(),
   orgId: uuid("org_id").notNull().references(() => organizations.id),
   proposalId: uuid("proposal_id").references(() => proposals.id),
@@ -227,7 +230,7 @@ export const projects = pgTable("projects", {
   createdAt: createdAt(),
 });
 
-export const milestones = pgTable(
+export const milestones = appSchema.table(
   "milestones",
   {
     id: id(),
@@ -247,7 +250,7 @@ export const milestones = pgTable(
   (t) => [index("milestones_project_idx").on(t.projectId)],
 );
 
-export const tasks = pgTable("tasks", {
+export const tasks = appSchema.table("tasks", {
   id: id(),
   projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   milestoneId: uuid("milestone_id").notNull().references(() => milestones.id, { onDelete: "cascade" }),
@@ -258,7 +261,7 @@ export const tasks = pgTable("tasks", {
   createdAt: createdAt(),
 });
 
-export const projectUpdates = pgTable("project_updates", {
+export const projectUpdates = appSchema.table("project_updates", {
   id: id(),
   projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
   orgId: uuid("org_id").notNull().references(() => organizations.id),
@@ -267,10 +270,10 @@ export const projectUpdates = pgTable("project_updates", {
   createdAt: createdAt(),
 });
 
-export const requestStatus = pgEnum("request_status", ["open", "resolved"]);
+export const requestStatus = appSchema.enum("request_status", ["open", "resolved"]);
 
 /** "Talk to a person" — always available to clients. */
-export const supportRequests = pgTable("support_requests", {
+export const supportRequests = appSchema.table("support_requests", {
   id: id(),
   orgId: uuid("org_id").notNull().references(() => organizations.id),
   projectId: uuid("project_id").references(() => projects.id, { onDelete: "set null" }),
@@ -285,7 +288,7 @@ export const supportRequests = pgTable("support_requests", {
 // --- Rate limits ---------------------------------------------------------------
 
 /** Fixed-window counters shared by every server instance (serverless-safe). */
-export const rateLimits = pgTable("rate_limits", {
+export const rateLimits = appSchema.table("rate_limits", {
   key: text("key").primaryKey(),
   windowStart: timestamp("window_start", { withTimezone: true }).notNull(),
   count: integer("count").notNull().default(0),
@@ -293,7 +296,7 @@ export const rateLimits = pgTable("rate_limits", {
 
 // --- Audit -----------------------------------------------------------------
 
-export const auditEvents = pgTable(
+export const auditEvents = appSchema.table(
   "audit_events",
   {
     id: id(),

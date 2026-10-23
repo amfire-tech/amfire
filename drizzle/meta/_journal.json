@@ -5,43 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1792660149162,
+      "when": 1792738878789,
       "tag": "0000_init",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1792662114170,
-      "tag": "0001_rate_limits",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1792662115515,
-      "tag": "0002_enable_rls",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1792665792601,
-      "tag": "0003_lead_contact",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1792693677694,
-      "tag": "0004_demo_offer",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1792735420166,
-      "tag": "0005_currency",
+      "when": 1792738880271,
+      "tag": "0001_enable_rls",
       "breakpoints": true
     }
   ]

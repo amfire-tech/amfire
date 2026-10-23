@@ -1,12 +1,12 @@
 {
-  "id": "fc1518de-d74d-4e75-9a40-d7f17683f1fa",
-  "prevId": "82f16bce-d0c7-4ad9-a396-a452b829a66c",
+  "id": "3b92e2ea-cc65-46a6-9e47-ad0c1f1ce82d",
+  "prevId": "3401b061-211d-4e39-a3a0-52a986de5708",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.agent_runs": {
+    "app.agent_runs": {
       "name": "agent_runs",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -48,7 +48,7 @@
         "status": {
           "name": "status",
           "type": "agent_run_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'running'"
@@ -114,15 +114,16 @@
         "agent_runs_triggered_by_users_id_fk": {
           "name": "agent_runs_triggered_by_users_id_fk",
           "tableFrom": "agent_runs",
-          "tableTo": "users",
           "columnsFrom": [
             "triggered_by"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -131,9 +132,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.audit_events": {
+    "app.audit_events": {
       "name": "audit_events",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -204,37 +205,39 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "audit_events_actor_id_users_id_fk": {
           "name": "audit_events_actor_id_users_id_fk",
           "tableFrom": "audit_events",
-          "tableTo": "users",
           "columnsFrom": [
             "actor_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "audit_events_org_id_organizations_id_fk": {
           "name": "audit_events_org_id_organizations_id_fk",
           "tableFrom": "audit_events",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -243,9 +246,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.leads": {
+    "app.leads": {
       "name": "leads",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -263,7 +266,7 @@
         "status": {
           "name": "status",
           "type": "lead_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'new'"
@@ -279,6 +282,18 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "call_time": {
+          "name": "call_time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "company": {
           "name": "company",
@@ -321,6 +336,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'INR'"
         },
         "consent_at": {
           "name": "consent_at",
@@ -386,43 +408,44 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "leads_client_org_id_organizations_id_fk": {
           "name": "leads_client_org_id_organizations_id_fk",
           "tableFrom": "leads",
-          "tableTo": "organizations",
           "columnsFrom": [
             "client_org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "leads_public_ref_unique": {
           "name": "leads_public_ref_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "public_ref"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.login_tokens": {
+    "app.login_tokens": {
       "name": "login_tokens",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -468,34 +491,35 @@
         "login_tokens_user_id_users_id_fk": {
           "name": "login_tokens_user_id_users_id_fk",
           "tableFrom": "login_tokens",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "login_tokens_token_hash_unique": {
           "name": "login_tokens_token_hash_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "token_hash"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.memberships": {
+    "app.memberships": {
       "name": "memberships",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "user_id": {
           "name": "user_id",
@@ -512,7 +536,7 @@
         "role": {
           "name": "role",
           "type": "member_role",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true
         },
@@ -529,28 +553,30 @@
         "memberships_user_id_users_id_fk": {
           "name": "memberships_user_id_users_id_fk",
           "tableFrom": "memberships",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "memberships_org_id_organizations_id_fk": {
           "name": "memberships_org_id_organizations_id_fk",
           "tableFrom": "memberships",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {
@@ -567,9 +593,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.milestones": {
+    "app.milestones": {
       "name": "milestones",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -618,7 +644,7 @@
         "status": {
           "name": "status",
           "type": "milestone_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'not_started'"
@@ -661,50 +687,53 @@
             }
           ],
           "isUnique": false,
-          "concurrently": false,
+          "with": {},
           "method": "btree",
-          "with": {}
+          "concurrently": false
         }
       },
       "foreignKeys": {
         "milestones_project_id_projects_id_fk": {
           "name": "milestones_project_id_projects_id_fk",
           "tableFrom": "milestones",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "milestones_org_id_organizations_id_fk": {
           "name": "milestones_org_id_organizations_id_fk",
           "tableFrom": "milestones",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "milestones_approved_by_users_id_fk": {
           "name": "milestones_approved_by_users_id_fk",
           "tableFrom": "milestones",
-          "tableTo": "users",
           "columnsFrom": [
             "approved_by"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -713,9 +742,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.organizations": {
+    "app.organizations": {
       "name": "organizations",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -733,7 +762,7 @@
         "kind": {
           "name": "kind",
           "type": "org_kind",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true
         },
@@ -753,9 +782,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.project_updates": {
+    "app.project_updates": {
       "name": "project_updates",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -801,41 +830,44 @@
         "project_updates_project_id_projects_id_fk": {
           "name": "project_updates_project_id_projects_id_fk",
           "tableFrom": "project_updates",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "project_updates_org_id_organizations_id_fk": {
           "name": "project_updates_org_id_organizations_id_fk",
           "tableFrom": "project_updates",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "project_updates_author_id_users_id_fk": {
           "name": "project_updates_author_id_users_id_fk",
           "tableFrom": "project_updates",
-          "tableTo": "users",
           "columnsFrom": [
             "author_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -844,9 +876,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.projects": {
+    "app.projects": {
       "name": "projects",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -876,10 +908,17 @@
         "status": {
           "name": "status",
           "type": "project_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'active'"
+        },
+        "currency": {
+          "name": "currency",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'INR'"
         },
         "started_at": {
           "name": "started_at",
@@ -901,28 +940,30 @@
         "projects_org_id_organizations_id_fk": {
           "name": "projects_org_id_organizations_id_fk",
           "tableFrom": "projects",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "projects_proposal_id_proposals_id_fk": {
           "name": "projects_proposal_id_proposals_id_fk",
           "tableFrom": "projects",
-          "tableTo": "proposals",
           "columnsFrom": [
             "proposal_id"
           ],
+          "tableTo": "proposals",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -931,9 +972,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.proposals": {
+    "app.proposals": {
       "name": "proposals",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -963,7 +1004,7 @@
         "status": {
           "name": "status",
           "type": "proposal_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'draft'"
@@ -971,7 +1012,7 @@
         "path": {
           "name": "path",
           "type": "service_path",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true
         },
@@ -1016,6 +1057,19 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "discount": {
+          "name": "discount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "discount_note": {
+          "name": "discount_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "terms": {
           "name": "terms",
@@ -1091,80 +1145,86 @@
         "proposals_lead_id_leads_id_fk": {
           "name": "proposals_lead_id_leads_id_fk",
           "tableFrom": "proposals",
-          "tableTo": "leads",
           "columnsFrom": [
             "lead_id"
           ],
+          "tableTo": "leads",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "proposals_recommendation_id_recommendations_id_fk": {
           "name": "proposals_recommendation_id_recommendations_id_fk",
           "tableFrom": "proposals",
-          "tableTo": "recommendations",
           "columnsFrom": [
             "recommendation_id"
           ],
+          "tableTo": "recommendations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "proposals_client_org_id_organizations_id_fk": {
           "name": "proposals_client_org_id_organizations_id_fk",
           "tableFrom": "proposals",
-          "tableTo": "organizations",
           "columnsFrom": [
             "client_org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "proposals_approved_by_users_id_fk": {
           "name": "proposals_approved_by_users_id_fk",
           "tableFrom": "proposals",
-          "tableTo": "users",
           "columnsFrom": [
             "approved_by"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "proposals_decided_by_users_id_fk": {
           "name": "proposals_decided_by_users_id_fk",
           "tableFrom": "proposals",
-          "tableTo": "users",
           "columnsFrom": [
             "decided_by"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "proposals_created_by_users_id_fk": {
           "name": "proposals_created_by_users_id_fk",
           "tableFrom": "proposals",
-          "tableTo": "users",
           "columnsFrom": [
             "created_by"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1173,9 +1233,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.rate_limits": {
+    "app.rate_limits": {
       "name": "rate_limits",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "key": {
           "name": "key",
@@ -1205,9 +1265,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.recommendations": {
+    "app.recommendations": {
       "name": "recommendations",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -1231,7 +1291,7 @@
         "path": {
           "name": "path",
           "type": "service_path",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true
         },
@@ -1280,7 +1340,7 @@
         "status": {
           "name": "status",
           "type": "recommendation_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'proposed'"
@@ -1310,41 +1370,44 @@
         "recommendations_lead_id_leads_id_fk": {
           "name": "recommendations_lead_id_leads_id_fk",
           "tableFrom": "recommendations",
-          "tableTo": "leads",
           "columnsFrom": [
             "lead_id"
           ],
+          "tableTo": "leads",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "recommendations_agent_run_id_agent_runs_id_fk": {
           "name": "recommendations_agent_run_id_agent_runs_id_fk",
           "tableFrom": "recommendations",
-          "tableTo": "agent_runs",
           "columnsFrom": [
             "agent_run_id"
           ],
+          "tableTo": "agent_runs",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "recommendations_reviewed_by_users_id_fk": {
           "name": "recommendations_reviewed_by_users_id_fk",
           "tableFrom": "recommendations",
-          "tableTo": "users",
           "columnsFrom": [
             "reviewed_by"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1353,9 +1416,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.sessions": {
+    "app.sessions": {
       "name": "sessions",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -1395,34 +1458,35 @@
         "sessions_user_id_users_id_fk": {
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
-          "tableTo": "users",
           "columnsFrom": [
             "user_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "sessions_token_hash_unique": {
           "name": "sessions_token_hash_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "token_hash"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.support_requests": {
+    "app.support_requests": {
       "name": "support_requests",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -1464,7 +1528,7 @@
         "status": {
           "name": "status",
           "type": "request_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'open'"
@@ -1488,41 +1552,44 @@
         "support_requests_org_id_organizations_id_fk": {
           "name": "support_requests_org_id_organizations_id_fk",
           "tableFrom": "support_requests",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         },
         "support_requests_project_id_projects_id_fk": {
           "name": "support_requests_project_id_projects_id_fk",
           "tableFrom": "support_requests",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "set null"
         },
         "support_requests_author_id_users_id_fk": {
           "name": "support_requests_author_id_users_id_fk",
           "tableFrom": "support_requests",
-          "tableTo": "users",
           "columnsFrom": [
             "author_id"
           ],
+          "tableTo": "users",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1531,9 +1598,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.tasks": {
+    "app.tasks": {
       "name": "tasks",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -1569,7 +1636,7 @@
         "status": {
           "name": "status",
           "type": "task_status",
-          "typeSchema": "public",
+          "typeSchema": "app",
           "primaryKey": false,
           "notNull": true,
           "default": "'todo'"
@@ -1594,41 +1661,44 @@
         "tasks_project_id_projects_id_fk": {
           "name": "tasks_project_id_projects_id_fk",
           "tableFrom": "tasks",
-          "tableTo": "projects",
           "columnsFrom": [
             "project_id"
           ],
+          "tableTo": "projects",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "tasks_milestone_id_milestones_id_fk": {
           "name": "tasks_milestone_id_milestones_id_fk",
           "tableFrom": "tasks",
-          "tableTo": "milestones",
           "columnsFrom": [
             "milestone_id"
           ],
+          "tableTo": "milestones",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "tasks_org_id_organizations_id_fk": {
           "name": "tasks_org_id_organizations_id_fk",
           "tableFrom": "tasks",
-          "tableTo": "organizations",
           "columnsFrom": [
             "org_id"
           ],
+          "tableTo": "organizations",
+          "schemaTo": "app",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1637,9 +1707,9 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.users": {
+    "app.users": {
       "name": "users",
-      "schema": "",
+      "schema": "app",
       "columns": {
         "id": {
           "name": "id",
@@ -1674,10 +1744,10 @@
       "uniqueConstraints": {
         "users_email_unique": {
           "name": "users_email_unique",
-          "nullsNotDistinct": false,
           "columns": [
             "email"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       },
       "policies": {},
@@ -1686,18 +1756,18 @@
     }
   },
   "enums": {
-    "public.agent_run_status": {
+    "app.agent_run_status": {
       "name": "agent_run_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "running",
         "succeeded",
         "failed"
       ]
     },
-    "public.lead_status": {
+    "app.lead_status": {
       "name": "lead_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "new",
         "qualified",
@@ -1707,9 +1777,9 @@
         "lost"
       ]
     },
-    "public.member_role": {
+    "app.member_role": {
       "name": "member_role",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "owner",
         "staff",
@@ -1717,9 +1787,9 @@
         "client_member"
       ]
     },
-    "public.milestone_status": {
+    "app.milestone_status": {
       "name": "milestone_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "not_started",
         "in_progress",
@@ -1728,26 +1798,26 @@
         "done"
       ]
     },
-    "public.org_kind": {
+    "app.org_kind": {
       "name": "org_kind",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "internal",
         "client"
       ]
     },
-    "public.project_status": {
+    "app.project_status": {
       "name": "project_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "active",
         "on_hold",
         "completed"
       ]
     },
-    "public.proposal_status": {
+    "app.proposal_status": {
       "name": "proposal_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "draft",
         "sent",
@@ -1756,35 +1826,35 @@
         "withdrawn"
       ]
     },
-    "public.recommendation_status": {
+    "app.recommendation_status": {
       "name": "recommendation_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "proposed",
         "accepted",
         "rejected"
       ]
     },
-    "public.request_status": {
+    "app.request_status": {
       "name": "request_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "open",
         "resolved"
       ]
     },
-    "public.service_path": {
+    "app.service_path": {
       "name": "service_path",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "build",
         "operate",
         "automate"
       ]
     },
-    "public.task_status": {
+    "app.task_status": {
       "name": "task_status",
-      "schema": "public",
+      "schema": "app",
       "values": [
         "todo",
         "doing",
@@ -1793,11 +1863,13 @@
       ]
     }
   },
-  "schemas": {},
+  "schemas": {
+    "app": "app"
+  },
+  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
-  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

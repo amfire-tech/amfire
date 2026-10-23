@@ -16,7 +16,7 @@ const withOffer = (p: ServicePathId) =>
 
 const INCLUDED: Record<ServicePathId, string[]> = {
   build: ["Free problem-finding session", "Designs you approve before we build", "Your own Client Hub to follow progress", "Code, data and documentation are yours"],
-  operate: ["Website, hosting and business email", "Social media, SEO and online marketing", "Software upkeep, backups and security", "Monthly report and technology updates"],
+  operate: ["Website, hosting and business email", "Social media, SEO, marketing and lead follow-up", "Software upkeep, backups and security", "Sales tracking, monthly report and tech updates"],
   automate: ["Free process walkthrough", "Automation built for your process", "Runs alongside your old way first", "Your people approve what matters"],
 };
 

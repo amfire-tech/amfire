@@ -42,7 +42,7 @@ const DEMOS: Record<ServicePathId, { title: string; body: string; demo: ReactNod
 // Page titles written for search: what the service is called by people looking for it.
 const SEO_TITLES: Record<ServicePathId, string> = {
   build: "Custom Software & App Development for Businesses",
-  operate: "Managed IT, Website, SEO & Digital Marketing — Monthly Plan",
+  operate: "Managed IT, Website, SEO, Digital Marketing & Lead Generation",
   automate: "Business Automation — WhatsApp Orders to Tally, GST & Payments",
 };
 

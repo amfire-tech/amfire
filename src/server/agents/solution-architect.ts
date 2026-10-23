@@ -56,7 +56,7 @@ const KEYWORDS: Record<ServicePathId, RegExp> = {
   automate: /manual|spreadsheet|excel|copy|re-?typ|data entry|chas|order entry|repetitive|paperwork|sync|reconcil|reminder/i,
   build: /\bapps?\b|portal|platform|product|dashboard|software|\btools?\b|customers? (can|could|should)|self-service|mvp|booking system/i,
   operate:
-    /website|instagram|facebook|social media|google (listing|profile|business)|\bseo\b|digital marketing|\bads?\b|marketing|online presence|domain|business email|hosting|server|backup|\bdown\b|outage|slow|crash|support|maintain|maintenance|legacy|security|developer left|unreliable/i,
+    /website|instagram|facebook|social media|google (listing|profile|business)|\bseo\b|digital marketing|\bads?\b|marketing|online presence|domain|business email|hosting|server|backup|\bdown\b|outage|slow|crash|support|maintain|maintenance|legacy|security|developer left|unreliable|\bleads?\b|follow.?ups?|revenue|sales (tracking|reports?|pipeline)/i,
 };
 
 export function choosePath(goal: string, problem: string): { path: ServicePathId; inferred: boolean } {

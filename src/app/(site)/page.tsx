@@ -147,7 +147,7 @@ export default function HomePage() {
               </h2>
               <p className="mt-4 text-muted">
                 A developer, a digital marketer and someone for social media can cost <Money amounts={THREE_HIRES} /> or more a month. AMFIRE manages your
-                website, email, software, social media, SEO and online marketing — for one monthly fee.
+                website, email, software, social media, SEO, online marketing and lead follow-up — for one monthly fee.
               </p>
               <div className="mt-6 text-sm">
                 <CheckList

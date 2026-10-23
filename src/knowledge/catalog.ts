@@ -26,7 +26,7 @@ export const SERVICES: Record<
     tagline: "Your tech team, without hiring one",
     promise: "We become your technology partner and run everything online — so you can focus on your business.",
     description:
-      "Website, hosting, business email, software upkeep, social media, SEO, digital marketing and online sales — managed by one partner for a fixed monthly fee, instead of hiring and managing an IT team.",
+      "Website, hosting, business email, software upkeep, social media, SEO, digital marketing, lead generation and follow-up, online sales and revenue tracking — managed by one partner for a fixed monthly fee, instead of hiring and managing an IT team.",
     examples: [
       "Website, Google listing, Instagram and ads run for a family showroom",
       "Software and servers maintained after the original developer left",
@@ -55,7 +55,7 @@ export const GOALS = [
   { id: "customer-portal", label: "Get a software, app or tool made", hint: "For customers, dealers or your own team", path: "build" },
   { id: "new-product", label: "Turn an idea into a working product", hint: "From idea to a first version people can use", path: "build" },
   { id: "modernise", label: "Replace or modernise an old system", hint: "It works, but it's holding you back", path: "build" },
-  { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, ads, Instagram", path: "operate" },
+  { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, ads, Instagram, leads", path: "operate" },
   { id: "keep-running", label: "Look after our software and IT", hint: "Hosting, email, fixes, security, backups", path: "operate" },
   { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll sit with you and work it out, free", path: null },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; hint: string; path: ServicePathId | null }>;
@@ -202,7 +202,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     headline: "Your complete tech team — without hiring one.",
     audience: "For owners who want everything online handled for them",
     persona:
-      "Website, hosting, email, software, social media, SEO, ads, online sales — it all needs someone who knows technology. Hiring a team is expensive and hard to manage. AMFIRE becomes your technology partner and handles all of it, A to Z, for one monthly fee — so you can focus on running your business.",
+      "Website, hosting, email, software, social media, SEO, ads, leads, online sales — it all needs someone who knows technology. Hiring a team is expensive and hard to manage. AMFIRE becomes your technology partner and handles all of it, A to Z, for one monthly fee — from bringing in leads and following them up to showing you where your sales and revenue stand — so you can focus on running your business.",
     story: {
       owner: "A family-run furniture showroom",
       where: "Nagpur",
@@ -217,6 +217,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     signs: [
       "Your website is outdated or nobody looks after it",
       "Social media, Google listing and ads happen only when someone finds time",
+      "Enquiries come in, but nobody follows them up on time",
       "You depend on one developer or a relative for anything technical",
       "Hiring an IT or marketing team feels too expensive or hard to manage",
     ],
@@ -229,7 +230,9 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
       { title: "Domain & business email", body: "Professional email, renewals and access managed." },
       { title: "Software & apps", body: "Maintenance, bug fixes and improvements to what you run." },
       { title: "Social media", body: "Regular posts and replies on Instagram, Facebook and LinkedIn." },
-      { title: "Digital marketing & ads", body: "Google and Meta campaigns tracked against real enquiries." },
+      { title: "Digital marketing & lead generation", body: "Google and Meta campaigns that bring in enquiries, tracked against real leads." },
+      { title: "Lead follow-up", body: "Every enquiry in one place and followed up on time, so no lead goes cold." },
+      { title: "Sales & revenue tracking", body: "Enquiries, sales and revenue in one simple view, so you always know where you stand." },
       { title: "SEO & Google Business Profile", body: "Be found when customers search nearby." },
       { title: "Online sales", body: "WhatsApp catalogue, marketplaces, payment links and enquiries." },
       { title: "Backups & security", body: "Tested backups, updates and protection for your data." },
@@ -244,7 +247,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     model: "One fixed monthly fee for everything in your plan. No long lock-in — cancel with 30 days' notice.",
     faqs: [
       { q: "Do I still need an in-house IT person?", a: "For most small and mid-sized businesses, no. We handle the technology and online work; you keep one point of contact." },
-      { q: "What does the starting plan include?", a: "Our starting plan covers website and hosting care, email, backups and basic online presence. Social media, SEO and ads are added as you need them." },
+      { q: "What does the starting plan include?", a: "Our starting plan covers website and hosting care, email, backups and basic online presence. Social media, SEO, ads, lead follow-up and sales tracking are added as you need them." },
       { q: "Can you take over a website or software someone else built?", a: "Yes. We start with a free review so we understand it before we change anything." },
       { q: "Will you keep us updated on new technology like AI?", a: "Yes. Every month we tell you what's new and whether it's worth using for your business — in plain language." },
       { q: "Can our data stay in India?", a: "Yes. We can host and back up in Indian cloud regions such as Mumbai where required." },

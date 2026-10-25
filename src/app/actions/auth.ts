@@ -65,13 +65,21 @@ const OTP_TYPES = ["email", "magiclink", "signup", "invite"] as const;
 export async function completeSignIn(formData: FormData) {
   const next = safeNext(formData.get("next"));
   const tokenHash = String(formData.get("token_hash") ?? "");
+  const code = String(formData.get("code") ?? "");
   const supabase = await createSupabaseServer();
 
-  if (supabase && tokenHash) {
+  if (supabase && (tokenHash || code)) {
     const typeRaw = String(formData.get("type") ?? "email");
     const type = (OTP_TYPES as readonly string[]).includes(typeRaw) ? (typeRaw as (typeof OTP_TYPES)[number]) : "email";
-    const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (error || !data.user?.email) redirect("/login?error=expired");
+    // The custom email template sends a token hash (works on any device); Supabase's
+    // default template sends a code, which works in the browser that asked for the link.
+    const { data, error } = tokenHash
+      ? await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+      : await supabase.auth.exchangeCodeForSession(code);
+    if (error || !data.user?.email) {
+      console.error("[auth] sign-in confirmation failed", error?.message);
+      redirect("/login?error=expired");
+    }
     const db = await getDb();
     const [user] = await db.select().from(users).where(eq(users.email, normalizeEmail(data.user.email)));
     if (user) await audit(db, { actorId: user.id, action: "auth.signed_in", subjectType: "user", subjectId: user.id });

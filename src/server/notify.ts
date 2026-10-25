@@ -19,7 +19,8 @@ export async function sendEmail({ to, subject, text }: { to: string; subject: st
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ from: process.env.NOTIFY_FROM_EMAIL, to: [to], subject, text }),
+    // Replies go to the support inbox (hello@amfire.in), whatever address sends.
+    body: JSON.stringify({ from: process.env.NOTIFY_FROM_EMAIL, to: [to], reply_to: site.contactEmail, subject, text }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Resend returned ${res.status}`);

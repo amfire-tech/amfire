@@ -3,8 +3,10 @@ export const site = {
   tagline: "Build · Operate · Automate",
   description:
     "AMFIRE builds software for your business problems, runs everything online as your technology partner, and automates the manual work — for Indian businesses.",
-  // Shown wherever a visitor or client wants to reach a real person.
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "info@amfire.in",
+  // Shown wherever a visitor or client wants to reach a real person (enquiries
+  // and support), and the reply-to address on emails sent to clients.
+  // Sign-in for the owner is a separate account (OWNER_EMAIL).
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@amfire.in",
   // Mobile for calls and WhatsApp, as shown to visitors (Indian format).
   contactPhone: process.env.NEXT_PUBLIC_CONTACT_PHONE ?? "+91 93730 10143",
   // Canonical address for links, the sitemap and structured data. On Vercel, the production domain is used if this isn't set.

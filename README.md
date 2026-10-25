@@ -93,6 +93,6 @@ drizzle/                   SQL migrations (0002 enables row-level security for S
 
 ## Before going live
 - Replace the **guideline prices** in `src/knowledge/pricing.ts` (INR) with your real rates. They also appear on the website.
-- Contact details default to info@amfire.in and +91 93730 10143 (`NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_PHONE`).
+- Contact details default to hello@amfire.in and +91 93730 10143 (`NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_PHONE`).
 - The examples in `src/knowledge/examples.ts` are **illustrative scenarios**, and the site labels them as such. Add verified case studies as clients approve them.
 - Fill in the About page specifics (founder, location) once you're ready to share them.

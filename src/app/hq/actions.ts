@@ -30,7 +30,8 @@ import { latestBrief, runTeam } from "@/server/agents/team";
 import { briefEmail, deliverBrief } from "@/server/notify";
 import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting } from "@/server/brain";
 import { addFact, logInteraction, retireFact, setLeadOutcome, updateBilling, updateDeal } from "@/server/crm";
-import { estimateChange } from "@/server/hub";
+import { sendClientDigests } from "@/server/client-digest";
+import { addChecklistItem, deleteChecklistItem, estimateChange, reopenChecklistItem } from "@/server/hub";
 import { askHq, type AskAnswer, type AskTurn } from "@/server/ask";
 import { createPost } from "@/server/growth";
 import {
@@ -413,6 +414,34 @@ export async function draftInvestorUpdateAction(): Promise<ActionState> {
     const row = await draftInvestorUpdate(db, actor);
     revalidatePath("/hq", "layout");
     return { ok: row ? "Drafted — it's in your decision inbox on Today." : "This month's update is already in your inbox." };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function addChecklistItemAction(projectId: string, _prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) => addChecklistItem(db, actor, projectId, formText(formData, ["title", "detail", "dueDate"]) as never),
+    "Added. The client has been emailed.",
+  );
+}
+
+export async function reopenChecklistItemAction(itemId: string) {
+  return run(({ db, actor }) => reopenChecklistItem(db, actor, itemId), "Reopened.");
+}
+
+export async function deleteChecklistItemAction(itemId: string) {
+  return run(({ db, actor }) => deleteChecklistItem(db, actor, itemId), "Removed.");
+}
+
+/** Sends this week's client emails now (they normally go out on Friday mornings). */
+export async function sendClientDigestsAction(): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    assertOwner(actor);
+    const r = await sendClientDigests(db);
+    revalidatePath("/hq/agents");
+    return { ok: r.sent ? `Sent ${r.sent} weekly email${r.sent === 1 ? "" : "s"} to clients.` : "No new weekly emails to send (already sent this week, or nothing to report)." };
   } catch (err) {
     return toActionError(err);
   }

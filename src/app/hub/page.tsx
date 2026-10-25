@@ -13,7 +13,7 @@ export const metadata = { title: "Home" };
 
 export default async function HubHome() {
   const actor = await requireActor("/hub");
-  const { projects, proposals, invoices } = await getClientHome(await getDb(), actor);
+  const { projects, proposals, invoices, needed } = await getClientHome(await getDb(), actor);
 
   if (actor.clientOrgIds.length === 0) {
     return (
@@ -47,7 +47,7 @@ export default async function HubHome() {
   const awaiting = proposals.filter((p) => p.status === "sent");
   const approvals = projects.flatMap((p) => p.progress.awaitingApproval.map((m) => ({ project: p, milestone: m })));
   const unpaid = invoices.filter((i) => i.status === "sent");
-  const decisions = awaiting.length + approvals.length + unpaid.length;
+  const decisions = awaiting.length + approvals.length + unpaid.length + needed.length;
 
   return (
     <div className="space-y-8">
@@ -79,6 +79,17 @@ export default async function HubHome() {
                 <p className="font-semibold">{milestone.title}</p>
               </div>
               <ButtonLink href={`/hub/projects/${project.id}`}>Review and approve</ButtonLink>
+            </Card>
+          ))}
+          {needed.map((c) => (
+            <Card key={c.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-muted">
+                  We need from you · {projects.find((p) => p.id === c.projectId)?.name ?? "your project"}
+                </p>
+                <p className="font-semibold">{c.title}</p>
+              </div>
+              <ButtonLink href={`/hub/projects/${c.projectId}`}>Send and mark done</ButtonLink>
             </Card>
           ))}
           {unpaid.map((i) => (

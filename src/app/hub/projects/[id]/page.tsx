@@ -7,7 +7,7 @@ import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
 import { requireActor } from "@/lib/session";
 import { getClientProject } from "@/server/projects";
-import { changeRequestAction, decideChangeAction, feedbackAction } from "../../actions";
+import { changeRequestAction, completeChecklistAction, decideChangeAction, feedbackAction, requestMilestoneChangesAction } from "../../actions";
 import { ApproveMilestoneButton, SupportRequestForm } from "./client-forms";
 
 export const metadata = { title: "Project" };
@@ -18,8 +18,10 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
   const actor = await requireActor(`/hub/projects/${id}`);
   const data = await getClientProject(await getDb(), actor, id);
   if (!data) notFound();
-  const { project, milestones, tasks, updates, requests, progress, changeRequests, feedback } = data;
+  const { project, milestones, tasks, updates, requests, progress, changeRequests, feedback, checklist } = data;
   const toRate = milestones.filter((m) => m.status === "done" && !feedback.some((f) => f.milestoneId === m.id)).slice(-1);
+  const needed = checklist.filter((c) => c.status === "open");
+  const sent = checklist.filter((c) => c.status === "done");
 
   return (
     <div className="space-y-6">
@@ -64,9 +66,54 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
             <div className="mt-4">
               <ApproveMilestoneButton projectId={project.id} milestoneId={full.id} title={full.title} />
             </div>
+            <details className="mt-4 border-t border-line pt-4">
+              <summary className="cursor-pointer text-sm font-medium">Not quite right? Request changes</summary>
+              <div className="mt-3">
+                <ActionForm action={requestMilestoneChangesAction.bind(null, project.id, full.id)} submitLabel="Send back with changes">
+                  <label htmlFor={`fb-text-${full.id}`} className="sr-only">
+                    What should we change?
+                  </label>
+                  <textarea
+                    id={`fb-text-${full.id}`}
+                    name="feedback"
+                    rows={3}
+                    required
+                    minLength={5}
+                    className={inputClass}
+                    placeholder="The report should also show sales by salesperson…"
+                  />
+                </ActionForm>
+              </div>
+            </details>
           </Card>
         );
       })}
+
+      {needed.length > 0 && (
+        <Card className="ring-2 ring-flame">
+          <h2 className="font-semibold">What we need from you</h2>
+          <p className="mt-0.5 text-sm text-muted">The work continues as soon as these arrive. Please don&apos;t paste passwords here — tell us and we&apos;ll share a safe way.</p>
+          <ul className="mt-4 space-y-4">
+            {needed.map((c) => (
+              <li key={c.id} className="rounded-xl p-4 ring-1 ring-line">
+                <p className="font-medium">{c.title}</p>
+                {c.detail && <p className="mt-0.5 text-sm text-fg/80">{c.detail}</p>}
+                {c.dueDate && <p className="mt-0.5 text-xs text-muted">If possible by {formatDate(c.dueDate)}</p>}
+                <div className="mt-3">
+                  <ActionForm action={completeChecklistAction.bind(null, project.id, c.id)} submitLabel="Mark as done" size="sm" inline>
+                    <div className="min-w-0 flex-1">
+                      <label htmlFor={`note-${c.id}`} className="sr-only">
+                        Note
+                      </label>
+                      <input id={`note-${c.id}`} name="note" maxLength={1000} className={`${inputClass} !py-2`} placeholder="How you sent it (optional)" />
+                    </div>
+                  </ActionForm>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {progress.blocked.map((m) => (
         <Notice key={m.id} tone="warning" title={`Blocked: ${m.title}`}>
@@ -166,6 +213,25 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
             </ul>
           )}
         </Card>
+
+        {sent.length > 0 && (
+          <Card>
+            <CardTitle>Sent to AMFIRE</CardTitle>
+            <ul className="space-y-2 text-sm">
+              {sent.map((c) => (
+                <li key={c.id} className="flex items-start gap-2">
+                  <span aria-hidden className="text-success">
+                    ✓
+                  </span>
+                  <span>
+                    {c.title}
+                    <span className="text-muted"> · {formatDate(c.doneAt)}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
 
         <Card>
           <CardTitle>Ask for a change</CardTitle>

@@ -1,7 +1,7 @@
 // Read models for AMFIRE HQ. The overview surfaces exceptions and decisions,
 // not routine activity.
 
-import { and, asc, count, desc, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import type { DB } from "@/db";
 import {
   agentRuns,
@@ -55,8 +55,14 @@ export async function getOverview(db: DB, actor: Actor | null) {
         .orderBy(asc(supportRequests.createdAt)),
       db.select().from(agentRuns).where(eq(agentRuns.status, "failed")).orderBy(desc(agentRuns.startedAt)).limit(5),
     ]);
+  // Milestones a client sent back instead of approving, until they're sent for review again.
+  const sentBack = await db
+    .select({ milestone: milestones, project: projects })
+    .from(milestones)
+    .innerJoin(projects, eq(projects.id, milestones.projectId))
+    .where(and(isNotNull(milestones.clientFeedback), inArray(milestones.status, ["not_started", "in_progress", "blocked"])));
 
-  return { newLeads, recsToReview, drafts, awaitingClient, changesRequested, blocked, overdue, openRequests, failedRuns };
+  return { newLeads, recsToReview, drafts, awaitingClient, changesRequested, sentBack, blocked, overdue, openRequests, failedRuns };
 }
 
 export async function listLeads(db: DB, actor: Actor | null, filter: { source?: string } = {}) {

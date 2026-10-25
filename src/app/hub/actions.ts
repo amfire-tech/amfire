@@ -5,7 +5,15 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
-import { askConcierge, createChangeRequest, decideChange, leaveFeedback, type ConciergeAnswer } from "@/server/hub";
+import {
+  askConcierge,
+  completeChecklistItem,
+  createChangeRequest,
+  decideChange,
+  leaveFeedback,
+  requestMilestoneChanges,
+  type ConciergeAnswer,
+} from "@/server/hub";
 import { clientApproveMilestone, createSupportRequest } from "@/server/projects";
 import { clientDecideProposal } from "@/server/proposals";
 
@@ -44,15 +52,46 @@ export async function approveMilestoneAction(projectId: string, milestoneId: str
   return { ok: "Approved." };
 }
 
-export type ConciergeState = { question?: string; answer?: ConciergeAnswer; error?: string } | undefined;
+export type ConciergeState = { turns: { q: string; answer: ConciergeAnswer }[]; error?: string };
 
-export async function askConciergeAction(orgId: string, _prev: ConciergeState, formData: FormData): Promise<ConciergeState> {
+/** One question in a conversation with the project assistant; the last few turns go along for follow-ups. */
+export async function askConciergeAction(orgId: string, prev: ConciergeState, formData: FormData): Promise<ConciergeState> {
+  if (formData.get("reset")) return { turns: [] };
   const question = String(formData.get("question") ?? "");
+  const turns = prev?.turns ?? [];
   try {
-    return { question, answer: await askConcierge(await getDb(), await getActor(), orgId, question) };
+    const answer = await askConcierge(
+      await getDb(),
+      await getActor(),
+      orgId,
+      question,
+      turns.slice(-4).map((t) => ({ q: t.q, a: t.answer.answer.slice(0, 1500) })),
+    );
+    return { turns: [...turns, { q: question, answer }].slice(-8) };
   } catch (err) {
-    return { question, error: toActionError(err)?.error };
+    return { turns, error: toActionError(err)?.error };
   }
+}
+
+export async function completeChecklistAction(projectId: string, itemId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await completeChecklistItem(await getDb(), await getActor(), itemId, { note: String(formData.get("note") ?? "") });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hub/projects/${projectId}`);
+  revalidatePath("/hub");
+  return { ok: "Thanks — marked as done. We'll take it from here." };
+}
+
+export async function requestMilestoneChangesAction(projectId: string, milestoneId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await requestMilestoneChanges(await getDb(), await getActor(), milestoneId, { feedback: String(formData.get("feedback") ?? "") });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hub/projects/${projectId}`);
+  return { ok: "Sent. We'll make the changes and send it back for your review." };
 }
 
 export async function changeRequestAction(projectId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {

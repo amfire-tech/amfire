@@ -11,7 +11,7 @@ import { approvalStats } from "@/server/brain";
 import { listAgentRuns } from "@/server/hq";
 import { briefEmail, emailConfigured, whatsappConfigured } from "@/server/notify";
 import { desc } from "drizzle-orm";
-import { emailBriefAction, runTeamAction, updateAgentSettingAction } from "../actions";
+import { emailBriefAction, runTeamAction, sendClientDigestsAction, updateAgentSettingAction } from "../actions";
 
 export const metadata = { title: "AI team" };
 
@@ -50,7 +50,12 @@ export default async function AgentsPage() {
           Last run: {latest.run ? `${formatDateTime(latest.run.startedAt)} (${latest.run.triggeredBy ? "by hand" : "scheduled"})` : "never"} · scheduled every morning at
           8:00 IST · brief by email {emailConfigured() && briefEmail() ? `to ${briefEmail()}` : "off"}, WhatsApp {whatsappConfigured() ? "on" : "off"}.
         </p>
-        {isOwner && emailConfigured() && <ActionForm action={emailBriefAction} submitLabel="Email me today's brief" size="sm" variant="ghost" pendingLabel="Sending…" />}
+        {isOwner && emailConfigured() && (
+          <div className="flex flex-wrap gap-2">
+            <ActionForm action={emailBriefAction} submitLabel="Email me today's brief" size="sm" variant="ghost" pendingLabel="Sending…" />
+            <ActionForm action={sendClientDigestsAction} submitLabel="Send clients' weekly emails now" size="sm" variant="ghost" pendingLabel="Sending…" />
+          </div>
+        )}
       </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">

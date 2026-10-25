@@ -28,6 +28,7 @@ import {
 } from "@/knowledge/pricing";
 import { assertClientOrg, assertOwner, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
+import { afterResponse, notifyClient } from "./client-notify";
 import { demoOfferCode } from "./leads";
 
 export class ProposalError extends Error {
@@ -184,7 +185,7 @@ export async function approveAndSendProposal(
     throw new ProposalError("The total is below the pricing guideline. Record a reason to approve it.", "PRICING_BELOW_GUIDELINE");
   }
 
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [lead] = await tx.select().from(leads).where(eq(leads.id, proposal.leadId));
     // Leads added by hand from a conversation may not have an email yet.
     const email = lead.email;
@@ -234,6 +235,19 @@ export async function approveAndSendProposal(
     });
     return { proposal: sent, clientEmail: contact.email };
   });
+  const p = result.proposal;
+  await afterResponse(() =>
+    notifyClient(db, p.clientOrgId!, {
+      subject: `Your proposal from AMFIRE: ${p.title}`,
+      lines: [
+        `Your proposal for ${p.title} is ready: the scope, milestones, price and timeline, all in one place.`,
+        `You can accept it or ask for changes in your Client Hub. Sign in with this email address — no password needed.`,
+      ],
+      path: `/hub/proposals/${p.id}`,
+      action: "Read your proposal",
+    }),
+  );
+  return result;
 }
 
 /** Copy a sent/declined proposal into a new draft for revision. */

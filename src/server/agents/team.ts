@@ -20,6 +20,7 @@ import {
   approvals,
   briefs,
   changeRequests,
+  checklistItems,
   draftEdits,
   interactions,
   invoices,
@@ -94,6 +95,7 @@ export async function loadWorld(db: DB, now = new Date()) {
     ups,
     facts,
     owner,
+    items,
   ] = await Promise.all([
     db.select().from(leads),
     db.select().from(proposals).orderBy(desc(proposals.createdAt)),
@@ -116,9 +118,11 @@ export async function loadWorld(db: DB, now = new Date()) {
       .innerJoin(memberships, eq(memberships.userId, users.id))
       .where(eq(memberships.role, "owner"))
       .limit(1),
+    db.select().from(checklistItems).where(eq(checklistItems.status, "open")),
   ]);
   return {
     now,
+    openItems: items,
     leads: ls,
     proposals: props,
     recommendations: recs,
@@ -422,6 +426,51 @@ export function delivery(w: World): AgentOutput {
           });
         }
       }
+    }
+
+    // Things we asked the client for that haven't arrived in 3 days.
+    const late = w.openItems.filter((it) => it.projectId === project.id && days(it.createdAt, w.now) >= 3);
+    if (late.length) {
+      out.signals.push({
+        kind: "waiting_on_client_items",
+        severity: late.some((it) => it.dueDate && it.dueDate < w.now) ? "critical" : "warn",
+        subjectType: "project",
+        subjectId: project.id,
+        orgId: project.orgId,
+        summary: `${project.name}: still waiting on the client for ${late.map((it) => it.title).join(", ")}.`,
+        data: { href: `/hq/projects/${project.id}` },
+      });
+      const to = channelFor(contact);
+      if (to && contact) {
+        out.approvals.push({
+          kind: "client_nudge",
+          subjectType: "project",
+          subjectId: project.id,
+          orgId: project.orgId,
+          leadId: contact.id,
+          title: `Remind ${contact.company} about what we need`,
+          reason: `Asked ${days(late[0].createdAt, w.now)} days ago and not marked done: ${late.map((it) => it.title).join("; ")}.`,
+          channel: to.channel,
+          recipientName: contact.name,
+          recipient: to.recipient,
+          draft: `Hi ${first(contact.name)}, a quick reminder: to keep ${project.name} moving we still need ${late.map((it) => it.title).join(", ")}. You can mark it done in the Client Hub: ${hub(`/projects/${project.id}`)}${sign}`,
+          fingerprint: `items_nudge:${project.id}:${weekKey(w.now)}`,
+          data: { point: `send us ${late.map((it) => it.title).join(", ")}`, projectId: project.id },
+        });
+      }
+    }
+
+    // A milestone the client sent back needs a response.
+    for (const m of ms.filter((m) => m.clientFeedback && m.status !== "done" && m.status !== "awaiting_approval")) {
+      out.signals.push({
+        kind: "client_requested_changes",
+        severity: "warn",
+        subjectType: "milestone",
+        subjectId: m.id,
+        orgId: project.orgId,
+        summary: `${project.name}: the client asked for changes to “${m.title}” — ${m.clientFeedback}`,
+        data: { href: `/hq/projects/${project.id}` },
+      });
     }
 
     // A weekly update keeps clients calm; draft one if a week has passed without.
@@ -742,7 +791,7 @@ export function composeBrief(w: World, sigs: SignalDraft[], pending: { title: st
     },
     {
       title: "Delivery and clients",
-      lines: pick(["milestone_overdue", "milestone_blocked", "waiting_on_client", "client_health", "change_needs_estimate"])
+      lines: pick(["client_requested_changes", "milestone_overdue", "milestone_blocked", "waiting_on_client", "waiting_on_client_items", "client_health", "change_needs_estimate"])
         .sort((a, b) => (a.severity === "critical" ? -1 : 0) - (b.severity === "critical" ? -1 : 0))
         .slice(0, 6)
         .map((s) => ({ text: s.summary, href: typeof s.data?.href === "string" ? s.data.href : undefined })),

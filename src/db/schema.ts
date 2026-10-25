@@ -274,6 +274,9 @@ export const milestones = appSchema.table(
     blockerNote: text("blocker_note"),
     /** When the milestone was last set ready for the client's approval. */
     readyAt: timestamp("ready_at", { withTimezone: true }),
+    /** What the client asked to change instead of approving, and when. */
+    clientFeedback: text("client_feedback"),
+    clientFeedbackAt: timestamp("client_feedback_at", { withTimezone: true }),
     amount: integer("amount").notNull().default(0),
     approvedBy: uuid("approved_by").references(() => users.id),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -336,6 +339,29 @@ export const changeRequests = appSchema.table("change_requests", {
   milestoneId: uuid("milestone_id").references(() => milestones.id, { onDelete: "set null" }),
   createdAt: createdAt(),
 });
+
+export const checklistStatus = appSchema.enum("checklist_status", ["open", "done"]);
+
+/** "What we need from you": things the client must provide (logins, data, content) for work to continue. */
+export const checklistItems = appSchema.table(
+  "checklist_items",
+  {
+    id: id(),
+    projectId: uuid("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").notNull().references(() => organizations.id),
+    title: text("title").notNull(),
+    detail: text("detail"),
+    dueDate: timestamp("due_date", { withTimezone: true }),
+    status: checklistStatus("status").notNull().default("open"),
+    /** The client's note when they mark it done ("sent the price list by email"). */
+    clientNote: text("client_note"),
+    doneBy: uuid("done_by").references(() => users.id),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("checklist_project_idx").on(t.projectId)],
+);
 
 /** The client's rating after approving a milestone. Feeds the account health score. */
 export const milestoneFeedback = appSchema.table("milestone_feedback", {
@@ -604,6 +630,8 @@ export const notifications = appSchema.table("notifications", {
   body: text("body").notNull(),
   status: text("status").notNull(), // "sent" | "failed" | "skipped"
   error: text("error"),
+  /** Stops a once-a-period email (the weekly client digest) going out twice. */
+  dedupeKey: text("dedupe_key").unique(),
   createdAt: createdAt(),
 });
 
@@ -650,5 +678,6 @@ export type Signal = typeof signals.$inferSelect;
 export type Memory = typeof memories.$inferSelect;
 export type ChangeRequest = typeof changeRequests.$inferSelect;
 export type ContentPost = typeof contentPosts.$inferSelect;
+export type ChecklistItem = typeof checklistItems.$inferSelect;
 export type ServicePath = (typeof servicePath.enumValues)[number];
 export type MemberRole = (typeof memberRole.enumValues)[number];

@@ -4,6 +4,7 @@ import * as z from "zod";
 import type { DB } from "@/db";
 import {
   changeRequests,
+  checklistItems,
   invoices,
   leads,
   milestoneFeedback,
@@ -18,6 +19,7 @@ import {
 } from "@/db/schema";
 import { AccessDenied, assertClientOrg, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
+import { afterResponse, notifyClient } from "./client-notify";
 import { createMilestoneInvoice, recordPastPayment } from "./money";
 
 export class ProjectError extends Error {
@@ -83,6 +85,19 @@ export async function updateMilestone(db: DB, actor: Actor | null, milestoneId: 
       data: { from: current.status, to: m.status, blockerNote: m.blockerNote },
     });
     return m;
+  }).then(async (m) => {
+    if (m.status === "awaiting_approval") {
+      const [project] = await db.select({ name: projects.name }).from(projects).where(eq(projects.id, m.projectId));
+      await afterResponse(() =>
+        notifyClient(db, m.orgId, {
+          subject: `Ready for your review: ${m.title}`,
+          lines: [`“${m.title}” on ${project?.name ?? "your project"} is ready for your review.`, "Please take a look and approve it, or tell us what to change, in your Client Hub."],
+          path: `/hub/projects/${m.projectId}`,
+          action: "Review it here",
+        }),
+      );
+    }
+    return m;
   });
 }
 
@@ -110,11 +125,20 @@ export async function postProjectUpdate(db: DB, actor: Actor | null, projectId: 
   const clean = z.string().trim().min(3).max(4000).parse(body);
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
   if (!project) throw new ProjectError("Project not found");
-  return db.transaction(async (tx) => {
+  const update = await db.transaction(async (tx) => {
     const [u] = await tx.insert(projectUpdates).values({ projectId, orgId: project.orgId, authorId: actor.userId, body: clean }).returning();
     await audit(tx, { actorId: actor.userId, orgId: project.orgId, action: "project.update_posted", subjectType: "project", subjectId: projectId });
     return u;
   });
+  await afterResponse(() =>
+    notifyClient(db, project.orgId, {
+      subject: `Update on ${project.name}`,
+      lines: [clean],
+      path: `/hub/projects/${projectId}`,
+      action: "See your project",
+    }),
+  );
+  return update;
 }
 
 export async function resolveSupportRequest(db: DB, actor: Actor | null, requestId: string) {
@@ -126,14 +150,15 @@ export async function getProjectForStaff(db: DB, actor: Actor | null, projectId:
   assertStaff(actor);
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
   if (!project) return null;
-  const [ms, ts, ups, reqs, crs] = await Promise.all([
+  const [ms, ts, ups, reqs, crs, items] = await Promise.all([
     db.select().from(milestones).where(eq(milestones.projectId, projectId)).orderBy(asc(milestones.position)),
     db.select().from(tasks).where(eq(tasks.projectId, projectId)).orderBy(asc(tasks.createdAt)),
     db.select().from(projectUpdates).where(eq(projectUpdates.projectId, projectId)).orderBy(desc(projectUpdates.createdAt)),
     db.select().from(supportRequests).where(eq(supportRequests.projectId, projectId)).orderBy(desc(supportRequests.createdAt)),
     db.select().from(changeRequests).where(eq(changeRequests.projectId, projectId)).orderBy(desc(changeRequests.createdAt)),
+    db.select().from(checklistItems).where(eq(checklistItems.projectId, projectId)).orderBy(asc(checklistItems.createdAt)),
   ]);
-  return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs, changeRequests: crs };
+  return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs, changeRequests: crs, checklist: items };
 }
 
 export const MilestoneInput = z.object({
@@ -289,9 +314,9 @@ export async function addOutsideProject(db: DB, actor: Actor | null, input: z.in
 // --- Client Hub (always scoped to the actor's organisations) -------------------
 
 export async function getClientHome(db: DB, actor: Actor | null) {
-  if (!actor || actor.clientOrgIds.length === 0) return { projects: [], proposals: [], invoices: [] };
+  if (!actor || actor.clientOrgIds.length === 0) return { projects: [], proposals: [], invoices: [], needed: [] };
   const orgIds = actor.clientOrgIds;
-  const [ps, props, ms, invs] = await Promise.all([
+  const [ps, props, ms, invs, needed] = await Promise.all([
     db.select().from(projects).where(inArray(projects.orgId, orgIds)).orderBy(desc(projects.createdAt)),
     db
       .select()
@@ -305,8 +330,14 @@ export async function getClientHome(db: DB, actor: Actor | null) {
       .from(invoices)
       .where(and(inArray(invoices.orgId, orgIds), inArray(invoices.status, ["sent", "paid"])))
       .orderBy(desc(invoices.issuedAt)),
+    db
+      .select()
+      .from(checklistItems)
+      .where(and(inArray(checklistItems.orgId, orgIds), eq(checklistItems.status, "open")))
+      .orderBy(asc(checklistItems.createdAt)),
   ]);
   return {
+    needed,
     invoices: invs,
     proposals: props,
     projects: ps.map((p) => ({ ...p, progress: projectProgress(ms.filter((m) => m.projectId === p.id)) })),
@@ -316,7 +347,7 @@ export async function getClientHome(db: DB, actor: Actor | null) {
 export async function getClientProject(db: DB, actor: Actor | null, projectId: string) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
   if (!project || !actor?.clientOrgIds.includes(project.orgId)) return null;
-  const [ms, ts, ups, reqs, crs, fb] = await Promise.all([
+  const [ms, ts, ups, reqs, crs, fb, items] = await Promise.all([
     db.select().from(milestones).where(eq(milestones.projectId, projectId)).orderBy(asc(milestones.position)),
     db
       .select()
@@ -327,8 +358,10 @@ export async function getClientProject(db: DB, actor: Actor | null, projectId: s
     db.select().from(supportRequests).where(eq(supportRequests.projectId, projectId)).orderBy(desc(supportRequests.createdAt)),
     db.select().from(changeRequests).where(eq(changeRequests.projectId, projectId)).orderBy(desc(changeRequests.createdAt)),
     db.select().from(milestoneFeedback).where(eq(milestoneFeedback.projectId, projectId)),
+    db.select().from(checklistItems).where(eq(checklistItems.projectId, projectId)).orderBy(asc(checklistItems.createdAt)),
   ]);
   return {
+    checklist: items,
     project,
     milestones: ms,
     tasks: ts,
@@ -347,7 +380,7 @@ export async function clientApproveMilestone(db: DB, actor: Actor | null, milest
   return db.transaction(async (tx) => {
     const [approved] = await tx
       .update(milestones)
-      .set({ status: "done", approvedBy: actor.userId, completedAt: new Date(), blockerNote: null })
+      .set({ status: "done", approvedBy: actor.userId, completedAt: new Date(), blockerNote: null, clientFeedback: null })
       .where(and(eq(milestones.id, milestoneId), eq(milestones.status, "awaiting_approval")))
       .returning();
     if (!approved) throw new ProjectError("This milestone is not waiting for your approval.");

@@ -13,7 +13,20 @@ import { askHq } from "@/server/ask";
 import { approve, reject, shareInvoice, whatsappLink } from "@/server/brain";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
 import { getClientAccount, healthScore, logInteraction } from "@/server/crm";
-import { askConcierge, createChangeRequest, decideChange, estimateChange, leaveFeedback } from "@/server/hub";
+import {
+  addChecklistItem,
+  askConcierge,
+  completeChecklistItem,
+  createChangeRequest,
+  decideChange,
+  estimateChange,
+  leaveFeedback,
+  reopenChecklistItem,
+  requestMilestoneChanges,
+} from "@/server/hub";
+import { composeClientDigest, sendClientDigests } from "@/server/client-digest";
+import { clientEmailText, clientRecipients } from "@/server/client-notify";
+import { getOverview } from "@/server/hq";
 import { addManualLead, decideQualification, submitDiscovery } from "@/server/leads";
 import {
   draftDueRetainerInvoices,
@@ -25,7 +38,7 @@ import {
   recordPayment,
   sendInvoice,
 } from "@/server/money";
-import { addOutsideProject, clientApproveMilestone, updateMilestone } from "@/server/projects";
+import { addOutsideProject, clientApproveMilestone, getClientHome, updateMilestone } from "@/server/projects";
 import { approveAndSendProposal, clientDecideProposal, createProposalDraft } from "@/server/proposals";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -311,6 +324,55 @@ describe("the client's side", () => {
     await assert.rejects(leaveFeedback(db, ctx.client, m.id, { rating: 5 }));
     const account = await getClientAccount(db, owner, ctx.orgId);
     assert.ok(account!.health.reasons.some((r) => r.includes("rating")));
+  });
+
+  test("what we need from you: staff ask, only that client can tick it off, staff can reopen", async () => {
+    const item = await addChecklistItem(db, owner, ctx.project.id, { title: "Price list (Excel)", detail: "Current prices and GST", dueDate: "" });
+    await assert.rejects(addChecklistItem(db, ctx.client, ctx.project.id, { title: "Sneaky item" }), AccessDenied);
+    await assert.rejects(completeChecklistItem(db, stranger.client, item.id), AccessDenied);
+    const done = await completeChecklistItem(db, ctx.client, item.id, { note: "Emailed it to hello@" });
+    assert.equal(done.status, "done");
+    assert.equal(done.clientNote, "Emailed it to hello@");
+    await assert.rejects(completeChecklistItem(db, ctx.client, item.id));
+    assert.equal((await reopenChecklistItem(db, owner, item.id)).status, "open");
+    const home = await getClientHome(db, ctx.client);
+    assert.ok(home.needed.some((n) => n.id === item.id));
+    // The assistant's fallback knows about it too.
+    const a = await askConcierge(db, ctx.client, ctx.orgId, "Is anything waiting on me?");
+    assert.match(a.answer, /Price list/);
+  });
+
+  test("a client can send a milestone back with changes instead of approving it", async () => {
+    const ms = await db.select().from(milestones).where(eq(milestones.projectId, ctx.project.id)).orderBy(milestones.position);
+    const target = ms.find((m) => m.status !== "done")!;
+    await updateMilestone(db, owner, target.id, { status: "awaiting_approval" });
+    await assert.rejects(requestMilestoneChanges(db, stranger.client, target.id, { feedback: "Make it blue please" }), AccessDenied);
+    const back = await requestMilestoneChanges(db, ctx.client, target.id, { feedback: "Add sales by salesperson to the report" });
+    assert.equal(back.status, "in_progress");
+    assert.equal(back.clientFeedback, "Add sales by salesperson to the report");
+    await assert.rejects(requestMilestoneChanges(db, ctx.client, target.id, { feedback: "Again please" }));
+    const overview = await getOverview(db, owner);
+    assert.ok(overview.sentBack.some((r) => r.milestone.id === target.id));
+    // Sent for review again and approved: the feedback is cleared.
+    await updateMilestone(db, owner, target.id, { status: "awaiting_approval" });
+    await clientApproveMilestone(db, ctx.client, target.id);
+    const [after] = await db.select().from(milestones).where(eq(milestones.id, target.id));
+    assert.equal(after.clientFeedback, null);
+  });
+
+  test("the weekly digest lists what's done and what's waiting, and emails the client's people", async () => {
+    await addChecklistItem(db, owner, ctx.project.id, { title: "Logo files (SVG)" });
+    const digest = await composeClientDigest(db, ctx.orgId);
+    assert.ok(digest);
+    assert.match(digest.subject, /waiting on you/);
+    const body = digest.lines.join("\n");
+    assert.match(body, /milestones done/);
+    assert.match(body, /Send us: Logo files/);
+    const people = await clientRecipients(db, ctx.orgId);
+    assert.deepEqual(people.map((p) => p.email), ["riya@mehta.test"]);
+    assert.match(clientEmailText("Riya Mehta", digest), /^Hi Riya,[\s\S]*Open your Client Hub: .*\/hub\/projects\//);
+    // Without email set up nothing is sent, and nothing breaks.
+    assert.equal((await sendClientDigests(db)).sent, 0);
   });
 
   test("a past project is added with its client, contact and the money received", async () => {

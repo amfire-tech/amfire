@@ -21,6 +21,11 @@ import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { getProjectEconomics } from "@/server/crm";
 import { getProjectForStaff, projectProgress } from "@/server/projects";
+import {
+  addChecklistItemAction,
+  deleteChecklistItemAction,
+  reopenChecklistItemAction,
+} from "../../actions";
 import { addMilestoneAction, addTaskAction, estimateChangeAction, logTimeAction, resolveRequestAction, setTaskStatusAction } from "../../actions";
 import { InvoiceList } from "../../money/invoice-list";
 import { MilestoneForm } from "./milestone-form";
@@ -42,7 +47,7 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
   const db = await getDb();
   const data = await getProjectForStaff(db, actor, id);
   if (!data) notFound();
-  const { project, milestones, tasks, updates, requests, changeRequests } = data;
+  const { project, milestones, tasks, updates, requests, changeRequests, checklist } = data;
   const econ = await getProjectEconomics(db, actor, id);
   const progress = projectProgress(milestones);
   const path = `/hq/projects/${project.id}`;
@@ -95,6 +100,49 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
       )}
 
       <Card>
+        <CardTitle>What we need from the client</CardTitle>
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Logins, data, content, decisions. The client is emailed when you add one, ticks it off in their Hub, and the Delivery agent reminds them after 3 days.
+        </p>
+        {checklist.length > 0 && (
+          <ul className="mb-5 space-y-2">
+            {checklist.map((c) => (
+              <li key={c.id} className="flex flex-wrap items-start justify-between gap-3 rounded-xl bg-subtle px-3 py-2.5">
+                <div className="min-w-0">
+                  <p className={c.status === "done" ? "text-muted line-through" : "font-medium"}>{c.title}</p>
+                  {c.detail && <p className="text-sm text-muted">{c.detail}</p>}
+                  <p className="text-xs text-muted">
+                    {c.status === "done" ? `Done by the client ${formatDate(c.doneAt)}` : `Asked ${formatDate(c.createdAt)}${c.dueDate ? ` · by ${formatDate(c.dueDate)}` : ""}`}
+                  </p>
+                  {c.clientNote && <p className="mt-1 text-sm">Client: “{c.clientNote}”</p>}
+                </div>
+                <div className="flex gap-1">
+                  {c.status === "done" ? (
+                    <ActionForm action={reopenChecklistItemAction.bind(null, c.id)} submitLabel="Reopen" size="sm" variant="ghost" />
+                  ) : (
+                    <ActionForm action={deleteChecklistItemAction.bind(null, c.id)} submitLabel="Remove" size="sm" variant="ghost" />
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <ActionForm action={addChecklistItemAction.bind(null, project.id)} submitLabel="Ask the client" pendingLabel="Adding…">
+          <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <Field label="What do you need?" htmlFor="cl-title">
+              <input id="cl-title" name="title" required minLength={3} maxLength={200} className={inputClass} placeholder="Price list for all products (Excel)" />
+            </Field>
+            <Field label="By" htmlFor="cl-due" optional>
+              <input id="cl-due" name="dueDate" type="date" className={`${inputClass} sm:!w-44`} />
+            </Field>
+          </div>
+          <Field label="Details" htmlFor="cl-detail" optional>
+            <input id="cl-detail" name="detail" maxLength={1000} className={inputClass} placeholder="With current prices and GST rates" />
+          </Field>
+        </ActionForm>
+      </Card>
+
+      <Card>
         <CardTitle>Milestones</CardTitle>
         <Notice>Milestones are completed only when the client approves them in their Hub. Set “Ready for client approval” when the work is done.</Notice>
         <ol className="mt-5 space-y-4">
@@ -113,6 +161,13 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
                   </div>
                   <StatusBadge status={m.status} />
                 </div>
+                {m.clientFeedback && m.status !== "done" && (
+                  <div className="mt-3">
+                    <Notice tone="warning" title={`The client asked for changes · ${formatDate(m.clientFeedbackAt)}`}>
+                      {m.clientFeedback}
+                    </Notice>
+                  </div>
+                )}
                 {m.status === "done" ? (
                   <p className="mt-2 text-sm text-muted">
                     {m.approvedBy ? "Approved by the client" : "Completed"} {formatDate(m.completedAt)}.

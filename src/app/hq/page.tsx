@@ -69,6 +69,16 @@ export default async function TodayPage() {
       })),
     },
     {
+      title: "Clients asked for changes on a milestone",
+      hint: "Make the changes, then set it ready for their review again.",
+      items: o.sentBack.map(({ milestone, project }) => ({
+        key: milestone.id,
+        href: `/hq/projects/${project.id}`,
+        primary: `${project.name} — ${milestone.title}`,
+        secondary: milestone.clientFeedback ?? "",
+      })),
+    },
+    {
       title: "Blocked milestones",
       hint: "Clients can see these blockers and their explanation.",
       items: o.blocked.map(({ milestone, project }) => ({

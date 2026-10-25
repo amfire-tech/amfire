@@ -25,8 +25,8 @@ export default async function HubProposalPage({ params }: PageProps<"/hub/propos
     <div className="space-y-6">
       <PageHeader
         eyebrow={
-          <Link href="/hub" className="hover:underline">
-            ← Client Hub
+          <Link href="/hub/projects" className="hover:underline">
+            ← Projects
           </Link>
         }
         title="Proposal"

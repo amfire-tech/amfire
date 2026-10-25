@@ -27,8 +27,8 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
     <div className="space-y-6">
       <PageHeader
         eyebrow={
-          <Link href="/hub" className="hover:underline">
-            ← Client Hub
+          <Link href="/hub/projects" className="hover:underline">
+            ← Projects
           </Link>
         }
         title={project.name}

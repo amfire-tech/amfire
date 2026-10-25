@@ -1,19 +1,22 @@
 import Link from "next/link";
-import { ButtonLink, Card, EmptyState, InvoiceBadge, Notice, PageHeader, ProgressBar, StatusBadge, formatDate } from "@/components/ui";
+import { ButtonLink, Card, EmptyState, Notice, PageHeader, ProgressBar, StatusBadge, formatDate } from "@/components/ui";
 import { contact } from "@/config/site";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { requireActor } from "@/lib/session";
-import { isOverdue } from "@/server/money";
-import { getClientHome } from "@/server/projects";
-import { proposalTotal } from "@/server/proposals";
+import { getClientActivity, getClientOverview, getClientTodo } from "@/server/portal";
+import { ActivityList } from "./activity-list";
 import { Concierge } from "./concierge";
 
 export const metadata = { title: "Home" };
 
+function greeting() {
+  const hour = Number(new Intl.DateTimeFormat("en-IN", { hour: "numeric", hourCycle: "h23", timeZone: "Asia/Kolkata" }).format(new Date()));
+  return hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+}
+
 export default async function HubHome() {
   const actor = await requireActor("/hub");
-  const { projects, proposals, invoices, needed } = await getClientHome(await getDb(), actor);
 
   if (actor.clientOrgIds.length === 0) {
     return (
@@ -28,10 +31,6 @@ export default async function HubHome() {
             Your proposals and projects will appear here. Questions?{" "}
             <a href={contact.whatsapp()} target="_blank" rel="noopener noreferrer" className="underline">
               WhatsApp
-            </a>
-            ,{" "}
-            <a href={contact.call} className="underline">
-              call
             </a>{" "}
             or{" "}
             <a href={contact.email} className="underline">
@@ -44,90 +43,78 @@ export default async function HubHome() {
     );
   }
 
-  const awaiting = proposals.filter((p) => p.status === "sent");
-  const approvals = projects.flatMap((p) => p.progress.awaitingApproval.map((m) => ({ project: p, milestone: m })));
-  const unpaid = invoices.filter((i) => i.status === "sent");
-  const decisions = awaiting.length + approvals.length + unpaid.length + needed.length;
+  const db = await getDb();
+  const [overview, todo, activity] = await Promise.all([getClientOverview(db, actor), getClientTodo(db, actor), getClientActivity(db, actor, 5)]);
+  const firstThings = [
+    ...todo.approvals.map((a) => ({ key: a.milestone.id, label: `Review “${a.milestone.title}”`, sub: a.projectName })),
+    ...todo.needed.map((n) => ({ key: n.item.id, label: `Send us: ${n.item.title}`, sub: n.projectName })),
+    ...todo.proposals.map((p) => ({ key: p.proposal.id, label: `Decide on your proposal`, sub: p.proposal.title })),
+    ...todo.estimates.map((e) => ({ key: e.change.id, label: "Decide on a change price", sub: e.projectName })),
+    ...todo.invoices.map((i) => ({ key: i.invoice.id, label: `Pay ${i.invoice.number} · ${formatMoney(i.invoice.total, i.invoice.currency)}`, sub: i.overdue ? "Overdue" : `Due ${formatDate(i.invoice.dueAt)}` })),
+  ];
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title={`Hello, ${actor.name.split(" ")[0]}`}
-        description={decisions ? `${decisions} thing${decisions === 1 ? " is" : "s are"} waiting for you.` : "You're all caught up."}
+        eyebrow={overview?.orgName}
+        title={`${greeting()}, ${actor.name.split(" ")[0]}`}
+        description={todo.count ? `${todo.count} thing${todo.count === 1 ? " needs" : "s need"} you. Everything else is in hand.` : "Nothing needs you right now. We'll email you when something does."}
       />
 
-      <Concierge orgId={actor.clientOrgIds[0]} />
+      <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
+        <Concierge orgId={actor.clientOrgIds[0]} />
 
-      {decisions > 0 && (
-        <section aria-labelledby="decisions" className="space-y-3">
-          <h2 id="decisions" className="text-lg font-semibold">
-            Waiting for your decision
-          </h2>
-          {awaiting.map((p) => (
-            <Card key={p.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-muted">Proposal · {formatMoney(proposalTotal(p), p.currency)}</p>
-                <p className="font-semibold">{p.title}</p>
-              </div>
-              <ButtonLink href={`/hub/proposals/${p.id}`}>Review proposal</ButtonLink>
-            </Card>
-          ))}
-          {approvals.map(({ project, milestone }) => (
-            <Card key={milestone.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-muted">Milestone ready for approval · {project.name}</p>
-                <p className="font-semibold">{milestone.title}</p>
-              </div>
-              <ButtonLink href={`/hub/projects/${project.id}`}>Review and approve</ButtonLink>
-            </Card>
-          ))}
-          {needed.map((c) => (
-            <Card key={c.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-muted">
-                  We need from you · {projects.find((p) => p.id === c.projectId)?.name ?? "your project"}
-                </p>
-                <p className="font-semibold">{c.title}</p>
-              </div>
-              <ButtonLink href={`/hub/projects/${c.projectId}`}>Send and mark done</ButtonLink>
-            </Card>
-          ))}
-          {unpaid.map((i) => (
-            <Card key={i.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm text-muted">
-                  Invoice {i.number} · {isOverdue(i) ? "overdue" : `due ${formatDate(i.dueAt)}`}
-                </p>
-                <p className="font-semibold">
-                  {i.title} · {formatMoney(i.total, i.currency)}
-                </p>
-              </div>
-              <ButtonLink href={`/hub/invoices/${i.id}`}>View and pay</ButtonLink>
-            </Card>
-          ))}
-        </section>
-      )}
+        <Card className={todo.count ? "ring-2 ring-flame" : undefined}>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="font-semibold">Needs you</h2>
+            {todo.count > 0 && (
+              <Link href="/hub/todo" className="text-sm font-medium underline underline-offset-4">
+                See all {todo.count}
+              </Link>
+            )}
+          </div>
+          {firstThings.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">All caught up.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {firstThings.slice(0, 4).map((t) => (
+                <li key={t.key}>
+                  <Link href="/hub/todo" className="block rounded-xl bg-subtle px-3 py-2.5 hover:ring-1 hover:ring-line">
+                    <span className="block text-sm font-medium">{t.label}</span>
+                    <span className="block text-xs text-muted">{t.sub}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </div>
 
       <section aria-labelledby="projects" className="space-y-3">
-        <h2 id="projects" className="text-lg font-semibold">
-          Projects
-        </h2>
-        {projects.length === 0 ? (
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="projects" className="text-lg font-semibold">
+            Your projects
+          </h2>
+          <Link href="/hub/projects" className="text-sm text-muted underline-offset-4 hover:underline">
+            All projects
+          </Link>
+        </div>
+        {!overview || overview.projects.length === 0 ? (
           <EmptyState title="No projects yet.">A project starts as soon as you accept a proposal.</EmptyState>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            {projects.map((p) => (
-              <Link key={p.id} href={`/hub/projects/${p.id}`} className="group rounded-card bg-surface p-6 ring-1 ring-line hover:ring-fg/30">
+            {overview.projects.slice(0, 4).map(({ project: p, progress }) => (
+              <Link key={p.id} href={`/hub/projects/${p.id}`} className="group rounded-card bg-surface p-5 ring-1 ring-line hover:ring-fg/30">
                 <div className="flex items-start justify-between gap-3">
                   <p className="font-semibold group-hover:underline">{p.name}</p>
-                  <StatusBadge status={p.progress.blocked.length ? "blocked" : p.status} />
+                  <StatusBadge status={progress.blocked.length ? "blocked" : p.status} />
                 </div>
                 <div className="mt-4">
-                  <ProgressBar value={p.progress.percent} label={`${p.name} progress`} />
+                  <ProgressBar value={progress.percent} label={`${p.name} progress`} />
                 </div>
                 <p className="mt-2 text-sm text-muted">
-                  {p.progress.done} of {p.progress.total} milestones complete
-                  {p.progress.current ? ` · Now: ${p.progress.current.title}` : ""}
+                  {progress.done} of {progress.total} milestones done
+                  {progress.current ? ` · Now: ${progress.current.title}` : ""}
                 </p>
               </Link>
             ))}
@@ -135,50 +122,24 @@ export default async function HubHome() {
         )}
       </section>
 
-      {invoices.length > 0 && (
-        <section aria-labelledby="invoices" className="space-y-3">
-          <h2 id="invoices" className="text-lg font-semibold">
-            Invoices
+      <section aria-labelledby="recent" className="space-y-3">
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 id="recent" className="text-lg font-semibold">
+            Recent activity
           </h2>
-          <ul className="divide-y divide-line rounded-card bg-surface ring-1 ring-line">
-            {invoices.map((i) => (
-              <li key={i.id}>
-                <Link href={`/hub/invoices/${i.id}`} className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-subtle/60">
-                  <span className="min-w-0">
-                    <span className="block truncate font-medium">
-                      {i.number} · {i.title}
-                    </span>
-                    <span className="text-sm text-muted">{formatMoney(i.total, i.currency)}</span>
-                  </span>
-                  <InvoiceBadge status={i.status} overdue={isOverdue(i)} />
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+          <Link href="/hub/activity" className="text-sm text-muted underline-offset-4 hover:underline">
+            Everything
+          </Link>
+        </div>
+        <ActivityList items={activity} />
+      </section>
 
-      {proposals.some((p) => p.status !== "sent") && (
-        <section aria-labelledby="history" className="space-y-3">
-          <h2 id="history" className="text-lg font-semibold">
-            Past proposals
-          </h2>
-          <ul className="divide-y divide-line rounded-card bg-surface ring-1 ring-line">
-            {proposals
-              .filter((p) => p.status !== "sent")
-              .map((p) => (
-                <li key={p.id}>
-                  <Link href={`/hub/proposals/${p.id}`} className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-subtle/60">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium">{p.title}</span>
-                      <span className="text-sm text-muted">Decided {formatDate(p.decidedAt)}</span>
-                    </span>
-                    <StatusBadge status={p.status} />
-                  </Link>
-                </li>
-              ))}
-          </ul>
-        </section>
+      {todo.proposals.length > 0 && (
+        <Notice title="A proposal is waiting for your decision">
+          <ButtonLink href={`/hub/proposals/${todo.proposals[0].proposal.id}`} size="sm" className="mt-2">
+            Review proposal
+          </ButtonLink>
+        </Notice>
       )}
     </div>
   );

@@ -43,6 +43,13 @@
       "when": 1792928630630,
       "tag": "0005_client_hub",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792949325103,
+      "tag": "0006_support_threads",
+      "breakpoints": true
     }
   ]
 }

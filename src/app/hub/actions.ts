@@ -14,6 +14,7 @@ import {
   requestMilestoneChanges,
   type ConciergeAnswer,
 } from "@/server/hub";
+import { inviteTeammate, removeTeammate, replyToRequest } from "@/server/portal";
 import { clientApproveMilestone, createSupportRequest } from "@/server/projects";
 import { clientDecideProposal } from "@/server/proposals";
 
@@ -127,6 +128,40 @@ export async function feedbackAction(projectId: string, milestoneId: string, _pr
   return { ok: "Thank you for the feedback!" };
 }
 
+export async function replyToRequestAction(requestId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await replyToRequest(await getDb(), await getActor(), requestId, { body: String(formData.get("body") ?? "") });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hub/support");
+  return { ok: "Sent." };
+}
+
+export async function inviteTeammateAction(orgId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await inviteTeammate(await getDb(), await getActor(), orgId, {
+      name: String(formData.get("name") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      role: formData.get("role") === "client_admin" ? "client_admin" : "client_member",
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hub/team");
+  return { ok: "Added. They can now sign in with their email." };
+}
+
+export async function removeTeammateAction(orgId: string, userId: string): Promise<ActionState> {
+  try {
+    await removeTeammate(await getDb(), await getActor(), orgId, userId);
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hub/team");
+  return { ok: "Removed." };
+}
+
 export async function supportRequestAction(
   orgId: string,
   projectId: string | null,
@@ -142,5 +177,6 @@ export async function supportRequestAction(
     return toActionError(err);
   }
   if (projectId) revalidatePath(`/hub/projects/${projectId}`);
+  revalidatePath("/hub/support");
   return { ok: "Sent. A person at AMFIRE will reply." };
 }

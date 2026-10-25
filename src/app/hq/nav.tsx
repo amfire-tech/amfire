@@ -11,6 +11,7 @@ const ITEMS = [
   { href: "/hq/leads", label: "Leads" },
   { href: "/hq/clients", label: "Clients" },
   { href: "/hq/projects", label: "Projects" },
+  { href: "/hq/requests", label: "Requests" },
   { href: "/hq/money", label: "Money" },
   { href: "/hq/growth", label: "Growth" },
   { href: "/hq/agents", label: "AI team" },

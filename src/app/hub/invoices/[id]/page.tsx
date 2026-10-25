@@ -27,8 +27,8 @@ export default async function HubInvoicePage({ params }: PageProps<"/hub/invoice
       <div className="print:hidden">
         <PageHeader
           eyebrow={
-            <Link href="/hub" className="hover:underline">
-              ← Client Hub
+            <Link href="/hub/billing" className="hover:underline">
+              ← Billing
             </Link>
           }
           title={`Invoice ${i.number}`}

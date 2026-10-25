@@ -101,10 +101,10 @@ export default async function TodayPage() {
     },
     {
       title: "Open client requests",
-      hint: "A person should reply to each of these.",
+      hint: "Reply from Requests: the client sees it in their Hub and gets it by email.",
       items: o.openRequests.map(({ request, org }) => ({
         key: request.id,
-        href: request.projectId ? `/hq/projects/${request.projectId}` : "/hq/projects",
+        href: "/hq/requests",
         primary: `${org.name}: ${request.subject}`,
         secondary: `${timeAgo(request.createdAt)}`,
       })),

@@ -27,6 +27,17 @@ import {
 import { composeClientDigest, sendClientDigests } from "@/server/client-digest";
 import { clientEmailText, clientRecipients } from "@/server/client-notify";
 import { getOverview } from "@/server/hq";
+import {
+  getClientActivity,
+  getClientBilling,
+  getClientTodo,
+  getTeam,
+  inviteTeammate,
+  listClientRequests,
+  listRequestsForStaff,
+  removeTeammate,
+  replyToRequest,
+} from "@/server/portal";
 import { addManualLead, decideQualification, submitDiscovery } from "@/server/leads";
 import {
   draftDueRetainerInvoices,
@@ -38,7 +49,7 @@ import {
   recordPayment,
   sendInvoice,
 } from "@/server/money";
-import { addOutsideProject, clientApproveMilestone, getClientHome, updateMilestone } from "@/server/projects";
+import { addOutsideProject, clientApproveMilestone, createSupportRequest, getClientHome, updateMilestone } from "@/server/projects";
 import { approveAndSendProposal, clientDecideProposal, createProposalDraft } from "@/server/proposals";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -373,6 +384,47 @@ describe("the client's side", () => {
     assert.match(clientEmailText("Riya Mehta", digest), /^Hi Riya,[\s\S]*Open your Client Hub: .*\/hub\/projects\//);
     // Without email set up nothing is sent, and nothing breaks.
     assert.equal((await sendClientDigests(db)).sent, 0);
+  });
+
+  test("the Hub's to-do, billing and activity show only the client's own things", async () => {
+    const todo = await getClientTodo(db, ctx.client);
+    assert.ok(todo.count >= 1);
+    const strangerTodo = await getClientTodo(db, stranger.client);
+    assert.ok(strangerTodo.needed.every((n) => n.item.orgId === stranger.orgId));
+    const billing = await getClientBilling(db, ctx.client);
+    assert.ok(billing.invoices.every((i) => i.invoice.orgId === ctx.orgId));
+    const activity = await getClientActivity(db, ctx.client);
+    assert.ok(activity.length > 0);
+    assert.ok(activity.every((a, i) => i === 0 || +activity[i - 1].at >= +a.at), "newest first");
+  });
+
+  test("support requests are a conversation: staff replies, client replies reopen", async () => {
+    const req = await createSupportRequest(db, ctx.client, ctx.orgId, null, { subject: "Can we add a second user?", body: "Our accountant needs access." });
+    await assert.rejects(replyToRequest(db, stranger.client, req.id, { body: "Hijack" }), AccessDenied);
+    await replyToRequest(db, owner, req.id, { body: "Yes — add them under Team." }, { resolve: true });
+    let [thread] = (await listClientRequests(db, ctx.client)).filter((t) => t.request.id === req.id);
+    assert.equal(thread.request.status, "resolved");
+    assert.equal(thread.messages[0].fromStaff, true);
+    await replyToRequest(db, ctx.client, req.id, { body: "Thanks, one more question…" });
+    [thread] = (await listClientRequests(db, ctx.client)).filter((t) => t.request.id === req.id);
+    assert.equal(thread.request.status, "open");
+    assert.equal(thread.messages.length, 2);
+    const staffView = await listRequestsForStaff(db, owner);
+    assert.ok(staffView.some((t) => t.request.id === req.id));
+    await assert.rejects(listRequestsForStaff(db, ctx.client), AccessDenied);
+  });
+
+  test("a client admin can add and remove colleagues; members can't", async () => {
+    const team = await getTeam(db, ctx.client, ctx.orgId);
+    assert.equal(team.canManage, true);
+    const added = await inviteTeammate(db, ctx.client, ctx.orgId, { name: "Accounts Person", email: "accounts@mehta.test", role: "client_member" });
+    const colleague = await actorFor("accounts@mehta.test");
+    assert.deepEqual(colleague.clientOrgIds, [ctx.orgId]);
+    await assert.rejects(inviteTeammate(db, ctx.client, ctx.orgId, { name: "Again", email: "accounts@mehta.test" }));
+    await assert.rejects(inviteTeammate(db, colleague, ctx.orgId, { name: "X", email: "x@mehta.test" }), AccessDenied);
+    await assert.rejects(inviteTeammate(db, stranger.client, ctx.orgId, { name: "X", email: "x@mehta.test" }), AccessDenied);
+    await removeTeammate(db, ctx.client, ctx.orgId, added.id);
+    assert.deepEqual((await actorFor("accounts@mehta.test")).clientOrgIds, []);
   });
 
   test("a past project is added with its client, contact and the money received", async () => {

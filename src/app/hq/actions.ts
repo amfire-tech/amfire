@@ -31,6 +31,7 @@ import { briefEmail, deliverBrief } from "@/server/notify";
 import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting } from "@/server/brain";
 import { addFact, logInteraction, retireFact, setLeadOutcome, updateBilling, updateDeal } from "@/server/crm";
 import { sendClientDigests } from "@/server/client-digest";
+import { replyToRequest } from "@/server/portal";
 import { addChecklistItem, deleteChecklistItem, estimateChange, reopenChecklistItem } from "@/server/hub";
 import { askHq, type AskAnswer, type AskTurn } from "@/server/ask";
 import { createPost } from "@/server/growth";
@@ -185,6 +186,14 @@ export async function postUpdateAction(projectId: string, _prev: ActionState, fo
   }
   revalidatePath(`/hq/projects/${projectId}`);
   return { ok: "Update posted to the client." };
+}
+
+/** A reply to a client's support request; the client is emailed. "resolve" also closes it. */
+export async function staffReplyAction(requestId: string, _prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) => replyToRequest(db, actor, requestId, { body: String(formData.get("body") ?? "") }, { resolve: formData.get("resolve") === "on" }),
+    "Reply sent. The client has been emailed.",
+  );
 }
 
 export async function resolveRequestAction(path: string, requestId: string) {

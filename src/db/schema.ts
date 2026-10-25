@@ -635,6 +635,22 @@ export const notifications = appSchema.table("notifications", {
   createdAt: createdAt(),
 });
 
+/** A conversation on a client's support request: the client and AMFIRE reply back and forth. */
+export const supportMessages = appSchema.table(
+  "support_messages",
+  {
+    id: id(),
+    requestId: uuid("request_id").notNull().references(() => supportRequests.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").notNull().references(() => organizations.id),
+    authorId: uuid("author_id").references(() => users.id),
+    /** True when written by AMFIRE staff. */
+    fromStaff: boolean("from_staff").notNull().default(false),
+    body: text("body").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("support_messages_request_idx").on(t.requestId)],
+);
+
 // --- Rate limits ---------------------------------------------------------------
 
 /** Fixed-window counters shared by every server instance (serverless-safe). */

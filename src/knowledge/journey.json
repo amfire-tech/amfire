@@ -1,5 +1,5 @@
 {
-  "duration": 67,
+  "duration": 65,
   "chapters": [
     {
       "title": "Your next business solution starts here",
@@ -9,33 +9,33 @@
     {
       "title": "Tell us what your business needs",
       "sub": "Book a free demo: choose what you want to improve and tell us about your business.",
-      "start": 4
+      "start": 2
     },
     {
       "title": "First, we understand your business",
       "sub": "Describe the problem in your own words. You see our initial read right away, and a person calls you within one working day.",
-      "start": 15
+      "start": 13
     },
     {
       "title": "A clear plan with transparent pricing",
       "sub": "Your proposal in the Client Hub: scope, milestones, a fixed price and the timeline. Nothing starts until you accept.",
-      "start": 27
+      "start": 25
     },
     {
       "title": "Track progress, review milestones",
       "sub": "Tasks and updates from AMFIRE appear as we work. Each milestone is invoiced only after you approve it.",
-      "start": 40
+      "start": 38
     },
     {
       "title": "From idea to delivery",
       "sub": "Every milestone approved. Your project is complete.",
-      "start": 57
+      "start": 55
     },
     {
       "title": "Build. Operate. Automate.",
       "sub": "Book your free demo and we'll take it from there.",
-      "start": 61.5
+      "start": 59.5
     }
   ],
-  "version": "8e58b6c3be"
+  "version": "49a8301a44"
 }

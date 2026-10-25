@@ -26,10 +26,11 @@ import {
  * can step through it a frame at a time. CSS transitions and animations are
  * off inside the film: they run on the wall clock, not on `t`.
  */
-export const REEL = { width: 1920, height: 1080, fps: 30, duration: 67 };
+export const REEL = { width: 1920, height: 1080, fps: 30, duration: 65 };
 
 // Scene start times in seconds; the chapters in src/knowledge/journey.json follow these.
-export const SCENE = { hook: 0, book: 4, discover: 15, proposal: 27, project: 40, delivered: 57, end: 61.5 };
+// The opening title is short (2 s) so the product appears almost as soon as the video starts.
+export const SCENE = { hook: 0, book: 2, discover: 13, proposal: 25, project: 38, delivered: 55, end: 59.5 };
 
 // Uniform pacing.
 const MOVE = 1.2; // camera moves
@@ -379,7 +380,8 @@ export function Reel({ t, onReady }: { t: number; onReady?: () => void }) {
   ];
   const title = pages.filter((p) => t >= p.from).pop()!.title;
 
-  const frameIn = span(t, 3.4, 1.0);
+  // The product frame arrives as the opening title leaves, both timed from the first scene.
+  const frameIn = span(t, B - 0.4, 0.8);
   const frameOut = span(t, E - 0.2, 0.8, inOut);
 
   return (
@@ -390,16 +392,16 @@ export function Reel({ t, onReady }: { t: number; onReady?: () => void }) {
       {/* 1 · Hook */}
       <div
         className="absolute inset-0 flex flex-col items-center justify-center text-center"
-        style={{ opacity: 1 - span(t, 3.0, 0.8, inOut), transform: `translateY(${-40 * span(t, 3.0, 0.9, inOut)}px)` }}
+        style={{ opacity: 1 - span(t, B - 0.6, 0.6, inOut), transform: `translateY(${-40 * span(t, B - 0.6, 0.7, inOut)}px)` }}
       >
-        <div style={{ transform: `scale(${lerp(1.04, 1, span(t, 0, 1.4))})` }}>
+        <div style={{ transform: `scale(${lerp(1.04, 1, span(t, 0, 1.0))})` }}>
           <Image src="/brand/amfire-logo.png" alt="AMFIRE" width={1200} height={325} priority className="h-[80px] w-auto" />
         </div>
         <h1 className="mt-14 text-[92px] leading-[1.06] font-semibold tracking-[-0.035em]">
-          <span className="block" style={rise(t, 0.3, 30, 0.9)}>
+          <span className="block" style={rise(t, 0.1, 30, 0.6)}>
             Your next business solution
           </span>
-          <span className="text-brand block" style={rise(t, 0.6, 30, 0.9)}>
+          <span className="text-brand block" style={rise(t, 0.25, 30, 0.6)}>
             starts here.
           </span>
         </h1>

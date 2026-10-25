@@ -16,16 +16,11 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).p
  *
  * It's shown as a plain playing card with no player controls: it loops
  * muted while in view and pauses when it leaves, and clicking the card
- * pauses or resumes it. Brand-coloured light traces the card's edge to show
- * how far through it is. The card tilts and settles as the page scrolls past.
+ * pauses or resumes it. The card tilts and settles as the page scrolls past.
  * Autoplay and the tilt are skipped for visitors who prefer reduced motion.
  */
 export function JourneyVideo() {
   const ref = useRef<HTMLVideoElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const traceRef = useRef<SVGRectElement>(null);
-  const headRef = useRef<SVGCircleElement>(null);
-  const [size, setSize] = useState({ w: 0, h: 0 });
   const stage = useRef<HTMLDivElement>(null);
   const [current, setCurrent] = useState(0);
   const chapters = journey.chapters;
@@ -91,50 +86,6 @@ export function JourneyVideo() {
     };
   }, [reduce]);
 
-  // Keep the traced outline the same size as the card.
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
-    const ro = new ResizeObserver(([entry]) => {
-      const { width, height } = entry.contentRect;
-      setSize({ w: Math.round(width), h: Math.round(height) });
-    });
-    ro.observe(card);
-    return () => ro.disconnect();
-  }, []);
-
-  // Progress is drawn as light tracing the card's edge, updated every frame while it plays.
-  useEffect(() => {
-    const v = ref.current;
-    const trace = traceRef.current;
-    const head = headRef.current;
-    if (!v || !trace || !head) return;
-    let raf = 0;
-    const draw = () => {
-      const p = v.duration ? v.currentTime / v.duration : 0;
-      trace.style.strokeDashoffset = String(1 - p);
-      const pt = trace.getPointAtLength(p * trace.getTotalLength());
-      head.setAttribute("cx", String(pt.x));
-      head.setAttribute("cy", String(pt.y));
-      head.style.opacity = p > 0.002 ? "1" : "0";
-      if (!v.paused) raf = requestAnimationFrame(draw);
-    };
-    const start = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(draw);
-    };
-    v.addEventListener("play", start);
-    v.addEventListener("seeked", draw);
-    v.addEventListener("pause", draw);
-    draw();
-    return () => {
-      cancelAnimationFrame(raf);
-      v.removeEventListener("play", start);
-      v.removeEventListener("seeked", draw);
-      v.removeEventListener("pause", draw);
-    };
-  }, [size]);
-
   function onTime() {
     const t = ref.current?.currentTime ?? 0;
     let idx = 0;
@@ -168,47 +119,9 @@ export function JourneyVideo() {
           className="absolute inset-x-10 -inset-y-6 -z-10 rounded-full bg-[linear-gradient(90deg,#ff453a,#ff8747)] blur-3xl"
         />
         <motion.div
-          ref={cardRef}
           style={reduce ? undefined : { rotateX, scale, y, transformOrigin: "50% 100%" }}
-          className="relative overflow-hidden rounded-[1.5rem] bg-ink shadow-[0_40px_100px_-40px_rgba(0,0,0,0.55)] ring-1 ring-line will-change-transform"
+          className="overflow-hidden rounded-[1.5rem] bg-ink shadow-[0_40px_100px_-40px_rgba(0,0,0,0.55)] ring-1 ring-line will-change-transform"
         >
-          {/* Progress: brand light traces the card's edge clockwise as the film plays, led by a glowing head. */}
-          <svg aria-hidden className="pointer-events-none absolute inset-0 z-10 size-full overflow-visible" width={size.w} height={size.h}>
-            <defs>
-              <linearGradient id="journey-trace" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#ff453a" />
-                <stop offset="100%" stopColor="#ff8747" />
-              </linearGradient>
-              <filter id="journey-glow" x="-50%" y="-50%" width="200%" height="200%">
-                <feGaussianBlur stdDeviation="4" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-            {size.w > 0 && (
-              <>
-                <rect
-                  ref={traceRef}
-                  x="1.5"
-                  y="1.5"
-                  width={size.w - 3}
-                  height={size.h - 3}
-                  rx="22"
-                  pathLength={1}
-                  fill="none"
-                  stroke="url(#journey-trace)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray="1 1"
-                  strokeDashoffset="1"
-                  filter="url(#journey-glow)"
-                />
-                <circle ref={headRef} r="4.5" fill="#fff" stroke="#ff6b40" strokeWidth="2.5" filter="url(#journey-glow)" style={{ opacity: 0 }} />
-              </>
-            )}
-          </svg>
           <video
             ref={ref}
             className="block aspect-video w-full cursor-pointer"

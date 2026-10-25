@@ -22,7 +22,7 @@ import puppeteer, { type Browser, type Page } from "puppeteer-core";
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const WORK = path.join(process.cwd(), ".data", "reel");
 const OUT_DIR = path.join(process.cwd(), "public", "media");
-const POSTER_AT = 2.2;
+const POSTER_AT = 1.2;
 
 function findBrowser() {
   const candidates = [

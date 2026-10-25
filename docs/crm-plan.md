@@ -1,6 +1,6 @@
 # AMFIRE HQ: a CRM run by an AI team
 
-**Status:** plan for review · October 2026
+**Status:** Phases 0–5 built, October 2026. External channels (Razorpay, Resend email, WhatsApp Business) switch on with their keys; see `.env.example`.
 **Goal:** a one-person company that runs like a team of ten. The owner spends about 10 minutes a day in HQ. Agents do the watching, drafting and chasing. The owner makes the decisions.
 
 ---

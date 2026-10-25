@@ -240,7 +240,7 @@ async function recommendWithGemini(input: DiscoveryInput) {
 }
 
 /** Cost monitoring: set GEMINI_PRICE_INPUT / GEMINI_PRICE_OUTPUT (USD per million tokens) for your model. */
-function estimateCost(inputTokens: number | null, outputTokens: number | null): number | null {
+export function estimateCost(inputTokens: number | null, outputTokens: number | null): number | null {
   const pin = Number(process.env.GEMINI_PRICE_INPUT);
   const pout = Number(process.env.GEMINI_PRICE_OUTPUT);
   if (!pin || !pout || inputTokens == null || outputTokens == null) return null;

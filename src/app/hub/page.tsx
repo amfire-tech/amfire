@@ -1,17 +1,19 @@
 import Link from "next/link";
-import { ButtonLink, Card, EmptyState, Notice, PageHeader, ProgressBar, StatusBadge, formatDate } from "@/components/ui";
+import { ButtonLink, Card, EmptyState, InvoiceBadge, Notice, PageHeader, ProgressBar, StatusBadge, formatDate } from "@/components/ui";
 import { contact } from "@/config/site";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { requireActor } from "@/lib/session";
+import { isOverdue } from "@/server/money";
 import { getClientHome } from "@/server/projects";
 import { proposalTotal } from "@/server/proposals";
+import { Concierge } from "./concierge";
 
 export const metadata = { title: "Home" };
 
 export default async function HubHome() {
   const actor = await requireActor("/hub");
-  const { projects, proposals } = await getClientHome(await getDb(), actor);
+  const { projects, proposals, invoices } = await getClientHome(await getDb(), actor);
 
   if (actor.clientOrgIds.length === 0) {
     return (
@@ -44,14 +46,17 @@ export default async function HubHome() {
 
   const awaiting = proposals.filter((p) => p.status === "sent");
   const approvals = projects.flatMap((p) => p.progress.awaitingApproval.map((m) => ({ project: p, milestone: m })));
-  const decisions = awaiting.length + approvals.length;
+  const unpaid = invoices.filter((i) => i.status === "sent");
+  const decisions = awaiting.length + approvals.length + unpaid.length;
 
   return (
     <div className="space-y-8">
       <PageHeader
         title={`Hello, ${actor.name.split(" ")[0]}`}
-        description={decisions ? `${decisions} decision${decisions === 1 ? " is" : "s are"} waiting for you.` : "You're all caught up."}
+        description={decisions ? `${decisions} thing${decisions === 1 ? " is" : "s are"} waiting for you.` : "You're all caught up."}
       />
+
+      <Concierge orgId={actor.clientOrgIds[0]} />
 
       {decisions > 0 && (
         <section aria-labelledby="decisions" className="space-y-3">
@@ -74,6 +79,19 @@ export default async function HubHome() {
                 <p className="font-semibold">{milestone.title}</p>
               </div>
               <ButtonLink href={`/hub/projects/${project.id}`}>Review and approve</ButtonLink>
+            </Card>
+          ))}
+          {unpaid.map((i) => (
+            <Card key={i.id} className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-muted">
+                  Invoice {i.number} · {isOverdue(i) ? "overdue" : `due ${formatDate(i.dueAt)}`}
+                </p>
+                <p className="font-semibold">
+                  {i.title} · {formatMoney(i.total, i.currency)}
+                </p>
+              </div>
+              <ButtonLink href={`/hub/invoices/${i.id}`}>View and pay</ButtonLink>
             </Card>
           ))}
         </section>
@@ -105,6 +123,29 @@ export default async function HubHome() {
           </div>
         )}
       </section>
+
+      {invoices.length > 0 && (
+        <section aria-labelledby="invoices" className="space-y-3">
+          <h2 id="invoices" className="text-lg font-semibold">
+            Invoices
+          </h2>
+          <ul className="divide-y divide-line rounded-card bg-surface ring-1 ring-line">
+            {invoices.map((i) => (
+              <li key={i.id}>
+                <Link href={`/hub/invoices/${i.id}`} className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-subtle/60">
+                  <span className="min-w-0">
+                    <span className="block truncate font-medium">
+                      {i.number} · {i.title}
+                    </span>
+                    <span className="text-sm text-muted">{formatMoney(i.total, i.currency)}</span>
+                  </span>
+                  <InvoiceBadge status={i.status} overdue={isOverdue(i)} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {proposals.some((p) => p.status !== "sent") && (
         <section aria-labelledby="history" className="space-y-3">

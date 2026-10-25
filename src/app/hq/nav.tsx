@@ -5,10 +5,15 @@ import { usePathname } from "next/navigation";
 import { cx } from "@/components/ui";
 
 const ITEMS = [
-  { href: "/hq", label: "Overview", exact: true },
+  { href: "/hq", label: "Today", exact: true },
+  { href: "/hq/ask", label: "Ask HQ" },
+  { href: "/hq/pipeline", label: "Pipeline" },
   { href: "/hq/leads", label: "Leads" },
+  { href: "/hq/clients", label: "Clients" },
   { href: "/hq/projects", label: "Projects" },
-  { href: "/hq/agents", label: "Agent runs" },
+  { href: "/hq/money", label: "Money" },
+  { href: "/hq/growth", label: "Growth" },
+  { href: "/hq/agents", label: "AI team" },
   { href: "/hq/activity", label: "Activity" },
 ];
 

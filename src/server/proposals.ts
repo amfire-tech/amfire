@@ -10,11 +10,22 @@ import {
   projects,
   proposals,
   recommendations,
+  subscriptions,
   users,
   type Proposal,
 } from "@/db/schema";
 import { SERVICES } from "@/knowledge/catalog";
-import { DEMO_OFFER, defaultTerms, isCurrency, milestoneTemplate, priceFloor, PRICING_CURRENCY, type Currency, type ProjectSize } from "@/knowledge/pricing";
+import {
+  DEMO_OFFER,
+  defaultTerms,
+  isCurrency,
+  milestoneTemplate,
+  OPERATE_RETAINER,
+  priceFloor,
+  PRICING_CURRENCY,
+  type Currency,
+  type ProjectSize,
+} from "@/knowledge/pricing";
 import { assertClientOrg, assertOwner, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
 import { demoOfferCode } from "./leads";
@@ -330,6 +341,21 @@ export async function clientDecideProposal(
       .update(leads)
       .set({ status: "won", nextAction: "Kick off the project", updatedAt: now })
       .where(eq(leads.id, p.leadId));
+    // Operate continues as a monthly plan once onboarding is done.
+    if (p.path === "operate") {
+      const [rec] = p.recommendationId ? await tx.select().from(recommendations).where(eq(recommendations.id, p.recommendationId)) : [];
+      const size = (rec?.size ?? "small") as ProjectSize;
+      const currency = isCurrency(p.currency) ? p.currency : PRICING_CURRENCY;
+      await tx.insert(subscriptions).values({
+        orgId,
+        projectId: project.id,
+        title: `${p.title} — monthly plan`,
+        amount: OPERATE_RETAINER[size][currency],
+        currency,
+        startedAt: now,
+        nextInvoiceAt: new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
+      });
+    }
     await audit(tx, { actorId: actor.userId, orgId, action: "proposal.accepted", subjectType: "proposal", subjectId: p.id, data: { projectId: project.id } });
     return { project };
   });

@@ -2,6 +2,9 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
 import {
+  changeRequests,
+  invoices,
+  milestoneFeedback,
   milestones,
   projectUpdates,
   projects,
@@ -12,6 +15,7 @@ import {
 } from "@/db/schema";
 import { AccessDenied, assertClientOrg, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
+import { createMilestoneInvoice } from "./money";
 
 export class ProjectError extends Error {
   constructor(message: string) {
@@ -60,7 +64,11 @@ export async function updateMilestone(db: DB, actor: Actor | null, milestoneId: 
     if (current.status === "done") throw new ProjectError("This milestone has been approved by the client and is closed.");
     const [m] = await tx
       .update(milestones)
-      .set({ status: data.status, blockerNote: data.status === "blocked" ? data.blockerNote! : null })
+      .set({
+        status: data.status,
+        blockerNote: data.status === "blocked" ? data.blockerNote! : null,
+        readyAt: data.status === "awaiting_approval" ? (current.status === "awaiting_approval" ? current.readyAt : new Date()) : null,
+      })
       .where(eq(milestones.id, milestoneId))
       .returning();
     await audit(tx, {
@@ -115,21 +123,22 @@ export async function getProjectForStaff(db: DB, actor: Actor | null, projectId:
   assertStaff(actor);
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
   if (!project) return null;
-  const [ms, ts, ups, reqs] = await Promise.all([
+  const [ms, ts, ups, reqs, crs] = await Promise.all([
     db.select().from(milestones).where(eq(milestones.projectId, projectId)).orderBy(asc(milestones.position)),
     db.select().from(tasks).where(eq(tasks.projectId, projectId)).orderBy(asc(tasks.createdAt)),
     db.select().from(projectUpdates).where(eq(projectUpdates.projectId, projectId)).orderBy(desc(projectUpdates.createdAt)),
     db.select().from(supportRequests).where(eq(supportRequests.projectId, projectId)).orderBy(desc(supportRequests.createdAt)),
+    db.select().from(changeRequests).where(eq(changeRequests.projectId, projectId)).orderBy(desc(changeRequests.createdAt)),
   ]);
-  return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs };
+  return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs, changeRequests: crs };
 }
 
 // --- Client Hub (always scoped to the actor's organisations) -------------------
 
 export async function getClientHome(db: DB, actor: Actor | null) {
-  if (!actor || actor.clientOrgIds.length === 0) return { projects: [], proposals: [] };
+  if (!actor || actor.clientOrgIds.length === 0) return { projects: [], proposals: [], invoices: [] };
   const orgIds = actor.clientOrgIds;
-  const [ps, props, ms] = await Promise.all([
+  const [ps, props, ms, invs] = await Promise.all([
     db.select().from(projects).where(inArray(projects.orgId, orgIds)).orderBy(desc(projects.createdAt)),
     db
       .select()
@@ -137,8 +146,15 @@ export async function getClientHome(db: DB, actor: Actor | null) {
       .where(and(inArray(proposals.clientOrgId, orgIds), inArray(proposals.status, ["sent", "accepted", "declined"])))
       .orderBy(desc(proposals.sentAt)),
     db.select().from(milestones).where(inArray(milestones.orgId, orgIds)),
+    // Drafts are internal until the owner sends them.
+    db
+      .select()
+      .from(invoices)
+      .where(and(inArray(invoices.orgId, orgIds), inArray(invoices.status, ["sent", "paid"])))
+      .orderBy(desc(invoices.issuedAt)),
   ]);
   return {
+    invoices: invs,
     proposals: props,
     projects: ps.map((p) => ({ ...p, progress: projectProgress(ms.filter((m) => m.projectId === p.id)) })),
   };
@@ -147,7 +163,7 @@ export async function getClientHome(db: DB, actor: Actor | null) {
 export async function getClientProject(db: DB, actor: Actor | null, projectId: string) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
   if (!project || !actor?.clientOrgIds.includes(project.orgId)) return null;
-  const [ms, ts, ups, reqs] = await Promise.all([
+  const [ms, ts, ups, reqs, crs, fb] = await Promise.all([
     db.select().from(milestones).where(eq(milestones.projectId, projectId)).orderBy(asc(milestones.position)),
     db
       .select()
@@ -156,8 +172,19 @@ export async function getClientProject(db: DB, actor: Actor | null, projectId: s
       .orderBy(asc(tasks.createdAt)),
     db.select().from(projectUpdates).where(eq(projectUpdates.projectId, projectId)).orderBy(desc(projectUpdates.createdAt)),
     db.select().from(supportRequests).where(eq(supportRequests.projectId, projectId)).orderBy(desc(supportRequests.createdAt)),
+    db.select().from(changeRequests).where(eq(changeRequests.projectId, projectId)).orderBy(desc(changeRequests.createdAt)),
+    db.select().from(milestoneFeedback).where(eq(milestoneFeedback.projectId, projectId)),
   ]);
-  return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs, progress: projectProgress(ms) };
+  return {
+    project,
+    milestones: ms,
+    tasks: ts,
+    updates: ups,
+    requests: reqs,
+    changeRequests: crs,
+    feedback: fb,
+    progress: projectProgress(ms),
+  };
 }
 
 export async function clientApproveMilestone(db: DB, actor: Actor | null, milestoneId: string) {
@@ -179,6 +206,8 @@ export async function clientApproveMilestone(db: DB, actor: Actor | null, milest
     if (remaining.length === 0) {
       await tx.update(projects).set({ status: "completed" }).where(eq(projects.id, m.projectId));
     }
+    // "It will then be invoiced as agreed": a draft for the owner to send.
+    await createMilestoneInvoice(tx, m.id);
     await audit(tx, { actorId: actor.userId, orgId: m.orgId, action: "milestone.approved_by_client", subjectType: "milestone", subjectId: m.id });
     return approved;
   });

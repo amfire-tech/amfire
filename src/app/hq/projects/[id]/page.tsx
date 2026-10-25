@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/forms";
 import {
   Card,
   CardTitle,
   EmptyState,
+  Field,
   Notice,
   PageHeader,
   ProgressBar,
@@ -17,8 +19,10 @@ import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
+import { getProjectEconomics } from "@/server/crm";
 import { getProjectForStaff, projectProgress } from "@/server/projects";
-import { addTaskAction, resolveRequestAction, setTaskStatusAction } from "../../actions";
+import { addTaskAction, estimateChangeAction, logTimeAction, resolveRequestAction, setTaskStatusAction } from "../../actions";
+import { InvoiceList } from "../../money/invoice-list";
 import { MilestoneForm } from "./milestone-form";
 import { UpdateForm } from "./update-form";
 
@@ -33,9 +37,11 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const actor = await requireStaffActor();
-  const data = await getProjectForStaff(await getDb(), actor, id);
+  const db = await getDb();
+  const data = await getProjectForStaff(db, actor, id);
   if (!data) notFound();
-  const { project, milestones, tasks, updates, requests } = data;
+  const { project, milestones, tasks, updates, requests, changeRequests } = data;
+  const econ = await getProjectEconomics(db, actor, id);
   const progress = projectProgress(milestones);
   const path = `/hq/projects/${project.id}`;
 
@@ -52,7 +58,10 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
           <span className="flex flex-wrap items-center gap-2">
             <StatusBadge status={project.status} />
             <span>
-              {progress.done} of {progress.total} milestones approved by the client
+              {progress.done} of {progress.total} milestones approved by the client ·{" "}
+              <Link href={`/hq/clients/${project.orgId}`} className="underline underline-offset-4">
+                client account
+              </Link>
             </span>
           </span>
         }
@@ -176,6 +185,87 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
           </ul>
         )}
       </Card>
+
+      {changeRequests.length > 0 && (
+        <Card>
+          <CardTitle>Change requests</CardTitle>
+          <ul className="space-y-4">
+            {changeRequests.map((c) => (
+              <li key={c.id} className="rounded-xl p-4 ring-1 ring-line">
+                <div className="flex items-start justify-between gap-3">
+                  <p className="whitespace-pre-wrap">{c.description}</p>
+                  <StatusBadge status={c.status} />
+                </div>
+                <p className="mt-1 text-xs text-muted">Asked {formatDateTime(c.createdAt)}</p>
+                {c.status === "submitted" ? (
+                  <div className="mt-3 border-t border-line pt-3">
+                    <ActionForm action={estimateChangeAction.bind(null, c.id)} submitLabel="Send estimate to client" inline>
+                      <Field label={`Price (${project.currency}, before GST)`} htmlFor={`cr-amount-${c.id}`}>
+                        <input id={`cr-amount-${c.id}`} name="amount" type="number" min={0} required className={`${inputClass} sm:!w-36`} />
+                      </Field>
+                      <Field label="Weeks" htmlFor={`cr-weeks-${c.id}`}>
+                        <input id={`cr-weeks-${c.id}`} name="weeks" type="number" min={1} max={52} required defaultValue={1} className={`${inputClass} sm:!w-24`} />
+                      </Field>
+                      <Field label="Note for the client" htmlFor={`cr-note-${c.id}`} optional>
+                        <input id={`cr-note-${c.id}`} name="note" className={`${inputClass} sm:!w-72`} />
+                      </Field>
+                    </ActionForm>
+                  </div>
+                ) : (
+                  c.estimateAmount != null && (
+                    <p className="mt-2 text-sm">
+                      Estimate: {formatMoney(c.estimateAmount, project.currency)} · {c.estimateWeeks} week{c.estimateWeeks === 1 ? "" : "s"}
+                      {c.estimateNote && <span className="text-muted"> · {c.estimateNote}</span>}
+                    </p>
+                  )
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <Card>
+          <CardTitle>Time and earnings</CardTitle>
+          <dl className="mb-5 grid grid-cols-3 gap-3 text-sm">
+            <div>
+              <dt className="text-muted">Hours</dt>
+              <dd className="text-lg font-semibold">{econ.hours}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Collected</dt>
+              <dd className="text-lg font-semibold">{formatMoney(econ.collected, project.currency)}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Per hour</dt>
+              <dd className="text-lg font-semibold">{econ.effectiveRate == null ? "—" : formatMoney(econ.effectiveRate, project.currency)}</dd>
+            </div>
+          </dl>
+          <ActionForm action={logTimeAction.bind(null, project.id)} submitLabel="Log time" inline>
+            <Field label="Hours" htmlFor="time-hours">
+              <input id="time-hours" name="hours" type="number" step="0.25" min={0.25} max={24} required className={`${inputClass} sm:!w-24`} />
+            </Field>
+            <Field label="On what" htmlFor="time-note" optional>
+              <input id="time-note" name="note" className={`${inputClass} sm:!w-56`} />
+            </Field>
+          </ActionForm>
+          {econ.time.length > 0 && (
+            <ul className="mt-4 space-y-1 text-sm text-muted">
+              {econ.time.slice(0, 5).map((t) => (
+                <li key={t.id}>
+                  {Math.round(t.minutes / 6) / 10} h · {formatDate(t.workedOn)}
+                  {t.note && ` · ${t.note}`}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card>
+          <CardTitle>Invoices</CardTitle>
+          <InvoiceList rows={econ.invoices.map((invoice) => ({ invoice, orgName: "" }))} hideClient />
+        </Card>
+      </div>
     </div>
   );
 }

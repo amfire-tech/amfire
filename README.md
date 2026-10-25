@@ -12,6 +12,15 @@ The first milestone path works end to end:
 
 > Visitor → discovery → qualified lead → solution recommendation → human-reviewed proposal → project creation → client progress page
 
+On top of that path, HQ is a CRM run by an AI team (plan: `docs/crm-plan.md`):
+
+- **Today** (`/hq`): the Chief of Staff's daily brief and a decision inbox where every agent suggestion arrives with its draft written. Approve, edit or dismiss.
+- **AI team** (`/hq/agents`): Sales, Deal Desk, Delivery, Client Success, Finance and Growth each watch one area and post *signals* the others read, keep a *dossier* of facts per lead and client, and suggest *approvals*. Nothing reaches a client without an approval. They run every morning at 8:00 IST (`/api/cron/agents`) or on demand.
+- **Pipeline, Clients, Money, Growth, Ask HQ**: deal values and follow-ups, account health, invoices with GST, payments and monthly plans, lead sources and tracked post links (`/go/{slug}`), and plain-language questions over the records.
+- **Client Hub**: invoices with UPI/Razorpay payment, a project concierge that answers from the client's own records, change requests priced by a person, milestone ratings and weekly updates.
+
+`npm run seed:demo` fills the local database with demo clients, invoices and leads so every screen has something to show (local PGlite only).
+
 **Stack:** Next.js 16 · TypeScript · Tailwind CSS 4 · Drizzle ORM · PostgreSQL (Supabase) · Supabase Auth · Google Gemini · Vercel.
 
 ## Run locally
@@ -43,7 +52,7 @@ The "How it works" video (`public/media/client-journey.mp4`) is a demo reel draw
      `{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email`
      Links then land on a confirm page that needs a button press, so email scanners can't use up the sign-in.
    - **SMTP:** set up custom SMTP (Resend, Zoho Mail, Amazon SES…). Supabase's built-in sender is heavily rate-limited.
-4. **Vercel env vars.** Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `GEMINI_API_KEY`, `OWNER_EMAIL`, `NEXT_PUBLIC_CONTACT_EMAIL` and `NEXT_PUBLIC_SITE_URL`. All variables are documented in `.env.example`. Use **Node.js 22** (Project → Settings → General).
+4. **Vercel env vars.** Set `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `GEMINI_API_KEY`, `OWNER_EMAIL`, `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_SITE_URL` and `CRON_SECRET` (for the morning AI team run). For getting paid and the brief by email/WhatsApp, see the `PAYMENT_*`, `RAZORPAY_*`, `RESEND_*` and `WHATSAPP_*` variables. All variables are documented in `.env.example`. Use **Node.js 22** (Project → Settings → General).
 5. **Deploy.** `npm run vercel-build` applies migrations, then builds. Give *Preview* deployments their own Supabase database so previews never migrate production.
 
 Only people who already exist in the `users` table can sign in. That means the owner, staff you add, and clients created when you send a proposal. Roles and organisation access always come from the database, never from Supabase metadata.
@@ -79,6 +88,8 @@ drizzle/                   SQL migrations (0002 enables row-level security for S
 - **Supabase Data API is locked.** Row-level security is on for every table, with no policies. The public anon key can't read or write anything, and the app's server connection is unaffected.
 - **Agent runs are structured, validated, logged and recoverable.** A failed Gemini run is recorded and falls back to the rules engine.
 - **Rate limits** on discovery and sign-in are stored in Postgres, so they hold across serverless instances.
+- **Agents observe with rules and draft; people decide.** Gemini (optional, with a daily budget per agent) only rewrites drafts in the owner's voice and summarises the brief. Invoices are sent only by the owner; change requests are priced by a person.
+- **Money is computed from records.** A milestone gets a draft invoice when the client approves it; an invoice is paid when recorded payments cover it. Payments with a reference are recorded once, so a repeated Razorpay webhook does nothing.
 
 ## Before going live
 - Replace the **guideline prices** in `src/knowledge/pricing.ts` (INR) with your real rates. They also appear on the website.

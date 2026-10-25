@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
+import { askConcierge, createChangeRequest, decideChange, leaveFeedback, type ConciergeAnswer } from "@/server/hub";
 import { clientApproveMilestone, createSupportRequest } from "@/server/projects";
 import { clientDecideProposal } from "@/server/proposals";
 
@@ -41,6 +42,50 @@ export async function approveMilestoneAction(projectId: string, milestoneId: str
   }
   revalidatePath(`/hub/projects/${projectId}`);
   return { ok: "Approved." };
+}
+
+export type ConciergeState = { question?: string; answer?: ConciergeAnswer; error?: string } | undefined;
+
+export async function askConciergeAction(orgId: string, _prev: ConciergeState, formData: FormData): Promise<ConciergeState> {
+  const question = String(formData.get("question") ?? "");
+  try {
+    return { question, answer: await askConcierge(await getDb(), await getActor(), orgId, question) };
+  } catch (err) {
+    return { question, error: toActionError(err)?.error };
+  }
+}
+
+export async function changeRequestAction(projectId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await createChangeRequest(await getDb(), await getActor(), projectId, { description: String(formData.get("description") ?? "") });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hub/projects/${projectId}`);
+  return { ok: "Sent. We'll reply with a price and timeline." };
+}
+
+export async function decideChangeAction(projectId: string, changeId: string, accept: boolean): Promise<ActionState> {
+  try {
+    await decideChange(await getDb(), await getActor(), changeId, accept);
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hub/projects/${projectId}`);
+  return { ok: accept ? "Accepted — it's now a milestone in your project." : "Declined. Thanks for letting us know." };
+}
+
+export async function feedbackAction(projectId: string, milestoneId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  try {
+    await leaveFeedback(await getDb(), await getActor(), milestoneId, {
+      rating: String(formData.get("rating") ?? "") as never,
+      comment: String(formData.get("comment") ?? ""),
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hub/projects/${projectId}`);
+  return { ok: "Thank you for the feedback!" };
 }
 
 export async function supportRequestAction(

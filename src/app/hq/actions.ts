@@ -23,6 +23,23 @@ import {
   setTaskStatus,
   updateMilestone,
 } from "@/server/projects";
+import { assertStaff } from "@/server/access";
+import { runTeam } from "@/server/agents/team";
+import { approve, draftInvestorUpdate, reject, updateAgentSetting } from "@/server/brain";
+import { addFact, logInteraction, retireFact, setLeadOutcome, updateDeal } from "@/server/crm";
+import { estimateChange } from "@/server/hub";
+import { askHq, type AskAnswer } from "@/server/ask";
+import { createPost } from "@/server/growth";
+import {
+  createManualInvoice,
+  createSubscription,
+  draftDueRetainerInvoices,
+  logTime,
+  recordPayment,
+  sendInvoice,
+  setSubscriptionStatus,
+  voidInvoice,
+} from "@/server/money";
 import {
   approveAndSendProposal,
   createProposalDraft,
@@ -170,4 +187,175 @@ export async function resolveRequestAction(path: string, requestId: string) {
   const { db, actor } = await ctx();
   await resolveSupportRequest(db, actor, requestId);
   revalidatePath(path.startsWith("/hq") ? path : "/hq");
+}
+
+/** Runs a mutation, refreshes HQ, and turns domain errors into a message. */
+async function run(fn: (c: Awaited<ReturnType<typeof ctx>>) => Promise<unknown>, ok: string): Promise<ActionState> {
+  try {
+    await fn(await ctx());
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hq", "layout");
+  return { ok };
+}
+
+// --- Relationships -------------------------------------------------------------
+
+export async function logInteractionAction(target: { leadId?: string; orgId?: string }, _prev: ActionState, formData: FormData) {
+  const input = formText(formData, ["kind", "direction", "summary"]);
+  return run(
+    ({ db, actor }) => logInteraction(db, actor, target, { ...input, direction: input.direction || undefined } as Parameters<typeof logInteraction>[3]),
+    "Logged.",
+  );
+}
+
+export async function updateDealAction(leadId: string, _prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => updateDeal(db, actor, leadId, formText(formData, ["dealValue", "nextFollowUpAt"]) as never), "Saved.");
+}
+
+export async function markLostAction(leadId: string) {
+  return run(({ db, actor }) => setLeadOutcome(db, actor, leadId, "lost"), "Marked as lost.");
+}
+
+export async function addFactAction(subject: { type: "lead" | "organization"; id: string }, _prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => addFact(db, actor, subject, { fact: String(formData.get("fact") ?? "") }), "Added to the dossier.");
+}
+
+export async function retireFactAction(memoryId: string) {
+  const { db, actor } = await ctx();
+  await retireFact(db, actor, memoryId);
+  revalidatePath("/hq", "layout");
+}
+
+// --- Money ---------------------------------------------------------------------
+
+export async function createInvoiceAction(target: { orgId: string; projectId?: string; currency: string }, _prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) =>
+      createManualInvoice(db, actor, {
+        orgId: target.orgId,
+        projectId: target.projectId,
+        currency: target.currency as "INR" | "USD",
+        title: String(formData.get("title") ?? ""),
+        amount: String(formData.get("amount") ?? "") as never,
+      }),
+    "Draft invoice created.",
+  );
+}
+
+export async function sendInvoiceAction(invoiceId: string) {
+  return run(({ db, actor }) => sendInvoice(db, actor, invoiceId), "Sent. The client can see and pay it in their Hub.");
+}
+
+export async function voidInvoiceAction(invoiceId: string) {
+  return run(({ db, actor }) => voidInvoice(db, actor, invoiceId), "Invoice voided.");
+}
+
+export async function recordPaymentAction(invoiceId: string, _prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) => recordPayment(db, actor, invoiceId, formText(formData, ["amount", "method", "reference"]) as never),
+    "Payment recorded.",
+  );
+}
+
+export async function createSubscriptionAction(target: { orgId: string; projectId?: string }, _prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) =>
+      createSubscription(db, actor, {
+        ...target,
+        ...(formText(formData, ["title", "amount", "currency"]) as { title: string; amount: string; currency: "INR" | "USD" }),
+        startsAt: String(formData.get("startsAt") || "") || undefined,
+      }),
+    "Monthly plan added.",
+  );
+}
+
+export async function setSubscriptionStatusAction(subscriptionId: string, status: "active" | "paused" | "cancelled") {
+  return run(({ db, actor }) => setSubscriptionStatus(db, actor, subscriptionId, status), "Plan updated.");
+}
+
+export async function draftRetainerInvoicesAction(): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    assertStaff(actor);
+    const drafted = await draftDueRetainerInvoices(db);
+    revalidatePath("/hq", "layout");
+    return { ok: drafted.length ? `${drafted.length} plan invoice${drafted.length === 1 ? "" : "s"} drafted.` : "No plans are due." };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+// --- AI team and decision inbox -------------------------------------------------
+
+export async function runTeamAction(): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    assertStaff(actor);
+    const r = await runTeam(db, { triggeredBy: actor.userId });
+    revalidatePath("/hq", "layout");
+    return { ok: `Done: ${r.pending} decision${r.pending === 1 ? "" : "s"} waiting, ${r.signals} item${r.signals === 1 ? "" : "s"} flagged.` };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function approveAction(approvalId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const text = formData.get("text");
+    const result = await approve(db, actor, approvalId, typeof text === "string" ? text : undefined);
+    revalidatePath("/hq", "layout");
+    return { ok: result.note, link: result.link };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function rejectAction(approvalId: string) {
+  return run(({ db, actor }) => reject(db, actor, approvalId), "Dismissed.");
+}
+
+export async function updateAgentSettingAction(role: string, _prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) =>
+      updateAgentSetting(db, actor, role, { enabled: formData.get("enabled") === "on", dailyBudgetUsd: String(formData.get("budget") ?? "0") as never }),
+    "Saved.",
+  );
+}
+
+export async function draftInvestorUpdateAction(): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const row = await draftInvestorUpdate(db, actor);
+    revalidatePath("/hq", "layout");
+    return { ok: row ? "Drafted — it's in your decision inbox on Today." : "This month's update is already in your inbox." };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function estimateChangeAction(changeId: string, _prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => estimateChange(db, actor, changeId, formText(formData, ["amount", "weeks", "note"]) as never), "Estimate sent to the client.");
+}
+
+export type AskState = { question?: string; answer?: AskAnswer; error?: string } | undefined;
+
+export async function askHqAction(_prev: AskState, formData: FormData): Promise<AskState> {
+  const question = String(formData.get("question") ?? "");
+  const { db, actor } = await ctx();
+  try {
+    return { question, answer: await askHq(db, actor, question) };
+  } catch (err) {
+    return { question, error: toActionError(err)?.error };
+  }
+}
+
+export async function createPostAction(_prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => createPost(db, actor, formText(formData, ["title", "postUrl", "targetPath"]) as never), "Tracked link created.");
+}
+
+export async function logTimeAction(projectId: string, _prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => logTime(db, actor, projectId, formText(formData, ["hours", "note"]) as never), "Time logged.");
 }

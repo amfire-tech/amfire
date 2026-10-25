@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ScorePill, SourceChip } from "@/components/hq";
+import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/forms";
 import {
   BulletList,
   Card,
   CardTitle,
   DescriptionList,
+  Field,
   Notice,
   PageHeader,
   PathBadge,
@@ -22,18 +24,33 @@ import { sourceLabel } from "@/lib/attribution";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { aiConfigured } from "@/server/agents/solution-architect";
+import { dealValueOf, getLeadCrm } from "@/server/crm";
 import { getLeadDetail } from "@/server/leads";
 import { proposalTotal } from "@/server/proposals";
-import { createDraftAction, qualifyLeadAction, rejectRecommendationAction, rerunRecommendationAction } from "../../actions";
+import {
+  createDraftAction,
+  markLostAction,
+  qualifyLeadAction,
+  rejectRecommendationAction,
+  rerunRecommendationAction,
+  updateDealAction,
+} from "../../actions";
+import { ConversationsCard, DossierCard } from "../../crm-panels";
 import { ContactForm } from "./contact-form";
+
+export const metadata = { title: "Lead" };
 
 export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) {
   const { id } = await params;
   const actor = await requireStaffActor();
   if (!isUuid(id)) notFound();
-  const detail = await getLeadDetail(await getDb(), actor, id);
+  const db = await getDb();
+  const detail = await getLeadDetail(db, actor, id);
   if (!detail) notFound();
   const { lead, recommendations, runs, proposals } = detail;
+  const crm = await getLeadCrm(db, actor, lead);
+  const value = dealValueOf(lead, proposals[0]);
+  const open = ["new", "qualified", "proposal_sent"].includes(lead.status);
   const latest = recommendations[0];
   const latestRun = latest ? runs.find((r) => r.id === latest.agentRunId) : null;
   const canDraft = lead.status === "qualified" && latest && latest.status !== "rejected";
@@ -85,6 +102,52 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
       />
 
       {lead.nextAction && <Notice title="Next action">{lead.nextAction}</Notice>}
+
+      <Card>
+        <CardTitle
+          aside={
+            lead.clientOrgId && (
+              <Link href={`/hq/clients/${lead.clientOrgId}`} className="text-sm font-medium underline underline-offset-4">
+                Client account →
+              </Link>
+            )
+          }
+        >
+          Deal
+        </CardTitle>
+        <div className="grid gap-5 lg:grid-cols-[1fr_auto]">
+          <ActionForm action={updateDealAction.bind(null, lead.id)} submitLabel="Save" inline>
+            <Field label={`Deal value (${currency})`} htmlFor="dealValue" hint={lead.dealValue == null && value ? "From the latest proposal" : undefined}>
+              <input
+                id="dealValue"
+                name="dealValue"
+                type="number"
+                min={0}
+                step="any"
+                defaultValue={value ? value / 100 : ""}
+                className={`${inputClass} sm:!w-44`}
+              />
+            </Field>
+            <Field label="Next follow-up" htmlFor="nextFollowUpAt" hint="The Sales agent drafts the message on this day.">
+              <input
+                id="nextFollowUpAt"
+                name="nextFollowUpAt"
+                type="date"
+                defaultValue={lead.nextFollowUpAt ? lead.nextFollowUpAt.toISOString().slice(0, 10) : ""}
+                className={`${inputClass} sm:!w-48`}
+              />
+            </Field>
+          </ActionForm>
+          {open && (
+            <ActionForm action={markLostAction.bind(null, lead.id)} submitLabel="Mark as lost" variant="ghost" size="sm" />
+          )}
+        </div>
+      </Card>
+
+      <div className="grid items-start gap-6 lg:grid-cols-2">
+        <ConversationsCard target={{ leadId: lead.id }} items={crm.interactions} />
+        <DossierCard subject={{ type: "lead", id: lead.id }} facts={crm.facts} />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <Card>

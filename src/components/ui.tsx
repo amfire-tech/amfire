@@ -230,7 +230,30 @@ const STATUS: Record<string, { label: string; tone: "neutral" | "info" | "warn" 
   failed: { label: "Failed", tone: "bad" },
   open: { label: "Open", tone: "warn" },
   resolved: { label: "Resolved", tone: "good" },
+  // change requests
+  submitted: { label: "Needs an estimate", tone: "warn" },
+  estimated: { label: "Estimate sent", tone: "info" },
+  // monthly plans
+  paused: { label: "Paused", tone: "warn" },
+  cancelled: { label: "Cancelled", tone: "neutral" },
+  // approvals
+  pending: { label: "Waiting for you", tone: "warn" },
+  approved: { label: "Approved", tone: "good" },
+  merged: { label: "Merged", tone: "neutral" },
 };
+
+const INVOICE_STATUS: Record<string, { label: string; tone: keyof typeof TONES }> = {
+  draft: { label: "Draft", tone: "neutral" },
+  sent: { label: "Unpaid", tone: "warn" },
+  overdue: { label: "Overdue", tone: "bad" },
+  paid: { label: "Paid", tone: "good" },
+  void: { label: "Void", tone: "neutral" },
+};
+
+export function InvoiceBadge({ status, overdue }: { status: string; overdue?: boolean }) {
+  const s = INVOICE_STATUS[overdue ? "overdue" : status] ?? { label: status, tone: "neutral" as const };
+  return <span className={cx("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap", TONES[s.tone])}>{s.label}</span>;
+}
 
 const TONES = {
   neutral: "bg-subtle text-muted",

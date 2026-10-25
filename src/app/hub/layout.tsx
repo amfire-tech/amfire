@@ -38,6 +38,9 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
             >
               <WhatsAppIcon className="size-5" />
             </a>
+            <Link href="/account" className="hidden text-muted hover:text-fg sm:inline">
+              Password
+            </Link>
             <form action={signOut}>
               <button className="px-1 py-2 text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
             </form>

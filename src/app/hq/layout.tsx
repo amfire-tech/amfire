@@ -28,6 +28,9 @@ export default async function HqLayout({ children }: LayoutProps<"/hq">) {
             <p className="truncate font-medium">{actor.name}</p>
             <p className="truncate text-muted">{actor.internalRole === "owner" ? "Owner" : "Staff"}</p>
             <div className="mt-3 flex items-center justify-between">
+              <Link href="/account" className="text-muted underline-offset-4 hover:text-fg hover:underline">
+                Password
+              </Link>
               <form action={signOut}>
                 <button className="text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
               </form>

@@ -1,14 +1,26 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { site } from "@/config/site";
 import { CURRENCY_COOKIE } from "@/knowledge/pricing";
 import { ATTRIBUTION_COOKIE, ATTRIBUTION_MAX_AGE, readTouch, shouldReplaceTouch, touchFromVisit } from "@/lib/attribution";
 import { supabaseConfig } from "@/lib/supabase/config";
 
-const AUTH_PATHS = ["/hq", "/hub", "/auth", "/login"];
+const AUTH_PATHS = ["/hq", "/hub", "/auth", "/login", "/account"];
 
 export async function proxy(request: NextRequest) {
+  const { pathname, hostname, search } = request.nextUrl;
+
+  // The live site has one address: the production *.vercel.app domains forward to it.
+  // (Previews keep their own addresses; /api is never matched, so Vercel Cron is unaffected.)
+  if (process.env.VERCEL_ENV === "production" && hostname.endsWith(".vercel.app") && !new URL(site.url).hostname.endsWith(".vercel.app")) {
+    return NextResponse.redirect(new URL(`${pathname}${search}`, site.url), 308);
+  }
+  // A sign-in link that fell back to Supabase's Site URL arrives at the home page with a code.
+  if (pathname === "/" && request.nextUrl.searchParams.has("code")) {
+    return NextResponse.redirect(new URL(`/auth/verify${search}`, request.nextUrl.origin));
+  }
+
   let response = NextResponse.next({ request });
-  const { pathname } = request.nextUrl;
   const config = supabaseConfig();
 
   // Keeps the Supabase session cookie fresh. Authorisation is NOT decided here —
@@ -64,6 +76,11 @@ export const config = {
     "/hub/:path*",
     "/auth/:path*",
     "/login",
+    "/account",
+    // Any page on a *.vercel.app address (forwarded to the live domain in production)…
+    { source: "/((?!api|_next/static|_next/image|.*\\..*).*)", has: [{ type: "host", value: ".*\\.vercel\\.app" }] },
+    // …a sign-in code that landed on the home page…
+    { source: "/", has: [{ type: "query", key: "code" }] },
     // Pages (not assets or files) for visitors who have no currency yet…
     { source: "/((?!api|_next/static|_next/image|.*\\..*).*)", missing: [{ type: "cookie", key: "currency" }] },
     // …no attribution cookie yet (ATTRIBUTION_COOKIE), or who arrive from a tagged link.

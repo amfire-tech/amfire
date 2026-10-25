@@ -5,14 +5,17 @@ import { WhatsAppIcon } from "@/components/contact";
 import { Logo } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { getDb } from "@/db";
-import { requireActor } from "@/lib/session";
+import { getActor } from "@/lib/session";
 import { getClientTodo } from "@/server/portal";
 import { HubNav } from "./nav";
 
 export const metadata: Metadata = { title: { default: "Client Hub", template: "%s · AMFIRE Client Hub" }, robots: { index: false } };
 
 export default async function HubLayout({ children }: LayoutProps<"/hub">) {
-  const actor = await requireActor("/hub");
+  // Signed out: each page sends the visitor to sign in and back to that exact page
+  // (an email's "Review it here" link must land on the milestone, not the Hub home).
+  const actor = await getActor();
+  if (!actor) return <>{children}</>;
   const todo = actor.clientOrgIds.length ? (await getClientTodo(await getDb(), actor)).count : 0;
   return (
     <div className="flex min-h-full flex-1 flex-col bg-subtle lg:flex-row">

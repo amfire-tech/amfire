@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Card, EmptyState, PageHeader, StatusBadge, formatDate, timeAgo } from "@/components/ui";
 import { getDb } from "@/db";
 import { GOALS, URGENCY, labelFor } from "@/knowledge/catalog";
+import { sourceLabel } from "@/lib/attribution";
 import { requireStaffActor } from "@/lib/session";
 import { ScorePill } from "@/components/hq";
 import { getOverview } from "@/server/hq";
@@ -21,7 +22,7 @@ export default async function OverviewPage() {
         key: l.id,
         href: `/hq/leads/${l.id}`,
         primary: `${l.name} · ${l.company}`,
-        secondary: `${labelFor(GOALS, l.goal)} · ${labelFor(URGENCY, l.urgency)} · ${timeAgo(l.createdAt)}`,
+        secondary: `${sourceLabel(l.source)} · ${labelFor(GOALS, l.goal)} · ${labelFor(URGENCY, l.urgency)} · ${timeAgo(l.createdAt)}`,
         aside: <ScorePill score={l.qualificationScore} />,
       })),
     },

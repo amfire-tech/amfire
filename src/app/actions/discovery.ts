@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import * as z from "zod";
 import { getDb } from "@/db";
 import { CURRENCY_COOKIE, isCurrency } from "@/knowledge/pricing";
+import { ATTRIBUTION_COOKIE, readTouch } from "@/lib/attribution";
 import { rateLimit } from "@/lib/rate-limit";
 import { DiscoverySchema, submitDiscovery } from "@/server/leads";
 
@@ -25,7 +26,8 @@ export async function submitDiscoveryAction(_prev: DiscoveryState, formData: For
     }),
   );
   // Prices were shown in the currency picked with the site's currency switch.
-  const currency = (await cookies()).get(CURRENCY_COOKIE)?.value;
+  const jar = await cookies();
+  const currency = jar.get(CURRENCY_COOKIE)?.value;
   const parsed = DiscoverySchema.safeParse({
     ...raw,
     consent: formData.get("consent") === "on",
@@ -42,7 +44,9 @@ export async function submitDiscoveryAction(_prev: DiscoveryState, formData: For
 
   let ref: string;
   try {
-    const { lead } = await submitDiscovery(await getDb(), parsed.data);
+    const { lead } = await submitDiscovery(await getDb(), parsed.data, {
+      attribution: readTouch(jar.get(ATTRIBUTION_COOKIE)?.value),
+    });
     ref = lead.publicRef;
   } catch (err) {
     console.error("discovery submit failed", err instanceof z.ZodError ? err.issues : err);

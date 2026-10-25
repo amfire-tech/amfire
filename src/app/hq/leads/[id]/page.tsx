@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ScorePill } from "@/components/hq";
+import { ScorePill, SourceChip } from "@/components/hq";
 import { SubmitButton } from "@/components/forms";
 import {
   BulletList,
@@ -18,12 +18,14 @@ import {
 import { getDb } from "@/db";
 import { CALL_TIMES, GOALS, TEAM_SIZES, URGENCY, labelFor } from "@/knowledge/catalog";
 import { CURRENCIES, formatMoney, isCurrency, PRICING_CURRENCY, priceBand, type ProjectSize } from "@/knowledge/pricing";
+import { sourceLabel } from "@/lib/attribution";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { aiConfigured } from "@/server/agents/solution-architect";
 import { getLeadDetail } from "@/server/leads";
 import { proposalTotal } from "@/server/proposals";
 import { createDraftAction, qualifyLeadAction, rejectRecommendationAction, rerunRecommendationAction } from "../../actions";
+import { ContactForm } from "./contact-form";
 
 export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) {
   const { id } = await params;
@@ -37,6 +39,23 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
   const canDraft = lead.status === "qualified" && latest && latest.status !== "rejected";
   const usesAi = aiConfigured();
   const currency = isCurrency(lead.currency) ? lead.currency : PRICING_CURRENCY;
+  // Discovery-form leads always carry consent; leads added in HQ don't.
+  const addedByHand = !lead.consentAt;
+  const tracking = [
+    lead.utmMedium && `medium: ${lead.utmMedium}`,
+    lead.utmCampaign && `campaign: ${lead.utmCampaign}`,
+    lead.utmContent && `content: ${lead.utmContent}`,
+    lead.utmTerm && `term: ${lead.utmTerm}`,
+    lead.referrer && `from ${lead.referrer}`,
+    lead.landingPath && `landed on ${lead.landingPath}`,
+  ].filter(Boolean);
+  const sourceDetail = (
+    <>
+      {sourceLabel(lead.source)}
+      {lead.sourceNote && <span className="block text-sm text-muted">{lead.sourceNote}</span>}
+      {tracking.length > 0 && <span className="block text-sm text-muted">{tracking.join(" · ")}</span>}
+    </>
+  );
 
   return (
     <div className="space-y-6">
@@ -50,11 +69,16 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
         description={
           <span className="flex flex-wrap items-center gap-2">
             <StatusBadge status={lead.status} />
+            <SourceChip source={lead.source} />
             <span>
               {lead.name} ·{" "}
-              <a href={`mailto:${lead.email}`} className="underline underline-offset-4">
-                {lead.email}
-              </a>
+              {lead.email ? (
+                <a href={`mailto:${lead.email}`} className="underline underline-offset-4">
+                  {lead.email}
+                </a>
+              ) : (
+                "no email yet"
+              )}
             </span>
           </span>
         }
@@ -64,9 +88,10 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
         <Card>
-          <CardTitle aside={<ScorePill score={lead.qualificationScore} />}>Discovery answers</CardTitle>
+          <CardTitle aside={<ScorePill score={lead.qualificationScore} />}>{addedByHand ? "Lead details" : "Discovery answers"}</CardTitle>
           <DescriptionList
             items={[
+              { term: "Source", value: sourceDetail },
               { term: "Goal", value: labelFor(GOALS, lead.goal) },
               { term: "Timing", value: labelFor(URGENCY, lead.urgency) },
               { term: "Organisation type", value: lead.businessType },
@@ -82,10 +107,17 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
                 ) : null,
               },
               { term: "Best time to call", value: lead.callTime ? labelFor(CALL_TIMES, lead.callTime) : null },
-              { term: "Received", value: formatDateTime(lead.createdAt) },
+              { term: addedByHand ? "Added" : "Received", value: formatDateTime(lead.createdAt) },
             ]}
           />
-          <h3 className="mt-6 text-xs font-medium tracking-wide text-muted uppercase">In their words</h3>
+          {addedByHand && (!lead.email || !lead.phone) && (
+            <div className="mt-5 border-t border-line pt-5">
+              <ContactForm leadId={lead.id} needsEmail={!lead.email} needsPhone={!lead.phone} />
+            </div>
+          )}
+          <h3 className="mt-6 text-xs font-medium tracking-wide text-muted uppercase">
+            {addedByHand ? "What they need" : "In their words"}
+          </h3>
           <blockquote className="mt-1.5 rounded-xl bg-subtle p-4 whitespace-pre-wrap">{lead.problem}</blockquote>
           <details className="mt-4 text-sm">
             <summary className="cursor-pointer text-muted">How the score was calculated</summary>

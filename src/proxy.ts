@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { CURRENCY_COOKIE } from "@/knowledge/pricing";
+import { ATTRIBUTION_COOKIE, ATTRIBUTION_MAX_AGE, readTouch, shouldReplaceTouch, touchFromVisit } from "@/lib/attribution";
 import { supabaseConfig } from "@/lib/supabase/config";
 
 const AUTH_PATHS = ["/hq", "/hub", "/auth", "/login"];
@@ -38,6 +39,22 @@ export async function proxy(request: NextRequest) {
       sameSite: "lax",
     });
   }
+
+  // Lead attribution: remember where a visitor first came from (LinkedIn,
+  // Google…) so a later booking is saved with its source. Website pages only.
+  if (!AUTH_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
+    const existing = readTouch(request.cookies.get(ATTRIBUTION_COOKIE)?.value);
+    const touch = touchFromVisit(request.nextUrl, request.headers.get("referer"), request.nextUrl.hostname);
+    if (shouldReplaceTouch(existing, touch)) {
+      response.cookies.set(ATTRIBUTION_COOKIE, JSON.stringify(touch), {
+        path: "/",
+        maxAge: ATTRIBUTION_MAX_AGE,
+        sameSite: "lax",
+        httpOnly: true,
+        secure: request.nextUrl.protocol === "https:",
+      });
+    }
+  }
   return response;
 }
 
@@ -47,7 +64,10 @@ export const config = {
     "/hub/:path*",
     "/auth/:path*",
     "/login",
-    // Pages (not assets or files) for visitors who have no currency yet.
+    // Pages (not assets or files) for visitors who have no currency yet…
     { source: "/((?!api|_next/static|_next/image|.*\\..*).*)", missing: [{ type: "cookie", key: "currency" }] },
+    // …no attribution cookie yet (ATTRIBUTION_COOKIE), or who arrive from a tagged link.
+    { source: "/((?!api|_next/static|_next/image|.*\\..*).*)", missing: [{ type: "cookie", key: "first_touch" }] },
+    { source: "/((?!api|_next/static|_next/image|.*\\..*).*)", has: [{ type: "query", key: "utm_source" }] },
   ],
 };

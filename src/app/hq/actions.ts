@@ -9,7 +9,13 @@ import { getDb } from "@/db";
 import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
 import { isCurrency } from "@/knowledge/pricing";
-import { decideQualification, rerunRecommendation, setRecommendationStatus } from "@/server/leads";
+import {
+  addManualLead,
+  decideQualification,
+  rerunRecommendation,
+  setRecommendationStatus,
+  updateLeadContact,
+} from "@/server/leads";
 import {
   addTask,
   postProjectUpdate,
@@ -47,6 +53,34 @@ export async function rejectRecommendationAction(leadId: string, recommendationI
   const { db, actor } = await ctx();
   await setRecommendationStatus(db, actor, recommendationId, "rejected");
   revalidatePath(`/hq/leads/${leadId}`);
+}
+
+const formText = (formData: FormData, keys: string[]) =>
+  Object.fromEntries(keys.map((k) => [k, typeof formData.get(k) === "string" ? String(formData.get(k)) : undefined]));
+
+export async function addLeadAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  let leadId: string;
+  try {
+    const input = formText(formData, ["source", "sourceNote", "name", "company", "email", "phone", "problem", "goal", "businessType", "urgency"]);
+    const { lead } = await addManualLead(db, actor, input as Parameters<typeof addManualLead>[2]);
+    leadId = lead.id;
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hq", "layout");
+  redirect(`/hq/leads/${leadId}`);
+}
+
+export async function updateLeadContactAction(leadId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    await updateLeadContact(db, actor, leadId, formText(formData, ["email", "phone"]));
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hq/leads/${leadId}`);
+  return { ok: "Saved." };
 }
 
 export async function createDraftAction(recommendationId: string, formData: FormData) {

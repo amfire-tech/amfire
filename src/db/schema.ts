@@ -90,7 +90,8 @@ export const leads = appSchema.table(
     publicRef: text("public_ref").notNull().unique(),
     status: leadStatus("status").notNull().default("new"),
     name: text("name").notNull(),
-    email: text("email").notNull(),
+    /** Null only for leads added in HQ from a conversation, until someone asks for it. */
+    email: text("email"),
     /** WhatsApp / phone for the free demo call. */
     phone: text("phone"),
     callTime: text("call_time"),
@@ -103,7 +104,25 @@ export const leads = appSchema.table(
     currentTools: text("current_tools"),
     /** Currency the visitor was viewing prices in when they booked: "INR" or "USD". */
     currency: text("currency").notNull().default("INR"),
-    consentAt: timestamp("consent_at", { withTimezone: true }).notNull(),
+    /** When the visitor consented on the discovery form. Null for leads added in HQ. */
+    consentAt: timestamp("consent_at", { withTimezone: true }),
+    /**
+     * Where the lead came from (LEAD_SOURCES in lib/attribution.ts): the
+     * visitor's first meaningful visit for form leads, or what staff chose when
+     * adding one by hand. "unknown" for leads from before this was recorded.
+     */
+    source: text("source").notNull().default("unknown"),
+    /** Staff note on the source, e.g. "DM after the Oct 21 post" or "referred by Rahul". */
+    sourceNote: text("source_note"),
+    utmSource: text("utm_source"),
+    utmMedium: text("utm_medium"),
+    utmCampaign: text("utm_campaign"),
+    utmContent: text("utm_content"),
+    utmTerm: text("utm_term"),
+    /** Host of the referring site only, never the full URL. */
+    referrer: text("referrer"),
+    /** First page the visitor landed on, without its query string. */
+    landingPath: text("landing_path"),
     qualificationScore: integer("qualification_score").notNull().default(0),
     qualificationNotes: text("qualification_notes"),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
@@ -112,7 +131,7 @@ export const leads = appSchema.table(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [index("leads_status_idx").on(t.status)],
+  (t) => [index("leads_status_idx").on(t.status), index("leads_source_idx").on(t.source)],
 );
 
 // --- Agent work ------------------------------------------------------------

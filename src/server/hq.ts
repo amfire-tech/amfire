@@ -1,7 +1,7 @@
 // Read models for AMFIRE HQ. The overview surfaces exceptions and decisions,
 // not routine activity.
 
-import { and, asc, desc, eq, inArray, isNull, lt, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNull, lt, ne, sql } from "drizzle-orm";
 import type { DB } from "@/db";
 import {
   agentRuns,
@@ -59,9 +59,22 @@ export async function getOverview(db: DB, actor: Actor | null) {
   return { newLeads, recsToReview, drafts, awaitingClient, changesRequested, blocked, overdue, openRequests, failedRuns };
 }
 
-export async function listLeads(db: DB, actor: Actor | null) {
+export async function listLeads(db: DB, actor: Actor | null, filter: { source?: string } = {}) {
   assertStaff(actor);
-  return db.select().from(leads).orderBy(desc(leads.createdAt));
+  const [rows, bySource] = await Promise.all([
+    db
+      .select()
+      .from(leads)
+      .where(filter.source ? eq(leads.source, filter.source) : undefined)
+      .orderBy(desc(leads.createdAt)),
+    // Every lead, counted by source, for the source filter.
+    db
+      .select({ source: leads.source, total: count(), won: sql<number>`count(*) filter (where ${leads.status} = 'won')`.mapWith(Number) })
+      .from(leads)
+      .groupBy(leads.source)
+      .orderBy(desc(count())),
+  ]);
+  return { leads: rows, bySource };
 }
 
 export async function getProposalForStaff(db: DB, actor: Actor | null, proposalId: string) {

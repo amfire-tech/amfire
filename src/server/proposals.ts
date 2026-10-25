@@ -22,7 +22,7 @@ import { demoOfferCode } from "./leads";
 export class ProposalError extends Error {
   constructor(
     message: string,
-    readonly code: "NOT_FOUND" | "NOT_EDITABLE" | "PRICING_BELOW_GUIDELINE" | "INVALID",
+    readonly code: "NOT_FOUND" | "NOT_EDITABLE" | "PRICING_BELOW_GUIDELINE" | "NO_CLIENT_EMAIL" | "INVALID",
   ) {
     super(message);
     this.name = "ProposalError";
@@ -175,6 +175,9 @@ export async function approveAndSendProposal(
 
   return db.transaction(async (tx) => {
     const [lead] = await tx.select().from(leads).where(eq(leads.id, proposal.leadId));
+    // Leads added by hand from a conversation may not have an email yet.
+    const email = lead.email;
+    if (!email) throw new ProposalError("Add the client's email on the lead page before sending.", "NO_CLIENT_EMAIL");
 
     let orgId = lead.clientOrgId;
     if (!orgId) {
@@ -183,8 +186,8 @@ export async function approveAndSendProposal(
       await audit(tx, { actorId: actor.userId, orgId, action: "org.created", subjectType: "organization", subjectId: orgId });
     }
 
-    const [existingUser] = await tx.select().from(users).where(eq(users.email, lead.email));
-    const contact = existingUser ?? (await tx.insert(users).values({ email: lead.email, name: lead.name }).returning())[0];
+    const [existingUser] = await tx.select().from(users).where(eq(users.email, email));
+    const contact = existingUser ?? (await tx.insert(users).values({ email, name: lead.name }).returning())[0];
     await tx
       .insert(memberships)
       .values({ userId: contact.id, orgId, role: "client_admin" })

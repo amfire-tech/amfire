@@ -9,7 +9,9 @@ import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { rateLimit } from "@/lib/rate-limit";
 import { endSession, setDevSessionCookie } from "@/lib/session";
+import { createSignInToken, supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { emailConfigured, sendEmail } from "@/server/notify";
 import { loadActor } from "@/server/access";
 import { audit } from "@/server/audit";
 import { consumeLoginToken, createLoginToken, normalizeEmail } from "@/server/auth";
@@ -65,10 +67,30 @@ export async function requestLoginLink(_prev: LoginState, formData: FormData): P
   // Same response whether or not the account exists.
   if (!user) return { sent: true };
 
+  // Preferred: we create the link with the Supabase admin API and send it through
+  // Resend (hello@amfire.in), so Supabase's few-emails-an-hour limit never applies.
+  // Links land on our confirm page, which needs a button press — email scanners
+  // that pre-open links cannot use up the sign-in.
+  if (emailConfigured() && supabaseAdmin()) {
+    try {
+      const tokenHash = await createSignInToken(email);
+      if (tokenHash) {
+        const link = `${await origin()}/auth/verify?token_hash=${encodeURIComponent(tokenHash)}&type=magiclink${next ? `&next=${encodeURIComponent(next)}` : ""}`;
+        await sendEmail({
+          to: email,
+          subject: "Your AMFIRE sign-in link",
+          text: `Hi,\n\nUse this link to sign in to AMFIRE:\n${link}\n\nIt works once and expires in an hour. If you didn't ask for it, you can ignore this email.\n\n— AMFIRE`,
+        });
+        return { sent: true };
+      }
+    } catch (err) {
+      // Fall through to Supabase's own email below.
+      console.error("[auth] sending the sign-in link through Resend failed", err instanceof Error ? err.message : err);
+    }
+  }
+
   const supabase = await createSupabaseServer();
   if (supabase) {
-    // Links land on our confirm page, which needs a button press — email
-    // scanners that pre-open links cannot use up the sign-in.
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { shouldCreateUser: true, emailRedirectTo: `${await origin()}/auth/verify${next ? `?next=${encodeURIComponent(next)}` : ""}` },
@@ -77,7 +99,7 @@ export async function requestLoginLink(_prev: LoginState, formData: FormData): P
       console.error("[auth] Supabase signInWithOtp failed", error.message);
       // Supabase's built-in email sender allows only a few emails an hour.
       if (error.status === 429 || /rate limit/i.test(error.message)) {
-        return { error: "Too many sign-in emails for now. Sign in with your password or Google instead, or try again in an hour." };
+        return { error: "Too many sign-in emails for now. Sign in with your password instead, or try again in an hour." };
       }
       return { error: "We couldn't send the email just now. Please try again in a minute." };
     }

@@ -1,20 +1,22 @@
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { Money, StatTile } from "@/components/hq";
-import { Card, CardTitle, EmptyState, PageHeader, StatusBadge, formatDate } from "@/components/ui";
+import { Card, CardTitle, EmptyState, Field, PageHeader, StatusBadge, formatDate, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { requireStaffActor } from "@/lib/session";
-import { getMoneyOverview } from "@/server/money";
+import { listClientOrgs } from "@/server/crm";
+import { getMoneyOverview, gstRegistered } from "@/server/money";
 import { razorpayConfigured } from "@/server/payments-provider";
-import { draftRetainerInvoicesAction } from "../actions";
+import { draftRetainerInvoicesAction, newInvoiceAction } from "../actions";
 import { InvoiceList } from "./invoice-list";
 
 export const metadata = { title: "Money" };
 
 export default async function MoneyPage() {
   const actor = await requireStaffActor();
-  const m = await getMoneyOverview(await getDb(), actor);
+  const db = await getDb();
+  const [m, clients] = await Promise.all([getMoneyOverview(db, actor), listClientOrgs(db, actor)]);
   // The bars compare months in the main currency only.
   const main = Object.keys(m.mrr)[0] ?? "INR";
   const peak = Math.max(1, ...m.months.map((x) => x.collected[main] ?? 0));
@@ -89,6 +91,41 @@ export default async function MoneyPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Invoices</h2>
+        <p className="text-sm text-muted">
+          Finance creates invoices by itself when a client approves a milestone and every month for monthly plans, then asks you to send each one. For anything
+          else, create one here.{" "}
+          {gstRegistered() ? "GST is added to rupee invoices." : "No GST is added: set AMFIRE_GSTIN once AMFIRE is GST-registered."}
+        </p>
+        {clients.length > 0 && (
+          <Card>
+            <ActionForm action={newInvoiceAction} submitLabel="Create draft invoice" inline>
+              <Field label="Client" htmlFor="new-inv-org">
+                <select id="new-inv-org" name="orgId" required defaultValue="" className={`${inputClass} sm:!w-56`}>
+                  <option value="" disabled>
+                    Choose a client
+                  </option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="For" htmlFor="new-inv-title">
+                <input id="new-inv-title" name="title" required className={`${inputClass} sm:!w-64`} placeholder="Extra report design" />
+              </Field>
+              <Field label="Amount (before GST)" htmlFor="new-inv-amount">
+                <input id="new-inv-amount" name="amount" type="number" min={1} required className={`${inputClass} sm:!w-36`} />
+              </Field>
+              <Field label="Currency" htmlFor="new-inv-currency">
+                <select id="new-inv-currency" name="currency" defaultValue="INR" className={`${inputClass} sm:!w-28`}>
+                  <option value="INR">₹ INR</option>
+                  <option value="USD">$ USD</option>
+                </select>
+              </Field>
+            </ActionForm>
+          </Card>
+        )}
         <InvoiceList rows={m.invoices} />
       </section>
     </div>

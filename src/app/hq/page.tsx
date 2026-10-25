@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { GOALS, URGENCY, labelFor } from "@/knowledge/catalog";
 import { sourceLabel } from "@/lib/attribution";
 import { requireStaffActor } from "@/lib/session";
-import { AgentTag, ScorePill } from "@/components/hq";
+import { AgentTag, ScorePill, cleanAiText, engineLabel } from "@/components/hq";
 import { latestBrief } from "@/server/agents/team";
 import { listInbox, readyToSend } from "@/server/brain";
 import { getOverview } from "@/server/hq";
@@ -105,8 +105,8 @@ export default async function TodayPage() {
       items: o.failedRuns.map((r) => ({
         key: r.id,
         href: r.subjectType === "lead" ? `/hq/leads/${r.subjectId}` : "/hq/agents",
-        primary: `${r.role} (${r.engine})`,
-        secondary: r.error ?? "",
+        primary: `${r.role.replace(/_/g, " ")} (${engineLabel(r.engine)})`,
+        secondary: cleanAiText(r.error) ?? "",
       })),
     },
   ];

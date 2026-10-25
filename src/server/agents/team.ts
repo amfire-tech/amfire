@@ -46,7 +46,8 @@ import { site } from "@/config/site";
 import { formatMoney, STARTING_PRICE, isCurrency, PRICING_CURRENCY } from "@/knowledge/pricing";
 import { sourceLabel } from "@/lib/attribution";
 import { healthScore } from "../crm";
-import { draftDueRetainerInvoices, isOverdue, mrr } from "../money";
+import { invoiceMessage } from "../brain";
+import { draftDueRetainerInvoices, isOverdue, mrr, PAYMENT_TERMS_DAYS } from "../money";
 import { projectProgress } from "../projects";
 import { canUseAi, DATA_RULE, generateJson, type LlmUsage } from "./llm";
 
@@ -60,7 +61,11 @@ export const TEAM = [
   { role: "deal_desk", name: "Deal Desk", job: "Spots qualified leads without a proposal, stale drafts and change requests that need a price." },
   { role: "delivery", name: "Delivery", job: "Watches milestones: overdue, blocked or waiting on the client. Drafts nudges and the weekly client update." },
   { role: "client_success", name: "Client Success", job: "Scores each client's health, notices quiet clients and suggests the monthly plan after a project ends." },
-  { role: "finance", name: "Finance", job: "Drafts invoices for monthly plans, asks you to send drafts, and drafts reminders for overdue payments." },
+  {
+    role: "finance",
+    name: "Finance",
+    job: "Creates invoices (when a client approves a milestone, and every month for monthly plans), writes the message to send each one, and chases late payments.",
+  },
   { role: "growth", name: "Growth", job: "Reports which channels bring leads and drafts LinkedIn posts from finished work." },
 ] as const;
 
@@ -536,16 +541,22 @@ export function finance(w: World): AgentOutput {
   const sign = signatureFor(w.ownerFirstName);
   const orgName = (id: string) => w.orgs.find((o) => o.id === id)?.name ?? "a client";
   for (const inv of w.invoices) {
-    if (inv.status === "draft") {
+    if (inv.status === "draft" && !inv.isRecord) {
+      // The draft is the message to the client; approving issues the invoice and sends it.
+      const contact = contactFor(w, inv.orgId);
+      const to = channelFor(contact);
       out.approvals.push({
         kind: "send_invoice",
         subjectType: "invoice",
         subjectId: inv.id,
         orgId: inv.orgId,
+        leadId: contact?.id ?? null,
         title: `Send invoice ${inv.number} to ${orgName(inv.orgId)}`,
-        reason: `${inv.title}: ${formatMoney(inv.total, inv.currency)} including GST. Approving sends it to their Client Hub, due in 7 days.`,
-        channel: "internal",
-        draft: `${inv.number} · ${inv.title} · ${formatMoney(inv.total, inv.currency)}`,
+        reason: `${inv.title}: ${formatMoney(inv.total, inv.currency)}${inv.tax ? " including GST" : ""}. Approving issues it to their Client Hub (due in ${PAYMENT_TERMS_DAYS} days)${to ? ` and ${to.channel === "whatsapp" ? "opens WhatsApp" : "emails it"} with this message` : ""}.`,
+        channel: to?.channel ?? "internal",
+        recipientName: contact?.name ?? null,
+        recipient: to?.recipient ?? null,
+        draft: contact && to ? invoiceMessage(inv, contact.name, w.ownerFirstName) : `${inv.number} · ${inv.title} · ${formatMoney(inv.total, inv.currency)}`,
         fingerprint: `send_invoice:${inv.id}`,
         data: { invoiceId: inv.id, href: `/hq/money/invoices/${inv.id}` },
       });

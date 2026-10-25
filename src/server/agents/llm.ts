@@ -39,7 +39,7 @@ export async function generateJson<T>(schema: z.ZodType<T>, jsonSchema: Record<s
     config: { systemInstruction: system, responseMimeType: "application/json", responseJsonSchema: jsonSchema },
   });
   const text = response.text;
-  if (!text) throw new Error(`Gemini returned no output (${response.candidates?.[0]?.finishReason ?? "empty response"}).`);
+  if (!text) throw new Error(`AMFIRE AI returned no output (${response.candidates?.[0]?.finishReason ?? "empty response"}).`);
   const usage = response.usageMetadata;
   const inputTokens = usage?.promptTokenCount ?? null;
   const outputTokens = usage ? (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0) : null;

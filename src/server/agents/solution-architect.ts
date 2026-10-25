@@ -165,7 +165,9 @@ export function recommendWithRules(input: DiscoveryInput): RecommendationOutput 
 // Gemini engine — optional, used when GEMINI_API_KEY is configured.
 // ---------------------------------------------------------------------------
 
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-latest";
+// Flash Lite answers in seconds; the full Flash model can take minutes when it
+// thinks at length, which times out page requests. Override with GEMINI_MODEL.
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-flash-lite-latest";
 
 export function aiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
@@ -223,7 +225,7 @@ async function recommendWithGemini(input: DiscoveryInput) {
   const text = response.text;
   if (!text) {
     const reason = response.promptFeedback?.blockReason ?? response.candidates?.[0]?.finishReason ?? "empty response";
-    throw new Error(`Gemini returned no output (${reason}).`);
+    throw new Error(`AMFIRE AI returned no output (${reason}).`);
   }
   // Validate ourselves: the database only accepts schema-valid output.
   const output = RecommendationOutput.parse(JSON.parse(text));

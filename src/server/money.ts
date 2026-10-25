@@ -38,11 +38,36 @@ const DAY = 24 * 60 * 60 * 1000;
 /** Days a client has to pay a sent invoice. */
 export const PAYMENT_TERMS_DAYS = Number(process.env.PAYMENT_TERMS_DAYS) || 7;
 
-/** GST for rupee invoices (18% unless GST_RATE_BP says otherwise); none for dollar invoices. */
+/** GST is charged only by a GST-registered business: AMFIRE_GSTIN must be set. */
+export function gstRegistered() {
+  return Boolean(process.env.AMFIRE_GSTIN?.trim());
+}
+
+/**
+ * GST for rupee invoices when AMFIRE is registered (18% unless GST_RATE_BP says
+ * otherwise); none for dollar invoices (export of services) or when unregistered.
+ * Applies to invoices drafted after it's set.
+ */
 export function taxRateFor(currency: string) {
-  if (currency !== "INR") return 0;
+  if (currency !== "INR" || !gstRegistered()) return 0;
   const bp = process.env.GST_RATE_BP ? Number(process.env.GST_RATE_BP) : NaN;
   return Number.isFinite(bp) && bp >= 0 ? bp : 1800;
+}
+
+/** CGST + SGST when AMFIRE and the client are in the same state, otherwise IGST. Null when the state isn't known. */
+export function gstSplit(inv: Pick<Invoice, "tax" | "taxRate" | "placeOfSupply">) {
+  if (!inv.taxRate) return [];
+  const home = process.env.AMFIRE_STATE?.trim().toLowerCase();
+  const place = inv.placeOfSupply?.trim().toLowerCase();
+  if (!home || !place) return [{ label: `GST ${inv.taxRate / 100}%`, amount: inv.tax }];
+  if (home === place) {
+    const half = Math.round(inv.tax / 2);
+    return [
+      { label: `CGST ${inv.taxRate / 200}%`, amount: half },
+      { label: `SGST ${inv.taxRate / 200}%`, amount: inv.tax - half },
+    ];
+  }
+  return [{ label: `IGST ${inv.taxRate / 100}%`, amount: inv.tax }];
 }
 
 export function invoiceAmounts(subtotal: number, currency: string) {
@@ -51,8 +76,9 @@ export function invoiceAmounts(subtotal: number, currency: string) {
   return { subtotal, taxRate, tax, total: subtotal + tax };
 }
 
-async function nextInvoiceNumber(tx: Tx, now = new Date()) {
-  const prefix = `AMF-${now.getFullYear()}-`;
+/** Issued invoices are numbered consecutively (AMF-…); records of past payments use their own series (REC-…). */
+async function nextInvoiceNumber(tx: Tx, now = new Date(), series = "AMF") {
+  const prefix = `${series}-${now.getFullYear()}-`;
   const [row] = await tx
     .select({ n: sql<number>`count(*)`.mapWith(Number) })
     .from(invoices)
@@ -121,6 +147,7 @@ export async function sendInvoice(db: DB, actor: Actor | null, invoiceId: string
   const [inv] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
   if (!inv) throw new MoneyError("Invoice not found.");
   if (inv.status !== "draft") throw new MoneyError("Only draft invoices can be sent.");
+  const [org] = await db.select().from(organizations).where(eq(organizations.id, inv.orgId));
   const link = await createPaymentLink(inv).catch(() => null);
   return db.transaction(async (tx) => {
     const [sent] = await tx
@@ -131,6 +158,7 @@ export async function sendInvoice(db: DB, actor: Actor | null, invoiceId: string
         dueAt: new Date(now.getTime() + PAYMENT_TERMS_DAYS * DAY),
         sentBy: actor.userId,
         paymentLinkUrl: link,
+        placeOfSupply: org?.state ?? null,
         updatedAt: now,
       })
       .where(and(eq(invoices.id, invoiceId), eq(invoices.status, "draft")))
@@ -224,6 +252,38 @@ export async function recordPayment(
     });
     return { invoice: updated, duplicate: false };
   });
+}
+
+/** Records money received outside HQ (a past project), so revenue to date is complete. `amount` in minor units. */
+export async function recordPastPayment(
+  tx: Tx,
+  opts: { orgId: string; projectId: string; title: string; amount: number; currency: string; paidAt: Date; recordedBy: string },
+) {
+  const [inv] = await tx
+    .insert(invoices)
+    .values({
+      orgId: opts.orgId,
+      projectId: opts.projectId,
+      number: await nextInvoiceNumber(tx, opts.paidAt, "REC"),
+      title: opts.title,
+      currency: opts.currency,
+      subtotal: opts.amount,
+      total: opts.amount,
+      status: "paid",
+      issuedAt: opts.paidAt,
+      paidAt: opts.paidAt,
+      isRecord: true,
+    })
+    .returning();
+  await tx.insert(payments).values({
+    invoiceId: inv.id,
+    orgId: opts.orgId,
+    amount: opts.amount,
+    method: "other",
+    receivedAt: opts.paidAt,
+    recordedBy: opts.recordedBy,
+  });
+  return inv;
 }
 
 // --- Retainers -------------------------------------------------------------------

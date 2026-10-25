@@ -12,7 +12,7 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
   const actor = await requireActor("/hub");
   return (
     <div className="flex min-h-full flex-1 flex-col bg-subtle">
-      <header className="border-b border-line bg-surface">
+      <header className="border-b border-line bg-surface print:hidden">
         <Container className="flex h-16 items-center justify-between gap-4">
           <Link href="/hub" className="flex items-center gap-2" aria-label="Client Hub home">
             <Logo className="h-6" /> <span className="hidden text-sm font-medium text-muted sm:inline">Client Hub</span>

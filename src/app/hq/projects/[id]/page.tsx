@@ -21,7 +21,7 @@ import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { getProjectEconomics } from "@/server/crm";
 import { getProjectForStaff, projectProgress } from "@/server/projects";
-import { addTaskAction, estimateChangeAction, logTimeAction, resolveRequestAction, setTaskStatusAction } from "../../actions";
+import { addMilestoneAction, addTaskAction, estimateChangeAction, logTimeAction, resolveRequestAction, setTaskStatusAction } from "../../actions";
 import { InvoiceList } from "../../money/invoice-list";
 import { MilestoneForm } from "./milestone-form";
 import { UpdateForm } from "./update-form";
@@ -32,6 +32,8 @@ const TASK_STATUSES = [
   { value: "blocked", label: "Blocked" },
   { value: "done", label: "Done" },
 ];
+
+export const metadata = { title: "Project" };
 
 export default async function HqProjectPage({ params }: PageProps<"/hq/projects/[id]">) {
   const { id } = await params;
@@ -112,7 +114,9 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
                   <StatusBadge status={m.status} />
                 </div>
                 {m.status === "done" ? (
-                  <p className="mt-2 text-sm text-muted">Approved by the client {formatDate(m.completedAt)}.</p>
+                  <p className="mt-2 text-sm text-muted">
+                    {m.approvedBy ? "Approved by the client" : "Completed"} {formatDate(m.completedAt)}.
+                  </p>
                 ) : (
                   <MilestoneForm projectId={project.id} milestoneId={m.id} status={m.status} blockerNote={m.blockerNote} />
                 )}
@@ -165,6 +169,29 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
             );
           })}
         </ol>
+        <details className="mt-5 border-t border-line pt-4 text-sm">
+          <summary className="cursor-pointer font-medium">Add a milestone</summary>
+          <div className="mt-3">
+            <ActionForm action={addMilestoneAction.bind(null, project.id)} submitLabel="Add milestone">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="sm:col-span-3">
+                  <Field label="Title" htmlFor="ms-title">
+                    <input id="ms-title" name="title" required className={inputClass} placeholder="Admin dashboard" />
+                  </Field>
+                </div>
+                <Field label="Planned for" htmlFor="ms-due" optional>
+                  <input id="ms-due" name="dueDate" type="date" className={inputClass} />
+                </Field>
+                <Field label={`Amount (${project.currency})`} htmlFor="ms-amount" hint="Invoiced when the client approves it">
+                  <input id="ms-amount" name="amount" type="number" min={0} step="any" className={inputClass} />
+                </Field>
+              </div>
+              <Field label="What the client gets" htmlFor="ms-desc" optional>
+                <textarea id="ms-desc" name="description" rows={2} className={inputClass} />
+              </Field>
+            </ActionForm>
+          </div>
+        </details>
       </Card>
 
       <Card>

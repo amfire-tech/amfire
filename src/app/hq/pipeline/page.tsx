@@ -17,7 +17,13 @@ export default async function PipelinePage() {
     <div className="space-y-6">
       <PageHeader
         title="Pipeline"
-        description="Every open deal by stage. A deal's value is what you set on the lead, or its latest proposal total."
+        description={
+          <>
+            Cards move by themselves as things happen: a booking or a lead you add lands in <strong>New</strong>; clicking “Qualify lead” moves it to{" "}
+            <strong>Qualified</strong>; sending the proposal moves it to <strong>Proposal sent</strong>; the client accepting in their Hub moves it to{" "}
+            <strong>Won</strong>. “Mark as lost” on a lead takes it off. A deal’s value is what you set on the lead, or its latest proposal total.
+          </>
+        }
       />
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

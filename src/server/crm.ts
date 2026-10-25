@@ -117,6 +117,44 @@ export async function setLeadOutcome(db: DB, actor: Actor | null, leadId: string
   return lead;
 }
 
+// --- Billing details ---------------------------------------------------------------------
+
+const optional = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .transform((v) => v || null)
+    .optional();
+
+export const BillingInput = z.object({
+  billingName: optional(200),
+  billingAddress: optional(500),
+  gstin: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .transform((v) => v || null)
+    .pipe(z.string().regex(/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/, "That doesn't look like a GSTIN (15 characters, e.g. 27ABCDE1234F1Z5).").nullable())
+    .optional(),
+  state: optional(60),
+});
+
+/** What's printed on the client's tax invoices. Applies to invoices sent from now on. */
+export async function updateBilling(db: DB, actor: Actor | null, orgId: string, input: z.input<typeof BillingInput>) {
+  assertStaff(actor);
+  const data = BillingInput.parse(input);
+  const [org] = await db.update(organizations).set(data).where(and(eq(organizations.id, orgId), eq(organizations.kind, "client"))).returning();
+  if (!org) throw new CrmError("Client not found.");
+  await audit(db, { actorId: actor.userId, orgId, action: "org.billing_updated", subjectType: "organization", subjectId: orgId });
+  return org;
+}
+
+export async function listClientOrgs(db: DB, actor: Actor | null) {
+  assertStaff(actor);
+  return db.select().from(organizations).where(eq(organizations.kind, "client")).orderBy(organizations.name);
+}
+
 // --- Dossier ---------------------------------------------------------------------------
 
 export const FactInput = z.object({ fact: z.string().trim().min(3, "Write the fact in a few words.").max(500) });

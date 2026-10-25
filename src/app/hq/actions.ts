@@ -17,6 +17,8 @@ import {
   updateLeadContact,
 } from "@/server/leads";
 import {
+  addMilestone,
+  addOutsideProject,
   addTask,
   postProjectUpdate,
   resolveSupportRequest,
@@ -25,10 +27,10 @@ import {
 } from "@/server/projects";
 import { assertStaff } from "@/server/access";
 import { runTeam } from "@/server/agents/team";
-import { approve, draftInvestorUpdate, reject, updateAgentSetting } from "@/server/brain";
-import { addFact, logInteraction, retireFact, setLeadOutcome, updateDeal } from "@/server/crm";
+import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting } from "@/server/brain";
+import { addFact, logInteraction, retireFact, setLeadOutcome, updateBilling, updateDeal } from "@/server/crm";
 import { estimateChange } from "@/server/hub";
-import { askHq, type AskAnswer } from "@/server/ask";
+import { askHq, type AskAnswer, type AskTurn } from "@/server/ask";
 import { createPost } from "@/server/growth";
 import {
   createManualInvoice,
@@ -244,8 +246,72 @@ export async function createInvoiceAction(target: { orgId: string; projectId?: s
   );
 }
 
-export async function sendInvoiceAction(invoiceId: string) {
-  return run(({ db, actor }) => sendInvoice(db, actor, invoiceId), "Sent. The client can see and pay it in their Hub.");
+export async function sendInvoiceAction(invoiceId: string): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    await sendInvoice(db, actor, invoiceId);
+    const shared = await shareInvoice(db, actor, invoiceId);
+    revalidatePath("/hq", "layout");
+    return { ok: shared.note, link: shared.link };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function shareInvoiceAction(invoiceId: string): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const shared = await shareInvoice(db, actor, invoiceId);
+    revalidatePath("/hq", "layout");
+    return { ok: shared.note, link: shared.link };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function newInvoiceAction(_prev: ActionState, formData: FormData) {
+  return run(
+    ({ db, actor }) => createManualInvoice(db, actor, formText(formData, ["orgId", "title", "amount", "currency"]) as never),
+    "Draft invoice created. Open it to send.",
+  );
+}
+
+export async function updateBillingAction(orgId: string, _prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => updateBilling(db, actor, orgId, formText(formData, ["billingName", "billingAddress", "gstin", "state"])), "Billing details saved.");
+}
+
+export async function addMilestoneAction(projectId: string, _prev: ActionState, formData: FormData) {
+  return run(({ db, actor }) => addMilestone(db, actor, projectId, formText(formData, ["title", "description", "dueDate", "amount"]) as never), "Milestone added.");
+}
+
+export async function addProjectAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  let projectId: string;
+  try {
+    const input = formText(formData, [
+      "orgId",
+      "clientName",
+      "contactName",
+      "contactEmail",
+      "contactPhone",
+      "source",
+      "businessType",
+      "name",
+      "description",
+      "path",
+      "status",
+      "startedAt",
+      "endedAt",
+      "amount",
+      "currency",
+    ]);
+    const project = await addOutsideProject(db, actor, { ...input, paidInFull: formData.get("paidInFull") === "on" } as never);
+    projectId = project.id;
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hq", "layout");
+  redirect(`/hq/projects/${projectId}`);
 }
 
 export async function voidInvoiceAction(invoiceId: string) {
@@ -340,15 +406,24 @@ export async function estimateChangeAction(changeId: string, _prev: ActionState,
   return run(({ db, actor }) => estimateChange(db, actor, changeId, formText(formData, ["amount", "weeks", "note"]) as never), "Estimate sent to the client.");
 }
 
-export type AskState = { question?: string; answer?: AskAnswer; error?: string } | undefined;
+export type AskState = { turns: (AskTurn & { answer: AskAnswer })[]; error?: string };
 
-export async function askHqAction(_prev: AskState, formData: FormData): Promise<AskState> {
+/** One question in an Ask HQ conversation; the last few turns go along so follow-ups make sense. */
+export async function askHqAction(prev: AskState, formData: FormData): Promise<AskState> {
+  if (formData.get("reset")) return { turns: [] };
   const question = String(formData.get("question") ?? "");
+  const turns = prev?.turns ?? [];
   const { db, actor } = await ctx();
   try {
-    return { question, answer: await askHq(db, actor, question) };
+    const answer = await askHq(
+      db,
+      actor,
+      question,
+      turns.slice(-4).map((t) => ({ q: t.q, a: t.a.slice(0, 3000) })),
+    );
+    return { turns: [...turns, { q: question, a: answer.answer, answer }].slice(-8) };
   } catch (err) {
-    return { question, error: toActionError(err)?.error };
+    return { turns, error: toActionError(err)?.error };
   }
 }
 

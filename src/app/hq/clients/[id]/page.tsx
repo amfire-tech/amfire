@@ -8,7 +8,7 @@ import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { getClientAccount } from "@/server/crm";
-import { createInvoiceAction, createSubscriptionAction, setSubscriptionStatusAction } from "../../actions";
+import { createInvoiceAction, createSubscriptionAction, setSubscriptionStatusAction, updateBillingAction } from "../../actions";
 import { ConversationsCard, DossierCard } from "../../crm-panels";
 import { InvoiceList } from "../../money/invoice-list";
 
@@ -165,6 +165,27 @@ export default async function ClientPage({ params }: PageProps<"/hq/clients/[id]
           </details>
         </Card>
       </div>
+
+      <Card>
+        <CardTitle>Billing details</CardTitle>
+        <p className="-mt-2 mb-4 text-sm text-muted">Printed on their invoices. The state decides CGST + SGST or IGST when you charge GST.</p>
+        <ActionForm action={updateBillingAction.bind(null, a.org.id)} submitLabel="Save billing details">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Legal name" htmlFor="bill-name" optional>
+              <input id="bill-name" name="billingName" defaultValue={a.org.billingName ?? ""} placeholder={a.org.name} className={inputClass} />
+            </Field>
+            <Field label="GSTIN" htmlFor="bill-gstin" optional>
+              <input id="bill-gstin" name="gstin" defaultValue={a.org.gstin ?? ""} maxLength={15} className={`${inputClass} uppercase`} />
+            </Field>
+            <Field label="State" htmlFor="bill-state" optional>
+              <input id="bill-state" name="state" defaultValue={a.org.state ?? ""} placeholder="Maharashtra" className={inputClass} />
+            </Field>
+            <Field label="Address" htmlFor="bill-address" optional>
+              <textarea id="bill-address" name="billingAddress" rows={2} defaultValue={a.org.billingAddress ?? ""} className={inputClass} />
+            </Field>
+          </div>
+        </ActionForm>
+      </Card>
 
       <Card>
         <CardTitle>Invoices</CardTitle>

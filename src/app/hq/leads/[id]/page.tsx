@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ScorePill, SourceChip } from "@/components/hq";
+import { ScorePill, SourceChip, cleanAiText, engineLabel } from "@/components/hq";
 import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/forms";
 import {
@@ -223,8 +223,8 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
                 <Section title="Ask on the first call" items={latest.openQuestions} />
               </div>
               <p className="mt-5 text-xs text-muted">
-                Proposed by the Solution Architect ({latestRun?.engine ?? "unknown"}
-                {latestRun?.model ? `, ${latestRun.model}` : ""}) {formatDateTime(latest.createdAt)}. Not a commitment.
+                Proposed by the Solution Architect ({latestRun ? engineLabel(latestRun.engine) : "unknown"}) {formatDateTime(latest.createdAt)}. Not a
+                commitment.
               </p>
             </>
           )}
@@ -252,7 +252,7 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
             )}
             <form action={rerunRecommendationAction.bind(null, lead.id)}>
               <SubmitButton variant="secondary" pendingLabel="Running…">
-                {usesAi ? "Re-run with Gemini" : "Re-run (rules)"}
+                {usesAi ? "Re-run with AMFIRE AI" : "Re-run (rules)"}
               </SubmitButton>
             </form>
             {latest?.status === "proposed" && (
@@ -302,15 +302,12 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
             {runs.map((r) => (
               <tr key={r.id}>
                 <td>{formatDateTime(r.startedAt)}</td>
-                <td>
-                  {r.engine}
-                  {r.model ? ` · ${r.model}` : ""}
-                </td>
+                <td>{engineLabel(r.engine)}</td>
                 <td>
                   <StatusBadge status={r.status} />
                 </td>
                 <td>{r.inputTokens != null ? `${r.inputTokens} in / ${r.outputTokens} out` : "—"}</td>
-                <td className="max-w-xs truncate text-muted">{r.error ?? "—"}</td>
+                <td className="max-w-xs truncate text-muted">{cleanAiText(r.error) ?? "—"}</td>
               </tr>
             ))}
           </tbody>

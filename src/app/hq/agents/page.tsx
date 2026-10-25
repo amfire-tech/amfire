@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
-import { AgentTag } from "@/components/hq";
+import { AgentTag, cleanAiText, engineLabel } from "@/components/hq";
 import { Card, EmptyState, PageHeader, StatusBadge, Table, formatDateTime, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
 import { notifications } from "@/db/schema";
@@ -38,8 +38,8 @@ export default async function AgentsPage() {
           <>
             Seven agents, each watching one part of the business. They share what they find, draft everything, and send nothing without you.{" "}
             {aiConfigured()
-              ? "Gemini is on: drafts are rewritten in your voice and the brief gets a summary."
-              : "Gemini is off (no GEMINI_API_KEY), so agents use their rules and templates — everything still works."}
+              ? "AMFIRE AI is on: drafts are rewritten in your voice and the brief gets a summary."
+              : "AMFIRE AI is off, so agents use their rules and templates — everything still works."}
           </>
         }
         actions={<ActionForm action={runTeamAction} submitLabel="Run the team now" pendingLabel="Team is working…" size="sm" />}
@@ -184,15 +184,12 @@ export default async function AgentsPage() {
                 <tr key={r.id}>
                   <td className="whitespace-nowrap">{formatDateTime(r.startedAt)}</td>
                   <td>{r.role.replace(/_/g, " ")}</td>
-                  <td>
-                    {r.engine}
-                    {r.model && <div className="text-xs text-muted">{r.model}</div>}
-                  </td>
+                  <td>{engineLabel(r.engine)}</td>
                   <td>
                     <StatusBadge status={r.status} />
                     {r.error && (
-                      <div className="mt-1 max-w-xs truncate text-xs text-danger" title={r.error}>
-                        {r.error}
+                      <div className="mt-1 max-w-xs truncate text-xs text-danger" title={cleanAiText(r.error) ?? undefined}>
+                        {cleanAiText(r.error)}
                       </div>
                     )}
                   </td>

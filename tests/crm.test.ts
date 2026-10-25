@@ -10,7 +10,7 @@ import { approvals, draftEdits, interactions, invoices, leads, milestones, signa
 import { AccessDenied, loadActor, type Actor } from "@/server/access";
 import { runTeam, weekKey } from "@/server/agents/team";
 import { askHq } from "@/server/ask";
-import { approve, reject, whatsappLink } from "@/server/brain";
+import { approve, reject, shareInvoice, whatsappLink } from "@/server/brain";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
 import { getClientAccount, healthScore, logInteraction } from "@/server/crm";
 import { askConcierge, createChangeRequest, decideChange, estimateChange, leaveFeedback } from "@/server/hub";
@@ -19,12 +19,13 @@ import {
   draftDueRetainerInvoices,
   getInvoiceForClient,
   getMoneyOverview,
+  gstSplit,
   invoiceAmounts,
   MoneyError,
   recordPayment,
   sendInvoice,
 } from "@/server/money";
-import { clientApproveMilestone, updateMilestone } from "@/server/projects";
+import { addOutsideProject, clientApproveMilestone, updateMilestone } from "@/server/projects";
 import { approveAndSendProposal, clientDecideProposal, createProposalDraft } from "@/server/proposals";
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -73,9 +74,28 @@ describe("money", () => {
     ctx = await wonClient("Acme Parts", "sam@acme.test");
   });
 
-  test("GST is 18% on rupee invoices and nothing on dollar invoices", () => {
+  test("GST only when AMFIRE is registered: 18% on rupees, nothing on dollars", () => {
+    const saved = process.env.AMFIRE_GSTIN;
+    delete process.env.AMFIRE_GSTIN;
+    assert.equal(invoiceAmounts(100_000_00, "INR").tax, 0, "an unregistered business can't charge GST");
+    process.env.AMFIRE_GSTIN = "27ABCDE1234F1Z5";
     assert.deepEqual(invoiceAmounts(100_000_00, "INR"), { subtotal: 100_000_00, taxRate: 1800, tax: 18_000_00, total: 118_000_00 });
     assert.equal(invoiceAmounts(1_000_00, "USD").tax, 0);
+    if (saved === undefined) delete process.env.AMFIRE_GSTIN;
+    else process.env.AMFIRE_GSTIN = saved;
+  });
+
+  test("CGST + SGST inside AMFIRE's state, IGST outside it", () => {
+    process.env.AMFIRE_STATE = "Maharashtra";
+    const inv = { tax: 18_000_00, taxRate: 1800 };
+    assert.deepEqual(
+      gstSplit({ ...inv, placeOfSupply: "maharashtra" }).map((t) => t.label),
+      ["CGST 9%", "SGST 9%"],
+    );
+    assert.deepEqual(gstSplit({ ...inv, placeOfSupply: "Karnataka" }), [{ label: "IGST 18%", amount: 18_000_00 }]);
+    assert.deepEqual(gstSplit({ ...inv, placeOfSupply: null }), [{ label: "GST 18%", amount: 18_000_00 }]);
+    assert.deepEqual(gstSplit({ tax: 0, taxRate: 0, placeOfSupply: "Karnataka" }), []);
+    delete process.env.AMFIRE_STATE;
   });
 
   test("a client approving a milestone drafts its invoice, which they can't see yet", async () => {
@@ -178,7 +198,7 @@ describe("the AI team", () => {
     await assert.rejects(approve(db, owner, a.id));
   });
 
-  test("Finance asks to send drafts, and approving sends the invoice", async () => {
+  test("Finance writes the invoice message; approving issues it and opens WhatsApp to the client", async () => {
     const [m] = await db.select().from(milestones).where(eq(milestones.projectId, ctx.project.id)).orderBy(milestones.position);
     await updateMilestone(db, owner, m.id, { status: "awaiting_approval" });
     await clientApproveMilestone(db, ctx.client, m.id);
@@ -186,9 +206,14 @@ describe("the AI team", () => {
     const [inv] = await db.select().from(invoices).where(eq(invoices.milestoneId, m.id));
     const [a] = await db.select().from(approvals).where(eq(approvals.fingerprint, `send_invoice:${inv.id}`));
     assert.ok(a);
-    await approve(db, owner, a.id);
+    assert.equal(a.channel, "whatsapp");
+    assert.match(a.draft, new RegExp(`${inv.number}.*hub/invoices/${inv.id}`, "s"));
+    const result = await approve(db, owner, a.id);
+    assert.ok(result.link?.startsWith("https://wa.me/91"));
     const [sent] = await db.select().from(invoices).where(eq(invoices.id, inv.id));
     assert.equal(sent.status, "sent");
+    const again = await shareInvoice(db, owner, inv.id);
+    assert.ok(again.link?.includes(encodeURIComponent(inv.number)));
   });
 
   test("three agents wanting to message one client become one message", async () => {
@@ -286,6 +311,30 @@ describe("the client's side", () => {
     await assert.rejects(leaveFeedback(db, ctx.client, m.id, { rating: 5 }));
     const account = await getClientAccount(db, owner, ctx.orgId);
     assert.ok(account!.health.reasons.some((r) => r.includes("rating")));
+  });
+
+  test("a past project is added with its client, contact and the money received", async () => {
+    const project = await addOutsideProject(db, owner, {
+      clientName: "Skillship",
+      contactName: "Asha Rao",
+      contactEmail: "asha@skillship.example",
+      source: "referral",
+      name: "AI learning platform for schools",
+      path: "build",
+      status: "completed",
+      startedAt: "2026-06-01",
+      endedAt: "2026-08-31",
+      amount: 250000,
+      paidInFull: true,
+    });
+    assert.equal(project.status, "completed");
+    const account = await getClientAccount(db, owner, project.orgId);
+    assert.equal(account!.revenue.INR, 250000_00);
+    assert.equal(account!.projects[0].progress.percent, 100);
+    assert.equal(account!.leads[0].status, "won");
+    assert.match(account!.invoices[0].number, /^REC-2026-/);
+    await assert.rejects(addOutsideProject(db, owner, { clientName: "X", contactName: "Y", name: "Thing", path: "build", status: "completed", startedAt: "2026-06-01" }));
+    await assert.rejects(addOutsideProject(db, ctx.client, { clientName: "X", contactName: "Y", name: "Thing", path: "build", status: "active", startedAt: "2026-06-01" }), AccessDenied);
   });
 
   test("conversations and Ask HQ", async () => {

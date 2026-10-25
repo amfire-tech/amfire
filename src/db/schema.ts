@@ -33,6 +33,12 @@ export const organizations = appSchema.table("organizations", {
   id: id(),
   name: text("name").notNull(),
   kind: orgKind("kind").notNull(),
+  /** Billing details printed on tax invoices. */
+  billingName: text("billing_name"),
+  billingAddress: text("billing_address"),
+  gstin: text("gstin"),
+  /** State for GST place of supply, e.g. "Maharashtra". */
+  state: text("state"),
   createdAt: createdAt(),
 });
 
@@ -411,6 +417,10 @@ export const invoices = appSchema.table(
     paidAt: timestamp("paid_at", { withTimezone: true }),
     /** Razorpay payment link, when Razorpay is configured. */
     paymentLinkUrl: text("payment_link_url"),
+    /** The client's state when the invoice was sent; decides CGST + SGST or IGST. */
+    placeOfSupply: text("place_of_supply"),
+    /** A record of money received before AMFIRE HQ (e.g. a past project), not an invoice that was issued from here. */
+    isRecord: boolean("is_record").notNull().default(false),
     sentBy: uuid("sent_by").references(() => users.id),
     createdAt: createdAt(),
     updatedAt: updatedAt(),

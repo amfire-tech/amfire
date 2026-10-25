@@ -14,8 +14,11 @@ import {
   organizations,
   payments,
   subscriptions,
+  users,
   type Approval,
+  type Invoice,
 } from "@/db/schema";
+import { site } from "@/config/site";
 import { formatMoney } from "@/knowledge/pricing";
 import { sourceLabel } from "@/lib/attribution";
 import { assertOwner, assertStaff, type Actor } from "./access";
@@ -59,6 +62,56 @@ export function sendLink(a: Pick<Approval, "channel" | "recipient">, text: strin
   return undefined;
 }
 
+// --- Invoices to clients ---------------------------------------------------------------------
+
+/** The person to send a client's invoices to: the lead the client came from. */
+export async function invoiceContact(db: Pick<DB, "select">, orgId: string) {
+  const [lead] = await db.select().from(leads).where(eq(leads.clientOrgId, orgId)).orderBy(leads.createdAt).limit(1);
+  return lead ?? null;
+}
+
+export function invoiceMessage(inv: Pick<Invoice, "id" | "number" | "title" | "total" | "currency" | "dueAt">, name: string, ownerFirstName = "AMFIRE") {
+  const due = inv.dueAt ? ` It's due on ${inv.dueAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}.` : "";
+  const sign = ownerFirstName.toUpperCase() === "AMFIRE" ? "— AMFIRE" : `— ${ownerFirstName}, AMFIRE`;
+  return `Hi ${name.split(" ")[0]}, here is invoice ${inv.number} for ${formatMoney(inv.total, inv.currency)} (${inv.title}).${due} You can view, download and pay it here: ${site.url}/hub/invoices/${inv.id}\n\nThank you!\n${sign}`;
+}
+
+/**
+ * Tells the client about a sent invoice: emails it when email is set up, and
+ * returns a WhatsApp (or email) link with the message typed in.
+ */
+export async function shareInvoice(db: DB, actor: Actor | null, invoiceId: string, text?: string) {
+  assertOwner(actor);
+  const [inv] = await db.select().from(invoices).where(eq(invoices.id, invoiceId));
+  if (!inv || inv.status !== "sent") throw new CrmError("Send the invoice first.");
+  const contact = await invoiceContact(db, inv.orgId);
+  if (!contact || (!contact.phone && !contact.email)) {
+    return { note: "Invoice sent to the client's Hub. Add a phone or email on their lead to message it to them.", link: undefined };
+  }
+  const [me] = await db.select({ name: users.name }).from(users).where(eq(users.id, actor.userId));
+  const message = text ?? invoiceMessage(inv, contact.name, me?.name.split(" ")[0]);
+  let emailed = false;
+  if (contact.email && emailConfigured()) {
+    await sendEmail({ to: contact.email, subject: `Invoice ${inv.number} from AMFIRE`, text: message });
+    emailed = true;
+  }
+  const link = contact.phone ? whatsappLink(contact.phone, message) : !emailed && contact.email ? sendLink({ channel: "email", recipient: contact.email }, message) : undefined;
+  await db.insert(interactions).values({
+    leadId: contact.id,
+    orgId: inv.orgId,
+    kind: emailed && !contact.phone ? "email" : "whatsapp",
+    direction: "out",
+    summary: message,
+    authorId: actor.userId,
+  });
+  return {
+    note: [emailed ? `Invoice emailed to ${contact.email}.` : "Invoice sent to the client's Hub.", link ? (contact.phone ? "Open WhatsApp to send it." : "Open your email to send it.") : null]
+      .filter(Boolean)
+      .join(" "),
+    link,
+  };
+}
+
 /** Messages approved in the last 12 hours that still need the owner to press send. */
 export async function readyToSend(db: DB, actor: Actor | null, now = new Date()) {
   assertStaff(actor);
@@ -88,20 +141,23 @@ export async function approve(db: DB, actor: Actor | null, approvalId: string, e
 
   // Effects that can fail run before the approval is marked done.
   if (a.kind === "send_invoice") {
+    // Finance's draft is the message to the client; the invoice itself goes to their Hub.
     assertOwner(actor);
     if (!a.data.invoiceId) throw new CrmError("This suggestion has no invoice attached.");
     await sendInvoice(db, actor, a.data.invoiceId);
     note = "Invoice sent to the client's Hub.";
-  } else if (a.kind === "weekly_update" || a.channel === "hub") {
+  }
+  if (a.channel === "hub") {
     if (!a.data.projectId) throw new CrmError("This suggestion has no project attached.");
     await postProjectUpdate(db, actor, a.data.projectId, text);
     note = "Posted to the client's Hub.";
   } else if (a.channel === "email" && a.recipient && emailConfigured()) {
-    await sendEmail({ to: a.recipient, subject: "A note from AMFIRE", text });
-    note = `Emailed to ${a.recipient}.`;
+    await sendEmail({ to: a.recipient, subject: a.kind === "send_invoice" ? "Your invoice from AMFIRE" : "A note from AMFIRE", text });
+    note = a.kind === "send_invoice" ? `Invoice sent and emailed to ${a.recipient}.` : `Emailed to ${a.recipient}.`;
   } else {
     link = sendLink(a, text);
-    if (link) note = a.channel === "linkedin" ? "Approved. Open LinkedIn to post it." : a.channel === "whatsapp" ? "Approved. Open WhatsApp and press send." : "Approved. Open your email to send it.";
+    const prefix = a.kind === "send_invoice" ? "Invoice sent. " : "Approved. ";
+    if (link) note = prefix + (a.channel === "linkedin" ? "Open LinkedIn to post it." : a.channel === "whatsapp" ? "Open WhatsApp and press send." : "Open your email to send it.");
   }
 
   await db.transaction(async (tx) => {

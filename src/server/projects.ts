@@ -1,11 +1,14 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
+import { and, asc, desc, eq, inArray, max } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
 import {
   changeRequests,
   invoices,
+  leads,
   milestoneFeedback,
   milestones,
+  organizations,
   projectUpdates,
   projects,
   proposals,
@@ -15,7 +18,7 @@ import {
 } from "@/db/schema";
 import { AccessDenied, assertClientOrg, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
-import { createMilestoneInvoice } from "./money";
+import { createMilestoneInvoice, recordPastPayment } from "./money";
 
 export class ProjectError extends Error {
   constructor(message: string) {
@@ -131,6 +134,156 @@ export async function getProjectForStaff(db: DB, actor: Actor | null, projectId:
     db.select().from(changeRequests).where(eq(changeRequests.projectId, projectId)).orderBy(desc(changeRequests.createdAt)),
   ]);
   return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs, changeRequests: crs };
+}
+
+export const MilestoneInput = z.object({
+  title: z.string().trim().min(3, "Give the milestone a short title.").max(200),
+  description: z
+    .string()
+    .trim()
+    .max(2000)
+    .transform((v) => v || "")
+    .optional(),
+  dueDate: z.union([z.literal("").transform(() => null), z.coerce.date()]).optional(),
+  /** Major units (₹ or $); invoiced when the client approves the milestone. */
+  amount: z.union([z.literal("").transform(() => 0), z.coerce.number().min(0)]).optional(),
+});
+
+export async function addMilestone(db: DB, actor: Actor | null, projectId: string, input: z.input<typeof MilestoneInput>) {
+  assertStaff(actor);
+  const data = MilestoneInput.parse(input);
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+  if (!project) throw new ProjectError("Project not found");
+  return db.transaction(async (tx) => {
+    const [{ last }] = await tx.select({ last: max(milestones.position) }).from(milestones).where(eq(milestones.projectId, projectId));
+    const [m] = await tx
+      .insert(milestones)
+      .values({
+        projectId,
+        orgId: project.orgId,
+        position: (last ?? -1) + 1,
+        title: data.title,
+        description: data.description ?? "",
+        dueDate: data.dueDate ?? null,
+        amount: Math.round((data.amount ?? 0) * 100),
+      })
+      .returning();
+    if (project.status === "completed") await tx.update(projects).set({ status: "active" }).where(eq(projects.id, projectId));
+    await audit(tx, { actorId: actor.userId, orgId: project.orgId, action: "milestone.added", subjectType: "milestone", subjectId: m.id });
+    return m;
+  });
+}
+
+/** First goal for each service, so a project added by hand reads like a booking. */
+const GOAL_FOR_PATH = { build: "customer-portal", automate: "reduce-manual-work", operate: "keep-running" } as const;
+
+export const OutsideProjectInput = z
+  .object({
+    orgId: z.union([z.literal("").transform(() => undefined), z.uuid()]).optional(),
+    clientName: z
+      .string()
+      .trim()
+      .max(160)
+      .transform((v) => v || undefined)
+      .optional(),
+    contactName: z.string().trim().min(1, "Add the client contact's name.").max(120),
+    contactEmail: z
+      .union([z.literal(""), z.email("Enter a valid email, or leave it empty.").trim().toLowerCase()])
+      .transform((v) => v || null)
+      .optional(),
+    contactPhone: z
+      .string()
+      .trim()
+      .max(20)
+      .transform((v) => v.replace(/[\s-]/g, "") || null)
+      .optional(),
+    source: z.enum(["linkedin", "referral", "whatsapp", "call", "email", "instagram", "facebook", "event", "google", "direct", "other"]).default("referral"),
+    businessType: z.string().trim().max(120).default("Something else"),
+    name: z.string().trim().min(3, "Give the project a name.").max(200),
+    description: z.string().trim().max(2000).default(""),
+    path: z.enum(["build", "operate", "automate"]),
+    status: z.enum(["active", "completed"]),
+    startedAt: z.coerce.date({ error: "Choose the start date." }),
+    endedAt: z.union([z.literal("").transform(() => undefined), z.coerce.date()]).optional(),
+    amount: z.union([z.literal("").transform(() => undefined), z.coerce.number().positive()]).optional(),
+    currency: z.enum(["INR", "USD"]).default("INR"),
+    paidInFull: z.boolean().default(false),
+  })
+  .refine((d) => d.orgId || d.clientName, { message: "Choose a client or type a new client's name.", path: ["clientName"] })
+  .refine((d) => d.status !== "completed" || d.endedAt, { message: "Add the end date for a completed project.", path: ["endedAt"] })
+  .refine((d) => !d.endedAt || d.endedAt >= d.startedAt, { message: "The end date is before the start date.", path: ["endedAt"] });
+
+/**
+ * A project that didn't start from a proposal in HQ — a past project, or work
+ * agreed outside — with its client, contact and (optionally) the money received.
+ */
+export async function addOutsideProject(db: DB, actor: Actor | null, input: z.input<typeof OutsideProjectInput>) {
+  assertStaff(actor);
+  const d = OutsideProjectInput.parse(input);
+  return db.transaction(async (tx) => {
+    let orgId = d.orgId;
+    if (!orgId) {
+      const [org] = await tx.insert(organizations).values({ name: d.clientName!, kind: "client" }).returning();
+      orgId = org.id;
+    }
+    const [org] = await tx.select().from(organizations).where(eq(organizations.id, orgId));
+    if (!org || org.kind !== "client") throw new ProjectError("Client not found");
+
+    // The contact is kept as a won lead, which is where agents look for whom to message.
+    const [existingLead] = await tx.select().from(leads).where(eq(leads.clientOrgId, orgId)).limit(1);
+    if (!existingLead) {
+      await tx.insert(leads).values({
+        publicRef: randomBytes(12).toString("base64url"),
+        status: "won",
+        name: d.contactName,
+        email: d.contactEmail ?? null,
+        phone: d.contactPhone ?? null,
+        company: org.name,
+        goal: GOAL_FOR_PATH[d.path],
+        businessType: d.businessType,
+        urgency: "month",
+        problem: d.description || d.name,
+        currency: d.currency,
+        source: d.source,
+        sourceNote: "Added in HQ with an existing project",
+        reviewedAt: d.startedAt,
+        clientOrgId: orgId,
+        createdAt: d.startedAt,
+      });
+    }
+
+    const [project] = await tx
+      .insert(projects)
+      .values({ orgId, name: d.name, status: d.status, currency: d.currency, startedAt: d.startedAt, createdAt: d.startedAt })
+      .returning();
+    const minor = d.amount ? Math.round(d.amount * 100) : 0;
+    if (d.status === "completed") {
+      await tx.insert(milestones).values({
+        projectId: project.id,
+        orgId,
+        position: 0,
+        title: "Delivered",
+        description: d.description,
+        dueDate: d.endedAt!,
+        status: "done",
+        amount: minor,
+        completedAt: d.endedAt!,
+      });
+    }
+    if (d.paidInFull && minor > 0) {
+      await recordPastPayment(tx, {
+        orgId,
+        projectId: project.id,
+        title: `${d.name} — paid in full`,
+        amount: minor,
+        currency: d.currency,
+        paidAt: d.endedAt ?? d.startedAt,
+        recordedBy: actor.userId,
+      });
+    }
+    await audit(tx, { actorId: actor.userId, orgId, action: "project.added", subjectType: "project", subjectId: project.id, data: { status: d.status } });
+    return project;
+  });
 }
 
 // --- Client Hub (always scoped to the actor's organisations) -------------------

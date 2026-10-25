@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { EmptyState, PageHeader, ProgressBar, StatusBadge, Table, formatDate } from "@/components/ui";
+import { ButtonLink, EmptyState, PageHeader, ProgressBar, StatusBadge, Table, formatDate } from "@/components/ui";
 import { getDb } from "@/db";
 import { requireStaffActor } from "@/lib/session";
 import { listProjects } from "@/server/hq";
@@ -11,9 +11,13 @@ export default async function ProjectsPage() {
   const rows = await listProjects(await getDb(), actor);
   return (
     <div className="space-y-6">
-      <PageHeader title="Projects" description="Created automatically when a client accepts a proposal." />
+      <PageHeader
+        title="Projects"
+        description="Created automatically when a client accepts a proposal. Add past projects, or work agreed outside HQ, by hand."
+        actions={<ButtonLink href="/hq/projects/new">Add a project</ButtonLink>}
+      />
       {rows.length === 0 ? (
-        <EmptyState title="No projects yet.">They appear here as soon as a client accepts a proposal.</EmptyState>
+        <EmptyState title="No projects yet.">They appear here as soon as a client accepts a proposal, or when you add one.</EmptyState>
       ) : (
         <>
           {/* Phones: one tappable card per project. */}

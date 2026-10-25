@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InvoiceDocument } from "@/components/invoice-document";
+import { PrintButton } from "@/components/print-button";
 import { Card, CardTitle, Notice, PageHeader, buttonClass, formatDate } from "@/components/ui";
 import { contact } from "@/config/site";
 import { getDb } from "@/db";
@@ -23,15 +24,18 @@ export default async function HubInvoicePage({ params }: PageProps<"/hub/invoice
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={
-          <Link href="/hub" className="hover:underline">
-            ← Client Hub
-          </Link>
-        }
-        title={`Invoice ${i.number}`}
-      />
-      <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr]">
+      <div className="print:hidden">
+        <PageHeader
+          eyebrow={
+            <Link href="/hub" className="hover:underline">
+              ← Client Hub
+            </Link>
+          }
+          title={`Invoice ${i.number}`}
+          actions={<PrintButton />}
+        />
+      </div>
+      <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr] print:block print:[&>*:nth-child(2)]:hidden">
         <InvoiceDocument invoice={i} org={org} paid={paid} balance={balance} overdue={isOverdue(i)} />
 
         {i.status === "paid" ? (

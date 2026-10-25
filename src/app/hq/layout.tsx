@@ -11,7 +11,7 @@ export default async function HqLayout({ children }: LayoutProps<"/hq">) {
   const actor = await requireStaffActor();
   return (
     <div className="flex min-h-full flex-1 flex-col bg-subtle lg:flex-row">
-      <aside className="border-b border-line bg-surface lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-r lg:border-b-0">
+      <aside className="border-b border-line bg-surface print:hidden lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-r lg:border-b-0">
         <div className="flex h-full flex-col gap-4 p-4 lg:p-5">
           <div className="flex items-center justify-between lg:block">
             <Link href="/hq" className="flex items-center gap-2" aria-label="AMFIRE HQ home">

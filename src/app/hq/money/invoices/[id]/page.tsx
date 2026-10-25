@@ -2,13 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionForm } from "@/components/action-form";
 import { InvoiceDocument } from "@/components/invoice-document";
-import { Card, CardTitle, Field, Notice, PageHeader, formatDateTime, inputClass } from "@/components/ui";
+import { Card, CardTitle, Field, Notice, PageHeader, buttonClass, formatDateTime, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
-import { getInvoiceForStaff, isOverdue } from "@/server/money";
-import { recordPaymentAction, sendInvoiceAction, voidInvoiceAction } from "../../../actions";
+import { PrintButton } from "@/components/print-button";
+import { invoiceContact, invoiceMessage, whatsappLink } from "@/server/brain";
+import { emailConfigured } from "@/server/notify";
+import { getInvoiceForStaff, isOverdue, PAYMENT_TERMS_DAYS } from "@/server/money";
+import { recordPaymentAction, sendInvoiceAction, shareInvoiceAction, voidInvoiceAction } from "../../../actions";
 
 const METHODS = [
   { id: "upi", label: "UPI" },
@@ -25,42 +28,87 @@ export default async function InvoicePage({ params }: PageProps<"/hq/money/invoi
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const actor = await requireStaffActor();
-  const data = await getInvoiceForStaff(await getDb(), actor, id);
+  const db = await getDb();
+  const data = await getInvoiceForStaff(db, actor, id);
   if (!data) notFound();
   const { invoice: i, org, payments, paid, balance } = data;
   const isOwner = actor.internalRole === "owner";
+  const contactLead = await invoiceContact(db, i.orgId);
+  const contact = contactLead?.name;
+  const message = contactLead ? invoiceMessage(i, contactLead.name, actor.name.split(" ")[0]) : "";
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow={
-          <Link href="/hq/money" className="hover:underline">
-            ← Money
-          </Link>
-        }
-        title={i.number}
-        description={
-          <Link href={`/hq/clients/${org.id}`} className="underline underline-offset-4">
-            {org.name}
-          </Link>
-        }
-      />
+      <div className="print:hidden">
+        <PageHeader
+          eyebrow={
+            <Link href="/hq/money" className="hover:underline">
+              ← Money
+            </Link>
+          }
+          title={i.number}
+          description={
+            <Link href={`/hq/clients/${org.id}`} className="underline underline-offset-4">
+              {org.name}
+            </Link>
+          }
+          actions={<PrintButton />}
+        />
+      </div>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr]">
+      <div className="grid items-start gap-6 lg:grid-cols-[1.3fr_1fr] print:block">
         <InvoiceDocument invoice={i} org={org} paid={paid} balance={balance} overdue={isOverdue(i)} />
 
-        <div className="space-y-6">
+        <div className="space-y-6 print:hidden">
           {i.status === "draft" && (
             <Card>
               <CardTitle>Send to the client</CardTitle>
               <p className="mb-4 text-sm text-muted">
-                The client sees it in their Hub with payment details, due in 7 days. This is a commercial commitment.
+                It appears in their Client Hub with payment details, due in {PAYMENT_TERMS_DAYS} days.{" "}
+                {contact ? `Then WhatsApp or email ${contact} the invoice link in one tap.` : "Add a phone or email on their lead to message it to them."} This is a
+                commercial commitment.
               </p>
+              {i.taxRate > 0 && (!org.state || !org.billingName) && (
+                <div className="mb-4">
+                  <Notice tone="warning" title="Billing details missing">
+                    Add the client’s billing name and state (and GSTIN, if they have one) on their{" "}
+                    <Link href={`/hq/clients/${org.id}`} className="underline">
+                      client page
+                    </Link>{" "}
+                    so this is a complete tax invoice.
+                  </Notice>
+                </div>
+              )}
               {isOwner ? (
                 <ActionForm action={sendInvoiceAction.bind(null, i.id)} submitLabel="Send invoice" variant="primary" pendingLabel="Sending…" />
               ) : (
                 <Notice>Only the owner can send invoices.</Notice>
               )}
+            </Card>
+          )}
+          {i.status === "sent" && contactLead && (contactLead.phone || contactLead.email) && (
+            <Card>
+              <CardTitle>Send it to {contactLead.name}</CardTitle>
+              <p className="mb-3 text-sm text-muted">The message has the invoice link, where they can view, download and pay it.</p>
+              <p className="mb-4 rounded-xl bg-subtle px-3 py-2 text-sm whitespace-pre-wrap">{message}</p>
+              <div className="flex flex-wrap gap-2">
+                {contactLead.phone && (
+                  <a href={whatsappLink(contactLead.phone, message)} target="_blank" rel="noopener noreferrer" className={buttonClass("primary", "sm")}>
+                    WhatsApp it ↗
+                  </a>
+                )}
+                {contactLead.email &&
+                  (emailConfigured() && isOwner ? (
+                    <ActionForm action={shareInvoiceAction.bind(null, i.id)} submitLabel={`Email it to ${contactLead.email}`} size="sm" />
+                  ) : (
+                    <a
+                      href={`mailto:${contactLead.email}?subject=${encodeURIComponent(`Invoice ${i.number} from AMFIRE`)}&body=${encodeURIComponent(message)}`}
+                      className={buttonClass("secondary", "sm")}
+                    >
+                      Email it ↗
+                    </a>
+                  ))}
+              </div>
             </Card>
           )}
 

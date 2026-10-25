@@ -25,8 +25,9 @@ import {
   setTaskStatus,
   updateMilestone,
 } from "@/server/projects";
-import { assertStaff } from "@/server/access";
-import { runTeam } from "@/server/agents/team";
+import { assertOwner, assertStaff } from "@/server/access";
+import { latestBrief, runTeam } from "@/server/agents/team";
+import { briefEmail, deliverBrief } from "@/server/notify";
 import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting } from "@/server/brain";
 import { addFact, logInteraction, retireFact, setLeadOutcome, updateBilling, updateDeal } from "@/server/crm";
 import { estimateChange } from "@/server/hub";
@@ -362,6 +363,21 @@ export async function runTeamAction(): Promise<ActionState> {
     const r = await runTeam(db, { triggeredBy: actor.userId });
     revalidatePath("/hq", "layout");
     return { ok: `Done: ${r.pending} decision${r.pending === 1 ? "" : "s"} waiting, ${r.signals} item${r.signals === 1 ? "" : "s"} flagged.` };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+/** Emails the latest brief now (writing one first if there's none), to check delivery without waiting for 8:00. */
+export async function emailBriefAction(): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    assertOwner(actor);
+    const brief = (await latestBrief(db))?.brief ?? (await runTeam(db, { triggeredBy: actor.userId })).brief;
+    const [email] = (await deliverBrief(db, brief.headline, brief.body)).filter((r) => r.channel === "email");
+    revalidatePath("/hq/agents");
+    if (email?.status === "sent") return { ok: `Brief emailed to ${briefEmail()}.` };
+    return { error: email?.status === "failed" ? "The email couldn't be sent. See “Brief deliveries” below for the reason." : "Email isn't set up yet (NOTIFY_FROM_EMAIL and RESEND_API_KEY)." };
   } catch (err) {
     return toActionError(err);
   }

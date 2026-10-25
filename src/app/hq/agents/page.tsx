@@ -9,9 +9,9 @@ import { aiConfigured } from "@/server/agents/solution-architect";
 import { latestSignals, teamSettings } from "@/server/agents/team";
 import { approvalStats } from "@/server/brain";
 import { listAgentRuns } from "@/server/hq";
-import { emailConfigured, whatsappConfigured } from "@/server/notify";
+import { briefEmail, emailConfigured, whatsappConfigured } from "@/server/notify";
 import { desc } from "drizzle-orm";
-import { runTeamAction, updateAgentSettingAction } from "../actions";
+import { emailBriefAction, runTeamAction, updateAgentSettingAction } from "../actions";
 
 export const metadata = { title: "AI team" };
 
@@ -45,10 +45,13 @@ export default async function AgentsPage() {
         actions={<ActionForm action={runTeamAction} submitLabel="Run the team now" pendingLabel="Team is working…" size="sm" />}
       />
 
-      <p className="text-sm text-muted">
-        Last run: {latest.run ? `${formatDateTime(latest.run.startedAt)} (${latest.run.triggeredBy ? "by hand" : "scheduled"})` : "never"} · scheduled every morning at
-        8:00 IST · brief by email {emailConfigured() ? "on" : "off"}, WhatsApp {whatsappConfigured() ? "on" : "off"}.
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted">
+          Last run: {latest.run ? `${formatDateTime(latest.run.startedAt)} (${latest.run.triggeredBy ? "by hand" : "scheduled"})` : "never"} · scheduled every morning at
+          8:00 IST · brief by email {emailConfigured() && briefEmail() ? `to ${briefEmail()}` : "off"}, WhatsApp {whatsappConfigured() ? "on" : "off"}.
+        </p>
+        {isOwner && emailConfigured() && <ActionForm action={emailBriefAction} submitLabel="Email me today's brief" size="sm" variant="ghost" pendingLabel="Sending…" />}
+      </div>
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         {team.map((t) => {

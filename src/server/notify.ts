@@ -62,16 +62,22 @@ export function briefAsText(headline: string, body: BriefBody) {
     .join("\n");
 }
 
+/** Where the morning brief is emailed: BRIEF_EMAIL, or the owner's sign-in address. */
+export function briefEmail() {
+  return process.env.BRIEF_EMAIL?.trim() || process.env.OWNER_EMAIL?.trim() || null;
+}
+
 /** Sends the brief to the owner on every configured channel. */
 export async function deliverBrief(db: DB, headline: string, body: BriefBody) {
   const text = briefAsText(headline, body);
+  const to = briefEmail();
   const results: { channel: string; status: string }[] = [];
   const attempts: { channel: string; recipient: string | undefined; configured: boolean; send: () => Promise<void> }[] = [
     {
       channel: "email",
-      recipient: process.env.OWNER_EMAIL,
-      configured: emailConfigured() && !!process.env.OWNER_EMAIL,
-      send: () => sendEmail({ to: process.env.OWNER_EMAIL!, subject: `AMFIRE brief: ${headline}`, text }),
+      recipient: to ?? undefined,
+      configured: emailConfigured() && !!to,
+      send: () => sendEmail({ to: to!, subject: `AMFIRE brief: ${headline}`, text }),
     },
     {
       channel: "whatsapp",

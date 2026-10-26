@@ -49,8 +49,8 @@ HQ (browser / phone)  ──►  /hq/outreach, /hq/outreach/call, /hq/outreach/[
 4. Try it: ask Claude "research 40 Pune showrooms for tomorrow" (uses `prospect-research`),
    or "review today" (uses `outreach-review`).
 
-For local testing, put `HQ_CONNECTOR_TOKEN` in `.env.development.local` and set
-`AMFIRE_HQ_URL=http://localhost:3001`.
+For local testing, put `HQ_CONNECTOR_TOKEN` in `.env.development.local` and pass Claude a
+config pointing at `http://localhost:3001/api/mcp` with `--mcp-config`.
 
 ## Daily rhythm
 

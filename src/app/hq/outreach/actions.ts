@@ -8,10 +8,13 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
+import { createPartnerLink } from "@/server/partners";
 import {
   addProspects,
   convertToLead,
   logTouch,
+  markResponseTestReplied,
+  startResponseTest,
   parseIstLocal,
   parsePastedProspects,
   updateProspect,
@@ -124,4 +127,32 @@ export async function convertToLeadAction(prospectId: string) {
   const lead = await convertToLead(db, actor, prospectId);
   revalidatePath("/hq", "layout");
   redirect(`/hq/leads/${lead.id}`);
+}
+
+export async function createPartnerLinkAction(prospectId: string): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const { url } = await createPartnerLink(db, actor, prospectId);
+    revalidatePath(`/hq/outreach/${prospectId}`);
+    return { ok: `Referral link ready: ${url}` };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function startResponseTestAction(prospectId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    await startResponseTest(db, actor, { prospectId, channel: text(formData, "channel") ?? "", note: text(formData, "note") });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hq/outreach/${prospectId}`);
+  return { ok: "Timer started. Tap “They replied” when they answer." };
+}
+
+export async function markResponseRepliedAction(prospectId: string, testId: string) {
+  const { db, actor } = await ctx();
+  await markResponseTestReplied(db, actor, testId);
+  revalidatePath(`/hq/outreach/${prospectId}`);
 }

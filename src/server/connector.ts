@@ -24,10 +24,14 @@ import {
   TOUCH_CHANNELS,
 } from "@/knowledge/outreach";
 import { AccessDenied, loadActor, type Actor } from "./access";
+import { AuditItem, upsertDemo } from "./demos";
+import { getPartners } from "./partners";
 import {
   addOutreachNote,
   addProspects,
   attachCallAnalysis,
+  findCallTouch,
+  listResponseTests,
   getProspect,
   getScoreboard,
   listOutreachNotes,
@@ -225,9 +229,34 @@ export const TOOLS: Tool[] = [
     },
   ),
   tool(
+    "create_demo",
+    "Build or update a prospect's personal demo page: an AI salesperson that answers like their WhatsApp would, from the knowledge you give it, plus up to 5 audit findings. Returns the link the owner sends. Use only what their public website, Google listing or catalogue shows; never invent prices or policies.",
+    z.object({
+      prospectId: z.uuid(),
+      knowledge: z.string().describe("Plain text, one fact per line: products/services with prices where public, hours, address and landmarks, delivery/booking, payment options, FAQs, brands stocked."),
+      greeting: z.string().optional().describe("First message, warm and short, in their style. Default: a Namaste welcome."),
+      sampleQuestions: z.array(z.string()).max(5).optional().describe("3–4 questions their customers really ask, e.g. 'Do you have 2x2 vitrified tiles?'"),
+      audit: z.array(AuditItem).max(5).optional().describe("Findings shown under the chat: what you saw (finding), what it costs them (impact), how AMFIRE fixes it (fix)."),
+    }),
+    async (db, actor, args) => {
+      const { demo, url } = await upsertDemo(db, actor, args);
+      return { demoId: demo.id, url, views: demo.views };
+    },
+  ),
+  tool(
+    "find_call_touch",
+    "Match a call recording to the prospect (by phone number) and the call touch logged nearest that time. If touch is null the call wasn't logged: log it with log_touch, then attach the analysis.",
+    z.object({ phone: z.string(), at: isoDate, windowMinutes: z.number().int().min(5).max(720).optional() }),
+    async (db, actor, args) => findCallTouch(db, actor, args),
+  ),
+  tool("list_response_tests", "Test enquiries the owner sent businesses and how long each took to reply, with summary numbers (median hours, no reply within 24 h). Source data for the Pune business response report.", z.object({}), async (db, actor) =>
+    listResponseTests(db, actor),
+  ),
+  tool("list_partners", "CA partner firms with their referral link, clicks, referred leads, wins, money collected in the first year and the 10% share owed.", z.object({}), async (db, actor) => getPartners(db, actor)),
+  tool(
     "add_note",
-    "Write back to HQ: the nightly review (kind review), research findings (research) or a proposed playbook change (playbook). Markdown. The owner reads the latest ones on the outreach page.",
-    z.object({ kind: z.enum(["review", "research", "playbook"]), title: z.string(), body: z.string() }),
+    "Write back to HQ: the nightly review (kind review), research findings (research), a proposed playbook change (playbook) or a draft post or report (content). Markdown. The owner reads the latest ones on the outreach page.",
+    z.object({ kind: z.enum(["review", "research", "playbook", "content"]), title: z.string(), body: z.string() }),
     async (db, actor, args) => {
       const note = await addOutreachNote(db, actor, args, "claude");
       return { id: note.id };
@@ -236,7 +265,7 @@ export const TOOLS: Tool[] = [
   tool(
     "list_notes",
     "Earlier reviews, research notes and playbook changes, newest first.",
-    z.object({ kind: z.enum(["review", "research", "playbook"]).optional(), limit: z.number().int().min(1).max(50).optional() }),
+    z.object({ kind: z.enum(["review", "research", "playbook", "content"]).optional(), limit: z.number().int().min(1).max(50).optional() }),
     async (db, actor, args) => listOutreachNotes(db, actor, args),
   ),
 ];

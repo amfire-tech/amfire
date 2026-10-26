@@ -676,6 +676,8 @@ export const prospects = appSchema.table(
     missedCalls: integer("missed_calls").notNull().default(0),
     lastTouchAt: timestamp("last_touch_at", { withTimezone: true }),
     leadId: uuid("lead_id").references(() => leads.id, { onDelete: "set null" }),
+    /** A CA firm's referral link (a tracked link in content_posts, channel "referral"). */
+    referralPostId: uuid("referral_post_id").references(() => contentPosts.id, { onDelete: "set null" }),
     /** "claude", "owner" or "import". */
     source: text("source").notNull().default("owner"),
     /** Where the research came from (a listing, a job ad, a review). */
@@ -714,6 +716,52 @@ export const touches = appSchema.table(
     createdAt: createdAt(),
   },
   (t) => [index("touches_prospect_idx").on(t.prospectId), index("touches_occurred_idx").on(t.occurredAt)],
+);
+
+/**
+ * A prospect's personal demo page (/demo/{slug}): "your AI salesperson",
+ * answering from their own catalogue and prices, plus a short audit. Claude
+ * researches the knowledge from public sources; opening it alerts the owner.
+ */
+export const demos = appSchema.table("demos", {
+  id: id(),
+  prospectId: uuid("prospect_id")
+    .notNull()
+    .unique()
+    .references(() => prospects.id, { onDelete: "cascade" }),
+  slug: text("slug").notNull().unique(),
+  businessName: text("business_name").notNull(),
+  /** The first message the AI salesperson sends. */
+  greeting: text("greeting").notNull(),
+  /** What the demo answers from: products, prices, hours, location, policies, FAQs. */
+  knowledge: text("knowledge").notNull(),
+  sampleQuestions: jsonb("sample_questions").$type<string[]>().notNull().default([]),
+  /** Findings shown under the chat: [{ title, finding, impact, fix }]. */
+  audit: jsonb("audit").$type<{ title: string; finding: string; impact: string; fix: string }[]>().notNull().default([]),
+  views: integer("views").notNull().default(0),
+  chats: integer("chats").notNull().default(0),
+  firstViewedAt: timestamp("first_viewed_at", { withTimezone: true }),
+  lastViewedAt: timestamp("last_viewed_at", { withTimezone: true }),
+  createdAt: createdAt(),
+  updatedAt: updatedAt(),
+});
+
+/** A test enquiry the owner sent a business, timed until they replied: evidence for the pitch and the Pune report. */
+export const responseTests = appSchema.table(
+  "response_tests",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id")
+      .notNull()
+      .references(() => prospects.id, { onDelete: "cascade" }),
+    /** "whatsapp", "website", "call" or "email". */
+    channel: text("channel").notNull(),
+    sentAt: timestamp("sent_at", { withTimezone: true }).notNull(),
+    repliedAt: timestamp("replied_at", { withTimezone: true }),
+    note: text("note"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("response_tests_prospect_idx").on(t.prospectId)],
 );
 
 /** What Claude writes back: the nightly review, research notes, playbook changes. */
@@ -808,5 +856,7 @@ export type ChecklistItem = typeof checklistItems.$inferSelect;
 export type Prospect = typeof prospects.$inferSelect;
 export type Touch = typeof touches.$inferSelect;
 export type OutreachNote = typeof outreachNotes.$inferSelect;
+export type Demo = typeof demos.$inferSelect;
+export type ResponseTest = typeof responseTests.$inferSelect;
 export type ServicePath = (typeof servicePath.enumValues)[number];
 export type MemberRole = (typeof memberRole.enumValues)[number];

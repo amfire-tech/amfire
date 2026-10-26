@@ -5,7 +5,8 @@
 import { and, asc, desc, eq, gte, ilike, inArray, isNull, lte, notInArray, or, sql, type SQL } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
-import { interactions, leads, outreachNotes, prospects, touches, type Prospect } from "@/db/schema";
+import { contentPosts, demos, interactions, leads, outreachNotes, prospects, responseTests, touches, type Prospect } from "@/db/schema";
+import { site } from "@/config/site";
 import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import {
   DAILY_TARGETS,
@@ -449,9 +450,9 @@ export async function nextInQueue(db: DB, actor: Actor | null, opts: { skip?: st
     .select({ count: sql<number>`count(*)::int` })
     .from(prospects)
     .where(and(...where));
-  if (!next) return { prospect: null, remaining: 0, history: [] };
+  if (!next) return { prospect: null, remaining: 0, history: [], demo: null };
   const history = await db.select().from(touches).where(eq(touches.prospectId, next.id)).orderBy(desc(touches.occurredAt)).limit(5);
-  return { prospect: next, remaining: count, history };
+  return { prospect: next, remaining: count, history, demo: await demoSummary(db, next.id) };
 }
 
 export async function listProspects(
@@ -487,7 +488,22 @@ export async function getProspect(db: DB, actor: Actor | null, prospectId: strin
   if (!prospect) return null;
   const history = await db.select().from(touches).where(eq(touches.prospectId, prospectId)).orderBy(desc(touches.occurredAt));
   const [lead] = prospect.leadId ? await db.select({ id: leads.id, status: leads.status }).from(leads).where(eq(leads.id, prospect.leadId)) : [];
-  return { prospect, history, lead: lead ?? null };
+  const tests = await db.select().from(responseTests).where(eq(responseTests.prospectId, prospectId)).orderBy(desc(responseTests.sentAt));
+  const [referral] = prospect.referralPostId ? await db.select().from(contentPosts).where(eq(contentPosts.id, prospect.referralPostId)) : [];
+  return {
+    prospect,
+    history,
+    lead: lead ?? null,
+    demo: await demoSummary(db, prospectId),
+    responseTests: tests,
+    referral: referral ? { url: `${site.url}/go/${referral.slug}`, clicks: referral.clicks, slug: referral.slug } : null,
+  };
+}
+
+/** The prospect's demo page, if Claude has built one: its link and how often it was opened. */
+async function demoSummary(db: DB, prospectId: string) {
+  const [d] = await db.select().from(demos).where(eq(demos.prospectId, prospectId));
+  return d ? { url: `${site.url}/demo/${d.slug}`, views: d.views, chats: d.chats, lastViewedAt: d.lastViewedAt } : null;
 }
 
 export async function listTouches(db: DB, actor: Actor | null, opts: { since?: Date; until?: Date; channel?: string; limit?: number } = {}) {
@@ -542,7 +558,7 @@ export async function attachCallAnalysis(db: DB, actor: Actor | null, input: z.i
 }
 
 export const NoteInput = z.object({
-  kind: z.enum(["review", "research", "playbook"]),
+  kind: z.enum(["review", "research", "playbook", "content"]),
   title: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(40_000),
 });
@@ -677,4 +693,84 @@ export async function getScoreboard(db: DB, actor: Actor | null, now = new Date(
     readyToContact: due[0]?.count ?? 0,
     totalProspects: all.length,
   };
+}
+
+// --- Response-time tests ---------------------------------------------------------
+//
+// The owner sends a business a genuine enquiry and times the reply. The result
+// opens the pitch ("I enquired on Tuesday at 11 and heard back 26 hours later")
+// and, across many businesses, becomes the Pune business response report.
+
+export const RESPONSE_TEST_CHANNELS = ["whatsapp", "website", "call", "email"] as const;
+
+export async function startResponseTest(db: DB, actor: Actor | null, input: { prospectId: string; channel: string; note?: string | null; sentAt?: Date }) {
+  assertStaff(actor);
+  const data = z
+    .object({ prospectId: z.uuid(), channel: z.enum(RESPONSE_TEST_CHANNELS), note: optional(500), sentAt: z.coerce.date().optional() })
+    .parse(input);
+  const [row] = await db
+    .insert(responseTests)
+    .values({ prospectId: data.prospectId, channel: data.channel, note: data.note ?? null, sentAt: data.sentAt ?? new Date() })
+    .returning();
+  return row;
+}
+
+export async function markResponseTestReplied(db: DB, actor: Actor | null, testId: string, repliedAt = new Date()) {
+  assertStaff(actor);
+  const [row] = await db
+    .update(responseTests)
+    .set({ repliedAt })
+    .where(and(eq(responseTests.id, testId), isNull(responseTests.repliedAt)))
+    .returning();
+  if (!row) throw new OutreachError("Test not found, or already marked as replied.");
+  return row;
+}
+
+/** Every test with the business it was for, plus the numbers for the report. */
+export async function listResponseTests(db: DB, actor: Actor | null, now = new Date()) {
+  assertStaff(actor);
+  const rows = await db
+    .select({ test: responseTests, prospect: { id: prospects.id, name: prospects.name, area: prospects.area, industry: prospects.industry } })
+    .from(responseTests)
+    .innerJoin(prospects, eq(prospects.id, responseTests.prospectId))
+    .orderBy(desc(responseTests.sentAt));
+  const hours = (t: { sentAt: Date; repliedAt: Date | null }) => (t.repliedAt ? (t.repliedAt.getTime() - t.sentAt.getTime()) / HOUR : null);
+  const settled = rows.filter((r) => r.test.repliedAt || now.getTime() - r.test.sentAt.getTime() > DAY);
+  const times = settled.map((r) => hours(r.test)).filter((h): h is number => h !== null).sort((a, b) => a - b);
+  return {
+    tests: rows.map((r) => ({ ...r.test, prospect: r.prospect, hoursToReply: hours(r.test) })),
+    summary: {
+      tests: rows.length,
+      settled: settled.length,
+      replied: times.length,
+      noReplyWithin24h: settled.filter((r) => (hours(r.test) ?? Infinity) > 24).length,
+      medianHoursToReply: times.length ? times[Math.floor(times.length / 2)] : null,
+      within1h: times.filter((h) => h <= 1).length,
+    },
+  };
+}
+
+// --- Recorded calls ---------------------------------------------------------------
+
+/**
+ * Finds the prospect a recorded call was with (by phone number) and the call
+ * touch logged closest to when it happened, so Claude can attach the
+ * transcript and review. A call that wasn't logged returns the prospect only.
+ */
+export async function findCallTouch(db: DB, actor: Actor | null, input: { phone: string; at: Date | string; windowMinutes?: number }) {
+  assertStaff(actor);
+  const key = phoneKey(input.phone);
+  if (!key || key.length < 8) throw new OutreachError("Give the phone number from the recording.");
+  const at = new Date(input.at);
+  if (Number.isNaN(at.getTime())) throw new OutreachError("Give the time of the call.");
+  const window = (input.windowMinutes ?? 120) * 60 * 1000;
+  const candidates = await db.select().from(prospects).where(ilike(prospects.phone, `%${key.slice(-4)}%`));
+  const prospect = candidates.find((p) => phoneKey(p.phone) === key);
+  if (!prospect) return { prospect: null, touch: null };
+  const calls = await db
+    .select()
+    .from(touches)
+    .where(and(eq(touches.prospectId, prospect.id), eq(touches.channel, "call"), gte(touches.occurredAt, new Date(at.getTime() - window)), lte(touches.occurredAt, new Date(at.getTime() + window))));
+  const touch = calls.sort((a, b) => Math.abs(a.occurredAt.getTime() - at.getTime()) - Math.abs(b.occurredAt.getTime() - at.getTime()))[0] ?? null;
+  return { prospect: { id: prospect.id, name: prospect.name, status: prospect.status }, touch: touch ? { id: touch.id, outcome: touch.outcome, occurredAt: touch.occurredAt, hasTranscript: !!touch.transcript } : null };
 }

@@ -16,7 +16,7 @@ export default async function CallPage({ searchParams }: PageProps<"/hq/outreach
   const params = await searchParams;
   const kind = PROSPECT_KINDS.find((k) => k.id === params.kind)?.id;
   const skip = typeof params.skip === "string" ? params.skip.split(",").filter((id) => /^[0-9a-f-]{36}$/i.test(id)) : [];
-  const [{ prospect: p, remaining, history }, board] = await Promise.all([nextInQueue(db, actor, { skip, kind }), getScoreboard(db, actor)]);
+  const [{ prospect: p, remaining, history, demo }, board] = await Promise.all([nextInQueue(db, actor, { skip, kind }), getScoreboard(db, actor)]);
 
   const skipHref = (id: string) => {
     const q = new URLSearchParams();
@@ -94,6 +94,7 @@ export default async function CallPage({ searchParams }: PageProps<"/hq/outreach
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Chip>Tier {p.tier}</Chip>
+                  {demo && <Chip className={demo.views ? "!bg-[#ecfdf3] !text-[#05603a]" : undefined}>{demo.views ? `Demo opened ${demo.views}×` : "Demo ready"}</Chip>}
                   <StatusBadge status={prospectStatusLabel(p.status)} />
                 </div>
               </div>
@@ -106,7 +107,7 @@ export default async function CallPage({ searchParams }: PageProps<"/hq/outreach
                 )}
                 {p.phone && (
                   <a
-                    href={whatsappLink(p.phone, fillTemplate(history.length ? hookFor(p.kind).whatsapp : hookFor(p.kind).coldWhatsapp, { contact: p.contactName, owner: actor.name.split(" ")[0], business: p.name }))}
+                    href={whatsappLink(p.phone, fillTemplate(history.length ? hookFor(p.kind).whatsapp : hookFor(p.kind).coldWhatsapp, { contact: p.contactName, owner: actor.name.split(" ")[0], business: p.name, demo: demo?.url }))}
                     target="_blank"
                     rel="noopener noreferrer"
                     className={buttonClass("secondary")}

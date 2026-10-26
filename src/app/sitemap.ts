@@ -23,5 +23,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...CASE_STUDIES.map((c) => page(`/work/${c.slug}`, 0.8)),
     ...EXAMPLES.map((e) => page(`/work/${e.slug}`, 0.6)),
     page("/about", 0.6),
+    page("/partners", 0.5),
   ];
 }

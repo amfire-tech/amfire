@@ -7,7 +7,9 @@ import { getDb } from "@/db";
 import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { DAILY_TARGETS, PROSPECT_KINDS, PROSPECT_STATUSES, STREAK_MIN_TOUCHES, formatIst, prospectStatusLabel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
-import { getScoreboard, listOutreachNotes, listProspects } from "@/server/outreach";
+import { getScoreboard, listOutreachNotes, listProspects, listResponseTests } from "@/server/outreach";
+import { getPartners } from "@/server/partners";
+import { Money } from "@/components/hq";
 import { addProspectAction, importProspectsAction } from "./actions";
 
 export const metadata = { title: "Outreach" };
@@ -22,10 +24,12 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
   const kind = PROSPECT_KINDS.find((k) => k.id === params.kind)?.id;
   const due = params.due === "1";
   const search = typeof params.q === "string" && params.q.trim() ? params.q.trim().slice(0, 80) : undefined;
-  const [board, list, notes] = await Promise.all([
+  const [board, list, notes, partners, response] = await Promise.all([
     getScoreboard(db, actor),
     listProspects(db, actor, { status, kind, search, dueOnly: due }),
     listOutreachNotes(db, actor, { limit: 3 }),
+    getPartners(db, actor),
+    listResponseTests(db, actor),
   ]);
   const review = notes.find((n) => n.kind === "review");
   const total = list.counts.reduce((s, c) => s + c.count, 0);
@@ -241,6 +245,56 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
                 </li>
               ))}
             </ul>
+          )}
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardTitle aside={<span className="text-sm text-muted">10% of year-one payments</span>}>CA partners</CardTitle>
+          {partners.length === 0 ? (
+            <p className="text-sm text-muted">No partners yet. When a CA firm agrees to refer clients, open it and create its referral link.</p>
+          ) : (
+            <ul className="divide-y divide-line text-sm">
+              {partners.map((pt) => (
+                <li key={pt.prospect.id} className="py-2.5">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <Link href={`/hq/outreach/${pt.prospect.id}`} className="font-medium underline-offset-4 hover:underline">
+                      {pt.prospect.name}
+                    </Link>
+                    <span className="text-muted tabular-nums">
+                      {pt.clicks} clicks · {pt.leads} leads · {pt.won} won
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-muted">
+                    Collected <Money amounts={pt.collected} empty="₹0" /> · share owed <Money amounts={pt.share} empty="₹0" />
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+        <Card>
+          <CardTitle aside={<span className="text-sm text-muted">{response.summary.tests} tests</span>}>Pune response report</CardTitle>
+          {response.summary.settled === 0 ? (
+            <p className="text-sm text-muted">
+              Send businesses a genuine enquiry and time the reply (on each prospect’s page). After 30+ tests, Claude turns the numbers into a post and a pitch: “61% of Pune businesses never replied”.
+            </p>
+          ) : (
+            <dl className="grid grid-cols-3 gap-3 text-sm">
+              <div>
+                <dt className="text-muted">Median reply</dt>
+                <dd className="text-xl font-semibold">{response.summary.medianHoursToReply === null ? "—" : `${response.summary.medianHoursToReply.toFixed(1)} h`}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">No reply in 24 h</dt>
+                <dd className="text-xl font-semibold">{pct(response.summary.noReplyWithin24h, response.summary.settled)}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Replied within 1 h</dt>
+                <dd className="text-xl font-semibold">{pct(response.summary.within1h, response.summary.settled)}</dd>
+              </div>
+            </dl>
           )}
         </Card>
       </div>

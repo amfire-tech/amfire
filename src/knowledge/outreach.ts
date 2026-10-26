@@ -162,9 +162,9 @@ export const PARTNER_HOOK = {
     "(Close:) Can I come by for 15 minutes this week, Wednesday or Thursday?",
   ],
   whatsapp:
-    "Namaste {contact}, {owner} from AMFIRE here, as discussed. We help your clients set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups. Happy to run a free session for your clients, hosted by your firm, with a referral share for anyone who signs up. When can I come by for 15 minutes?",
+    "Namaste {contact}, {owner} from AMFIRE here, as discussed. We help your clients set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups. Happy to run a free session for your clients, hosted by your firm, with a referral share for anyone who signs up. Details: www.amfire.in/partners. When can I come by for 15 minutes?",
   coldWhatsapp:
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. We help small businesses set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups, which also means cleaner books for their CA. Could I run a free session for your clients? Happy to share referral fees.",
+    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. We help small businesses set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups, which also means cleaner books for their CA. Could I run a free session for your clients? Happy to share referral fees. Details: www.amfire.in/partners",
 } as const;
 
 /** Someone the owner already knows: no pitch, just news and a request for help. */

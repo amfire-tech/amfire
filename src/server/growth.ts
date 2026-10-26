@@ -48,7 +48,9 @@ export async function followTrackedLink(db: DB, slug: string) {
     .where(eq(contentPosts.slug, slug))
     .returning();
   if (!post) return null;
-  const params = new URLSearchParams({ utm_source: post.channel, utm_medium: "social", utm_campaign: "post", utm_content: post.slug });
+  // A partner's link (channel "referral") is credited as a referral, a post's as social.
+  const referral = post.channel === "referral";
+  const params = new URLSearchParams({ utm_source: post.channel, utm_medium: referral ? "referral" : "social", utm_campaign: referral ? "partner" : "post", utm_content: post.slug });
   return `${post.targetPath}?${params.toString()}`;
 }
 

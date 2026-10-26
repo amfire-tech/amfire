@@ -57,6 +57,13 @@
       "when": 1793007470951,
       "tag": "0007_outreach",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793011488725,
+      "tag": "0008_proof_partners",
+      "breakpoints": true
     }
   ]
 }

@@ -73,6 +73,22 @@ No signal found → tier `C`, and say so in the brief rather than inventing one.
 - Then `add_note` with kind `research`: the batch's theme, how many per tier, the
   strongest signals found, and anything surprising about the market.
 
+## Demo pages for the best prospects
+
+For tier `A` prospects (and `B` when there's time), build their proof with `create_demo`:
+
+- `knowledge`: everything a customer might ask, one fact per line, only from their
+  website, Google listing, IndiaMART/Justdial page or menu/catalogue: products and
+  services, prices that are public, brands, hours, address and landmark, parking,
+  delivery or booking, payment options, FAQs. No price public → "Price depends on
+  size/design; share your requirement and we'll send a quote."
+- `greeting`: short and warm, in their style ("Namaste! 🙏 Welcome to …").
+- `sampleQuestions`: 3–4 questions their customers really ask.
+- `audit`: 2–4 findings, each with what you saw (finding), what it costs (impact)
+  and the fix. E.g. "No WhatsApp button on your Google listing" → "Mobile
+  searchers who want to message can't" → "Add the button; the AI replies instantly."
+- Then `update_prospect` so the `opener` mentions the demo, and add the link to `notes`.
+
 ## Rules
 
 - Public business information only. No personal social-media profiling, no personal

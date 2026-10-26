@@ -7,8 +7,16 @@ import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { CHANNEL_LABELS, PROSPECT_KINDS, fillTemplate, formatIst, hookFor, objectionLabel, outcomeLabel, prospectStatusLabel, type TouchChannel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
 import { whatsappLink } from "@/server/brain";
-import { getProspect } from "@/server/outreach";
-import { convertToLeadAction, logTouchAction, setProspectStatusAction, updateProspectAction } from "../actions";
+import { RESPONSE_TEST_CHANNELS, getProspect } from "@/server/outreach";
+import {
+  convertToLeadAction,
+  createPartnerLinkAction,
+  logTouchAction,
+  markResponseRepliedAction,
+  setProspectStatusAction,
+  startResponseTestAction,
+  updateProspectAction,
+} from "../actions";
 import { TouchForm } from "../touch-form";
 
 export const metadata = { title: "Prospect" };
@@ -21,7 +29,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const found = await getProspect(await getDb(), actor, id);
   if (!found) notFound();
-  const { prospect: p, history, lead } = found;
+  const { prospect: p, history, lead, demo, responseTests, referral } = found;
 
   return (
     <div className="space-y-6">
@@ -51,7 +59,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
             )}
             {p.phone && !p.doNotContact && (
               <a
-                href={whatsappLink(p.phone, fillTemplate(history.length ? hookFor(p.kind).whatsapp : hookFor(p.kind).coldWhatsapp, { contact: p.contactName, owner: actor.name.split(" ")[0], business: p.name }))}
+                href={whatsappLink(p.phone, fillTemplate(history.length ? hookFor(p.kind).whatsapp : hookFor(p.kind).coldWhatsapp, { contact: p.contactName, owner: actor.name.split(" ")[0], business: p.name, demo: demo?.url }))}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={buttonClass("secondary")}
@@ -165,6 +173,86 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
         </div>
 
         <aside className="space-y-6">
+          {p.kind !== "ca_firm" && (
+            <Card>
+              <CardTitle aside={demo && <span className="text-sm text-muted">{demo.views} {demo.views === 1 ? "view" : "views"}</span>}>Demo page</CardTitle>
+              {demo ? (
+                <div className="space-y-2 text-sm">
+                  <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{demo.url}</code>
+                  <p className="text-muted">
+                    {demo.lastViewedAt ? `Last opened ${formatIst(demo.lastViewedAt)}` : "Not opened yet"} · {demo.chats} {demo.chats === 1 ? "message" : "messages"} tried
+                  </p>
+                  <a href={demo.url} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>
+                    Open demo ↗
+                  </a>
+                  <p className="text-xs text-muted">The WhatsApp button fills in this link after your first conversation. When they open it, they jump to the top of your call list.</p>
+                </div>
+              ) : (
+                <p className="text-sm text-muted">
+                  No demo yet. In Claude Code, ask: “build a demo for {p.name}”. Claude reads their website and listing and makes their own AI-salesperson page.
+                </p>
+              )}
+            </Card>
+          )}
+
+          {p.kind === "ca_firm" && (
+            <Card>
+              <CardTitle>Partner referral link</CardTitle>
+              {referral ? (
+                <div className="space-y-2 text-sm">
+                  <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{referral.url}</code>
+                  <p className="text-muted">
+                    {referral.clicks} {referral.clicks === 1 ? "click" : "clicks"}. Clients who book through it are credited to this firm. Share: 10% of what they pay in year one.
+                  </p>
+                </div>
+              ) : (
+                <ActionForm action={createPartnerLinkAction.bind(null, p.id)} submitLabel="Create referral link" size="sm">
+                  <p className="text-sm text-muted">When the firm agrees to refer clients, give them their own link. It marks them as a partner.</p>
+                </ActionForm>
+              )}
+            </Card>
+          )}
+
+          {p.kind !== "ca_firm" && (
+            <Card>
+              <CardTitle>Response-time test</CardTitle>
+              <p className="-mt-2 mb-3 text-sm text-muted">Send them a genuine enquiry, start the timer, and tap when they reply. Tell them about the test when you pitch.</p>
+              {responseTests.length > 0 && (
+                <ul className="mb-3 space-y-2 text-sm">
+                  {responseTests.map((t) => (
+                    <li key={t.id} className="flex items-center justify-between gap-2 rounded-xl bg-subtle px-3 py-2">
+                      <span>
+                        {t.channel} · sent {formatIst(t.sentAt)}
+                        <br />
+                        <span className="text-muted">
+                          {t.repliedAt ? `Replied after ${formatDuration(t.repliedAt.getTime() - t.sentAt.getTime())}` : `No reply yet (${formatDuration(elapsedMs(t.sentAt))})`}
+                        </span>
+                      </span>
+                      {!t.repliedAt && (
+                        <form action={markResponseRepliedAction.bind(null, p.id, t.id)}>
+                          <Button size="sm" variant="secondary">
+                            They replied
+                          </Button>
+                        </form>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <ActionForm action={startResponseTestAction.bind(null, p.id)} submitLabel="I just sent an enquiry" size="sm" inline>
+                <Field label="Channel" htmlFor="test-channel">
+                  <select id="test-channel" name="channel" defaultValue="whatsapp" className={`${inputClass} !py-2`}>
+                    {RESPONSE_TEST_CHANNELS.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </ActionForm>
+            </Card>
+          )}
+
           <Card>
             <CardTitle>Details</CardTitle>
             <ActionForm action={updateProspectAction.bind(null, p.id)} submitLabel="Save" size="sm">
@@ -255,4 +343,17 @@ function TextField({ id, label, value, required }: { id: string; label: string; 
       <input id={id} name={id} defaultValue={value ?? ""} required={required} className={inputClass} />
     </Field>
   );
+}
+
+function formatDuration(ms: number) {
+  const minutes = Math.round(ms / 60_000);
+  if (minutes < 60) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 48) return `${hours} h ${minutes % 60} min`;
+  return `${Math.floor(hours / 24)} days`;
+}
+
+/** Time since `d`, read when the page renders. */
+function elapsedMs(d: Date) {
+  return Date.now() - d.getTime();
 }

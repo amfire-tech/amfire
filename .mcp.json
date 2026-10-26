@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "amfire-hq": {
+      "type": "http",
+      "url": "${AMFIRE_HQ_URL:-https://www.amfire.in}/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${AMFIRE_HQ_TOKEN}"
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@ import { cx } from "@/components/ui";
 
 const ITEMS = [
   { href: "/hq", label: "Today", exact: true },
+  { href: "/hq/outreach", label: "Outreach" },
   { href: "/hq/ask", label: "Ask HQ" },
   { href: "/hq/pipeline", label: "Pipeline" },
   { href: "/hq/leads", label: "Leads" },

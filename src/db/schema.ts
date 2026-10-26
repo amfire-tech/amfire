@@ -621,6 +621,116 @@ export const contentPosts = appSchema.table("content_posts", {
   createdAt: createdAt(),
 });
 
+// --- Outreach -------------------------------------------------------------------
+//
+// The calling desk: businesses, CA firms and people we plan to contact, before
+// any of them is a lead. Claude researches them through the HQ connector
+// (/api/mcp); the owner calls, messages and visits from HQ, and every attempt
+// is a touch, so activity and what works can be measured.
+
+export const prospectStatus = appSchema.enum("prospect_status", [
+  "to_contact",
+  "trying",
+  "talking",
+  "meeting",
+  "lead",
+  "partner",
+  "not_now",
+  "dropped",
+]);
+export const touchChannel = appSchema.enum("touch_channel", ["call", "whatsapp", "email", "linkedin", "visit", "note"]);
+
+export const prospects = appSchema.table(
+  "prospects",
+  {
+    id: id(),
+    /** The business or firm. */
+    name: text("name").notNull(),
+    contactName: text("contact_name"),
+    contactRole: text("contact_role"),
+    phone: text("phone"),
+    email: text("email"),
+    website: text("website"),
+    linkedinUrl: text("linkedin_url"),
+    mapsUrl: text("maps_url"),
+    city: text("city").notNull().default("Pune"),
+    area: text("area"),
+    industry: text("industry"),
+    /** "business", "ca_firm" (referral partner) or "network" (someone the owner knows). */
+    kind: text("kind").notNull().default("business"),
+    /** A = gets a personal demo, B = an audit page, C = a researched call. */
+    tier: text("tier").notNull().default("C"),
+    score: integer("score").notNull().default(50),
+    /** Why now: the job ad, the review, the ranking gap that makes this business worth a call. */
+    signal: text("signal"),
+    /** The 30-second research brief read before calling. */
+    brief: text("brief"),
+    /** Suggested first line for the call or message. */
+    opener: text("opener"),
+    status: prospectStatus("status").notNull().default("to_contact"),
+    statusReason: text("status_reason"),
+    /** Asked not to be contacted, or a number to never call again. */
+    doNotContact: boolean("do_not_contact").notNull().default(false),
+    nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),
+    /** Calls that didn't reach anyone in a row; reset by any real conversation. */
+    missedCalls: integer("missed_calls").notNull().default(0),
+    lastTouchAt: timestamp("last_touch_at", { withTimezone: true }),
+    leadId: uuid("lead_id").references(() => leads.id, { onDelete: "set null" }),
+    /** "claude", "owner" or "import". */
+    source: text("source").notNull().default("owner"),
+    /** Where the research came from (a listing, a job ad, a review). */
+    sourceUrl: text("source_url"),
+    notes: text("notes"),
+    createdBy: uuid("created_by").references(() => users.id),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("prospects_status_idx").on(t.status), index("prospects_follow_up_idx").on(t.nextFollowUpAt), index("prospects_phone_idx").on(t.phone)],
+);
+
+/** One attempt to reach a prospect: a call, a message, a visit. Claude adds the transcript and analysis of recorded calls. */
+export const touches = appSchema.table(
+  "touches",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id")
+      .notNull()
+      .references(() => prospects.id, { onDelete: "cascade" }),
+    channel: touchChannel("channel").notNull(),
+    /** OUTCOMES in knowledge/outreach.ts, e.g. "no_answer", "interested", "meeting_booked". */
+    outcome: text("outcome").notNull(),
+    /** The objection they raised (OBJECTIONS in knowledge/outreach.ts), if any. */
+    objection: text("objection"),
+    note: text("note"),
+    durationSec: integer("duration_sec"),
+    recordingRef: text("recording_ref"),
+    transcript: text("transcript"),
+    /** Claude's call review: summary, objections, talk ratio, next step, coaching. */
+    analysis: jsonb("analysis"),
+    /** "owner" or "claude". */
+    loggedBy: text("logged_by").notNull().default("owner"),
+    authorId: uuid("author_id").references(() => users.id),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("touches_prospect_idx").on(t.prospectId), index("touches_occurred_idx").on(t.occurredAt)],
+);
+
+/** What Claude writes back: the nightly review, research notes, playbook changes. */
+export const outreachNotes = appSchema.table(
+  "outreach_notes",
+  {
+    id: id(),
+    /** "review", "research" or "playbook". */
+    kind: text("kind").notNull(),
+    title: text("title").notNull(),
+    body: text("body").notNull(),
+    author: text("author").notNull().default("claude"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("outreach_notes_kind_idx").on(t.kind, t.createdAt)],
+);
+
 /** Outgoing notifications (the brief by email or WhatsApp), including ones skipped because a channel isn't set up. */
 export const notifications = appSchema.table("notifications", {
   id: id(),
@@ -695,5 +805,8 @@ export type Memory = typeof memories.$inferSelect;
 export type ChangeRequest = typeof changeRequests.$inferSelect;
 export type ContentPost = typeof contentPosts.$inferSelect;
 export type ChecklistItem = typeof checklistItems.$inferSelect;
+export type Prospect = typeof prospects.$inferSelect;
+export type Touch = typeof touches.$inferSelect;
+export type OutreachNote = typeof outreachNotes.$inferSelect;
 export type ServicePath = (typeof servicePath.enumValues)[number];
 export type MemberRole = (typeof memberRole.enumValues)[number];

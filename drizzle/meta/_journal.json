@@ -50,6 +50,13 @@
       "when": 1792949325103,
       "tag": "0006_support_threads",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793007470951,
+      "tag": "0007_outreach",
+      "breakpoints": true
     }
   ]
 }

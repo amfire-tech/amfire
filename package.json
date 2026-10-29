@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/milestone-path.test.ts tests/lead-source.test.ts tests/crm.test.ts tests/outreach.test.ts tests/proof.test.ts tests/engine.test.ts",
+    "test": "node --import tsx --test tests/milestone-path.test.ts tests/lead-source.test.ts tests/crm.test.ts tests/outreach.test.ts tests/proof.test.ts tests/engine.test.ts tests/hunts.test.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "vercel-build": "tsx scripts/migrate.ts && next build",

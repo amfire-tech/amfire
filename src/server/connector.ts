@@ -1,8 +1,9 @@
 // The HQ connector: a small MCP server (JSON-RPC over HTTP, see
 // app/api/mcp/route.ts) through which Claude, running on the owner's own
 // subscription in Claude Code, researches prospects into the outreach desk,
-// reads every touch and writes back its reviews. It acts as the owner and
-// can only reach the outreach desk, never clients' records or money.
+// reads every touch and writes back its reviews. It acts as the owner (shared
+// key) or as the HQ person whose personal key is used, and can only reach the
+// outreach desk and signal engine, never clients' records or money.
 
 import { and, eq } from "drizzle-orm";
 import * as z from "zod";
@@ -43,6 +44,7 @@ import {
   stopPlay,
   upsertTargets,
 } from "./engine";
+import { claimHunt, finishHunt, listHunts } from "./hunts";
 import { getPartners } from "./partners";
 import {
   addOutreachNote,
@@ -417,6 +419,32 @@ export const TOOLS: Tool[] = [
     z.object({}),
     async (db, actor) => getEngineInsights(db, actor),
   ),
+  // --- Hunts: requests from HQ, run on the caller's own Claude ---
+  tool(
+    "claim_hunt",
+    "Take the next hunt queued in HQ for you (assigned to you, else to anyone), with plain instructions. Returns { hunt: null } when there's nothing to do: then stop. Run it with the signal-hunt skill and report with finish_hunt.",
+    z.object({}),
+    async (db, actor) => ({ you: actor.name, ...((await claimHunt(db, actor)) ?? { hunt: null }) }),
+  ),
+  tool(
+    "finish_hunt",
+    "Report a hunt you claimed: { huntId, added, updated, warm, summary } when done (warm = targets now scoring 60+), or { huntId, error } if it couldn't be done. The owner sees this on the Signal engine page.",
+    z.object({
+      huntId: z.uuid(),
+      added: z.number().int().min(0).optional(),
+      updated: z.number().int().min(0).optional(),
+      warm: z.number().int().min(0).optional(),
+      summary: z.string().optional(),
+      error: z.string().optional(),
+    }),
+    async (db, actor, args) => {
+      const row = await finishHunt(db, actor, args.error ? { huntId: args.huntId, error: args.error } : { huntId: args.huntId, added: args.added ?? 0, updated: args.updated ?? 0, warm: args.warm ?? 0, summary: args.summary ?? "" });
+      return { id: row.id, status: row.status };
+    },
+  ),
+  tool("list_hunts", "Recent hunt requests from HQ: what was asked, for whom, status and results.", z.object({ limit: z.number().int().min(1).max(100).optional() }), async (db, actor, args) =>
+    listHunts(db, actor, args),
+  ),
   tool("list_partners", "CA partner firms with their referral link, clicks, referred leads, wins, money collected in the first year and the 10% share owed.", z.object({}), async (db, actor) => getPartners(db, actor)),
   tool(
     "add_note",
@@ -442,13 +470,18 @@ const fail = (id: JsonRpcMessage["id"], code: number, message: string) => ({ jso
 
 function toolErrorMessage(err: unknown) {
   if (err instanceof z.ZodError) return err.issues.map((i) => `${i.path.join(".") || "input"}: ${i.message}`).join("; ");
+  // HuntError and EngineError extend OutreachError.
   if (err instanceof OutreachError || err instanceof AccessDenied) return err.message;
   console.error(err);
   return "The tool failed. Try again, or check the input.";
 }
 
-/** Answers one JSON-RPC message; notifications (no id) get no answer. */
-export async function handleMcpMessage(db: DB, msg: JsonRpcMessage) {
+/**
+ * Answers one JSON-RPC message; notifications (no id) get no answer. `actor`
+ * is the person whose personal key made the call; without one (the shared
+ * key) the connector acts as the owner.
+ */
+export async function handleMcpMessage(db: DB, msg: JsonRpcMessage, actor?: Actor) {
   const isRequest = msg.id !== undefined && msg.id !== null;
   if (!isRequest) return null;
   switch (msg.method) {
@@ -474,8 +507,7 @@ export async function handleMcpMessage(db: DB, msg: JsonRpcMessage) {
       if (!found) return fail(msg.id, -32602, `Unknown tool: ${name}`);
       try {
         const args = found.input.parse(msg.params?.arguments ?? {});
-        const actor = await connectorActor(db);
-        const result = await found.run(db, actor, args as never);
+        const result = await found.run(db, actor ?? (await connectorActor(db)), args as never);
         return ok(msg.id, { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] });
       } catch (err) {
         return ok(msg.id, { content: [{ type: "text", text: toolErrorMessage(err) }], isError: true });

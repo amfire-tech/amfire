@@ -5,8 +5,10 @@ import { Button, ButtonLink, Card, CardTitle, Chip, EmptyState, Field, PageHeade
 import { getDb } from "@/db";
 import { AREA_CENTRES, SEGMENTS, SEGMENT_IDS, signalType } from "@/knowledge/engine";
 import { requireStaffActor } from "@/lib/session";
+import type { HuntPlace } from "@/db/schema";
 import { getEngineInsights, getEngineQueue } from "@/server/engine";
-import { runLearningAction, startPlayAction } from "../engine-actions";
+import { listHunts, listRunners } from "@/server/hunts";
+import { cancelHuntAction, requestHuntAction, runLearningAction, startPlayAction } from "../engine-actions";
 import { NextStep, ScoreBars, ScoreChip, StatsTable } from "../engine-ui";
 
 export const metadata = { title: "Signal engine" };
@@ -15,6 +17,17 @@ const one = (v: string | string[] | undefined) => (typeof v === "string" && v.tr
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const AREAS = Object.keys(AREA_CENTRES).sort();
 const title = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+
+const HUNT_LABELS: Record<string, string> = { queued: "Queued", running: "Running", done: "Done", failed: "Failed", cancelled: "Cancelled" };
+const HUNT_TONES: Record<string, string> = {
+  running: "!bg-[#f0f9ff] !text-[#026aa2]",
+  done: "!bg-[#ecfdf3] !text-[#05603a]",
+  failed: "!bg-[#fef3f2] !text-[#b42318]",
+};
+
+function placeLabel(p: HuntPlace) {
+  return [p.near ? `within ${p.near.km} km of ${title(p.near.area)}` : null, p.area, p.pincode ? `pin ${p.pincode}…` : null, p.city].filter(Boolean).join(", ");
+}
 
 export default async function EnginePage({ searchParams }: PageProps<"/hq/outreach/engine">) {
   const actor = await requireStaffActor();
@@ -28,7 +41,7 @@ export default async function EnginePage({ searchParams }: PageProps<"/hq/outrea
   const minScore = one(params.min) ? Math.min(Math.max(Number(one(params.min)) || 0, 0), 100) : undefined;
   const filter = { segment, area, pincode, near: near ? { area: near, km } : undefined, minScore };
 
-  const [queue, insights] = await Promise.all([getEngineQueue(db, actor, filter), getEngineInsights(db, actor)]);
+  const [queue, insights, hunts, runners] = await Promise.all([getEngineQueue(db, actor, filter), getEngineInsights(db, actor), listHunts(db, actor, { limit: 8 }), listRunners(db, actor)]);
   const shown = insights.segments.filter((s) => !segment || s.segment === segment);
   const filtered = !!(segment || area || pincode || near || minScore !== undefined);
 
@@ -44,6 +57,113 @@ export default async function EnginePage({ searchParams }: PageProps<"/hq/outrea
         description="Every lead is scored on fit × trigger × timing × reach. Warm ones go on a play: a reason in every touch, across email, visits, LinkedIn, calls and WhatsApp. Every morning it re-learns from what happened."
         actions={<ActionForm action={runLearningAction} submitLabel="Re-learn now" pendingLabel="Learning…" size="sm" inline />}
       />
+
+      <Card>
+        <CardTitle
+          aside={
+            <Link href="/hq/outreach/engine/claude" className="text-sm underline-offset-4 hover:underline">
+              Set up your Claude →
+            </Link>
+          }
+        >
+          Find warm leads
+        </CardTitle>
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Queue a hunt and a teammate’s own Claude runs it on their plan: it finds the targets, the person who decides and dated reasons to talk, and they land below already scored.
+        </p>
+        <ActionForm action={requestHuntAction} submitLabel="Find warm leads" pendingLabel="Queuing…" variant="primary">
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <Field label="Who" htmlFor="h-segment">
+              <select id="h-segment" name="segment" defaultValue={segment ?? "school"} className={inputClass}>
+                {SEGMENTS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Near" htmlFor="h-near" optional>
+              <select id="h-near" name="nearArea" defaultValue={near ?? ""} className={inputClass}>
+                <option value="">Anywhere in Pune</option>
+                {AREAS.map((a) => (
+                  <option key={a} value={a}>
+                    {title(a)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Within km" htmlFor="h-km" optional>
+              <input id="h-km" name="km" type="number" min={0.5} max={100} step={0.5} defaultValue={5} className={inputClass} />
+            </Field>
+            <Field label="Area or pin code" htmlFor="h-area" optional>
+              <input id="h-area" name="area" placeholder="Pimpri-Chinchwad" maxLength={80} className={inputClass} />
+            </Field>
+            <Field label="How many" htmlFor="h-count">
+              <input id="h-count" name="count" type="number" min={5} max={50} defaultValue={25} className={inputClass} />
+            </Field>
+            <Field label="Run on" htmlFor="h-runner">
+              <select id="h-runner" name="assignedTo" defaultValue="" className={inputClass}>
+                <option value="">Whoever’s Claude is free</option>
+                {runners.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.id === actor.userId ? "My Claude" : `${r.name}’s Claude`}
+                    {r.online ? " · online" : r.hasKey ? "" : " · not set up"}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <Field label="Notes for the hunter" htmlFor="h-brief" optional>
+            <input id="h-brief" name="brief" maxLength={1000} placeholder="Only CBSE with Classes 3–8 · firms with 3+ partners doing audits" className={inputClass} />
+          </Field>
+        </ActionForm>
+        {!runners.some((r) => r.hasKey) && (
+          <p className="mt-3 text-sm text-muted">
+            Nobody’s Claude is set up yet, so hunts will wait in the queue.{" "}
+            <Link href="/hq/outreach/engine/claude" className="underline">
+              Set up yours
+            </Link>{" "}
+            (5 minutes).
+          </p>
+        )}
+        {hunts.length > 0 && (
+          <ul className="mt-5 divide-y divide-line text-sm">
+            {hunts.map((h) => (
+              <li key={h.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                <div className="min-w-0">
+                  <p>
+                    <span className="font-medium">
+                      {h.count} {SEGMENTS.find((s) => s.id === h.segment)?.noun ?? h.segment}
+                    </span>
+                    <span className="text-muted"> · {placeLabel(h.place)}</span>
+                  </p>
+                  <p className="text-xs text-muted">
+                    Asked by {h.requestedByName ?? "someone"} {timeAgo(h.createdAt)} · for {h.assignedToName ? `${h.assignedToName}’s Claude` : "whoever’s free"}
+                    {h.claimedByName ? ` · run on ${h.claimedByName}’s Claude` : ""}
+                  </p>
+                  {h.result && (
+                    <p className="mt-1 text-fg/85">
+                      {h.result.added} added, {h.result.updated} updated, {h.result.warm} warm. {h.result.summary}
+                    </p>
+                  )}
+                  {h.error && <p className="mt-1 text-[#b42318]">{h.error}</p>}
+                  {h.brief && <p className="mt-1 text-xs text-muted">Notes: {h.brief}</p>}
+                </div>
+                <span className="flex items-center gap-2">
+                  <Chip className={HUNT_TONES[h.status]}>{HUNT_LABELS[h.status] ?? h.status}</Chip>
+                  {h.status === "queued" && (
+                    <form action={cancelHuntAction.bind(null, h.id)}>
+                      <Button size="sm" variant="ghost">
+                        Cancel
+                      </Button>
+                    </form>
+                  )}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <Card>
         <form action="/hq/outreach/engine" className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">

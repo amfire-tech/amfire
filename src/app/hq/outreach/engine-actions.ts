@@ -11,6 +11,7 @@ import { FIT_RULES, segmentOf } from "@/knowledge/engine";
 import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
 import { addContact, addSignal, recordFeedback, removeContact, removeSignal, runLearning, setFacts, startPlay, stopPlay } from "@/server/engine";
+import { addTeammate, cancelHunt, createConnectorToken, requestHunt, revokeConnectorToken } from "@/server/hunts";
 import { logTouch, parseIstLocal } from "@/server/outreach";
 
 async function ctx() {
@@ -155,6 +156,68 @@ export async function removeSignalAction(prospectId: string, signalId: string) {
   const { db, actor } = await ctx();
   await removeSignal(db, actor, signalId);
   refresh(prospectId);
+}
+
+// --- Hunts and the team's Claude ---
+
+export async function requestHuntAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  // One field takes an area name or a pin code.
+  const place = text(formData, "area")?.trim() ?? "";
+  const isPin = /^\d{1,6}$/.test(place);
+  try {
+    await requestHunt(db, actor, {
+      segment: (text(formData, "segment") ?? "") as never,
+      area: isPin ? undefined : place,
+      pincode: isPin ? place : undefined,
+      nearArea: text(formData, "nearArea") ?? "",
+      km: text(formData, "km") || undefined,
+      count: text(formData, "count") || undefined,
+      brief: text(formData, "brief"),
+      assignedTo: text(formData, "assignedTo") ?? "",
+    });
+  } catch (err) {
+    return toActionError(err);
+  }
+  refresh();
+  return { ok: "Queued. It starts when the chosen Claude next checks in (within the hour on a cloud routine)." };
+}
+
+export async function cancelHuntAction(huntId: string) {
+  const { db, actor } = await ctx();
+  await cancelHunt(db, actor, huntId);
+  refresh();
+}
+
+export type KeyState = { key?: string; error?: string } | undefined;
+
+/** A new personal connector key, returned once to show on screen. */
+export async function createKeyAction(_prev: KeyState, formData: FormData): Promise<KeyState> {
+  const { db, actor } = await ctx();
+  try {
+    const { key } = await createConnectorToken(db, actor, text(formData, "label") ?? "");
+    revalidatePath("/hq/outreach/engine/claude");
+    return { key };
+  } catch (err) {
+    return { error: toActionError(err)?.error ?? "Couldn't create the key." };
+  }
+}
+
+export async function revokeKeyAction(tokenId: string) {
+  const { db, actor } = await ctx();
+  await revokeConnectorToken(db, actor, tokenId);
+  revalidatePath("/hq/outreach/engine/claude");
+}
+
+export async function addTeammateAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const user = await addTeammate(db, actor, { name: text(formData, "name") ?? "", email: text(formData, "email") ?? "" });
+    revalidatePath("/hq/outreach/engine/claude");
+    return { ok: `${user.name} is in HQ. They sign in at amfire.in/login with ${user.email}, using "Email link".` };
+  } catch (err) {
+    return toActionError(err);
+  }
 }
 
 export async function removeContactAction(prospectId: string, contactId: string) {

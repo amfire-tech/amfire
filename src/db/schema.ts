@@ -889,6 +889,58 @@ export const engineStats = appSchema.table(
   (t) => [uniqueIndex("engine_stats_key_idx").on(t.segment, t.dimension, t.key)],
 );
 
+/**
+ * A personal key for the HQ connector. Claude Code signed in to that person's
+ * own Claude account uses it, so their hunts run on their plan and are
+ * credited to them. Only the hash is stored; the key is shown once.
+ */
+export const connectorTokens = appSchema.table("connector_tokens", {
+  id: id(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** Where it's used, e.g. "Cloud routine" or "Laptop". */
+  label: text("label").notNull(),
+  tokenHash: text("token_hash").notNull().unique(),
+  /** The key's first characters, to tell keys apart. */
+  hint: text("hint").notNull(),
+  lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: createdAt(),
+});
+
+export type HuntPlace = { city?: string; area?: string; pincode?: string; near?: { area: string; km: number } };
+export type HuntResult = { added: number; updated: number; warm: number; summary: string };
+
+/**
+ * A request to find warm leads, made from HQ and run by someone's own Claude
+ * (a cloud routine or their laptop) which claims it through the connector.
+ */
+export const huntRequests = appSchema.table(
+  "hunt_requests",
+  {
+    id: id(),
+    /** SEGMENTS in knowledge/engine.ts. */
+    segment: text("segment").notNull(),
+    place: jsonb("place").$type<HuntPlace>().notNull().default({}),
+    count: integer("count").notNull().default(25),
+    /** Anything else the hunter should know: "only CBSE", "firms with audit practices". */
+    brief: text("brief"),
+    /** Whose Claude should run it; null = whoever's Claude is free first. */
+    assignedTo: uuid("assigned_to").references(() => users.id, { onDelete: "set null" }),
+    requestedBy: uuid("requested_by").references(() => users.id, { onDelete: "set null" }),
+    /** "queued", "running", "done", "failed" or "cancelled". */
+    status: text("status").notNull().default("queued"),
+    claimedBy: uuid("claimed_by").references(() => users.id, { onDelete: "set null" }),
+    claimedAt: timestamp("claimed_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    result: jsonb("result").$type<HuntResult>(),
+    error: text("error"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("hunt_requests_status_idx").on(t.status, t.createdAt)],
+);
+
 /** One learning run: how many prospects it rescored and what changed, so the owner can see the engine learn. */
 export const engineRuns = appSchema.table("engine_runs", {
   id: id(),
@@ -1046,5 +1098,7 @@ export type ProspectContact = typeof prospectContacts.$inferSelect;
 export type BuyingSignal = typeof buyingSignals.$inferSelect;
 export type EngineStat = typeof engineStats.$inferSelect;
 export type EngineRun = typeof engineRuns.$inferSelect;
+export type ConnectorToken = typeof connectorTokens.$inferSelect;
+export type HuntRequest = typeof huntRequests.$inferSelect;
 export type ServicePath = (typeof servicePath.enumValues)[number];
 export type MemberRole = (typeof memberRole.enumValues)[number];

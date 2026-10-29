@@ -13,6 +13,7 @@ import {
   projectUpdates,
   projects,
   proposals,
+  subscriptions,
   supportRequests,
   tasks,
   type Milestone,
@@ -389,7 +390,13 @@ export async function clientApproveMilestone(db: DB, actor: Actor | null, milest
       .select({ id: milestones.id })
       .from(milestones)
       .where(and(eq(milestones.projectId, m.projectId), inArray(milestones.status, ["not_started", "in_progress", "awaiting_approval", "blocked"])));
-    if (remaining.length === 0) {
+    // A project on a monthly plan stays open: next month's work is added as new milestones.
+    const [plan] = await tx
+      .select({ id: subscriptions.id })
+      .from(subscriptions)
+      .where(and(eq(subscriptions.projectId, m.projectId), eq(subscriptions.status, "active")))
+      .limit(1);
+    if (remaining.length === 0 && !plan) {
       await tx.update(projects).set({ status: "completed" }).where(eq(projects.id, m.projectId));
     }
     // "It will then be invoiced as agreed": a draft for the owner to send.

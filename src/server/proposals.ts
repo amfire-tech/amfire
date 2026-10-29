@@ -8,6 +8,7 @@ import {
   organizations,
   projectUpdates,
   projects,
+  proposalFiles,
   proposals,
   recommendations,
   subscriptions,
@@ -146,6 +147,8 @@ export const ProposalEdit = z.object({
     .transform((v) => v || null),
   /** Operate only. Null falls back to the rate card. */
   monthlyAmount: z.number().int().min(0).max(100_000_000_00).nullish().transform((v) => v ?? null),
+  /** Operate only. Null bills the first month once onboarding is done. */
+  monthlyStartsOn: z.coerce.date().nullish().transform((v) => v ?? null),
   terms: z.string().trim().min(10).max(4000),
 });
 export type ProposalEdit = z.input<typeof ProposalEdit>;
@@ -263,6 +266,82 @@ export async function approveAndSendProposal(
   return result;
 }
 
+/** Drafts only: a sent proposal is withdrawn by revising it, so the client's record stays intact. */
+export async function deleteProposalDraft(db: DB, actor: Actor | null, proposalId: string) {
+  assertStaff(actor);
+  return db.transaction(async (tx) => {
+    const [gone] = await tx
+      .delete(proposals)
+      .where(and(eq(proposals.id, proposalId), eq(proposals.status, "draft")))
+      .returning();
+    if (!gone) throw new ProposalError("Only drafts can be deleted.", "NOT_EDITABLE");
+    await audit(tx, { actorId: actor.userId, action: "proposal.deleted", subjectType: "proposal", subjectId: gone.id, data: { title: gone.title } });
+    return gone;
+  });
+}
+
+// --- The owner's own PDF ------------------------------------------------------
+
+export const PROPOSAL_FILE_MAX_BYTES = 4 * 1024 * 1024;
+
+/** Attaches (or replaces) the PDF on a draft. */
+export async function attachProposalFile(db: DB, actor: Actor | null, proposalId: string, file: { name: string; bytes: Buffer }) {
+  assertStaff(actor);
+  if (file.bytes.length === 0) throw new ProposalError("Choose a PDF file.", "INVALID");
+  if (file.bytes.length > PROPOSAL_FILE_MAX_BYTES) throw new ProposalError("The PDF must be 4 MB or smaller.", "INVALID");
+  if (file.bytes.subarray(0, 5).toString("latin1") !== "%PDF-") throw new ProposalError("That file isn't a PDF.", "INVALID");
+  const name = file.name.replace(/[^\w .()-]/g, "_").slice(0, 120) || "proposal.pdf";
+  return db.transaction(async (tx) => {
+    const [p] = await tx.select({ status: proposals.status }).from(proposals).where(eq(proposals.id, proposalId));
+    if (!p) throw new ProposalError("Proposal not found", "NOT_FOUND");
+    if (p.status !== "draft") throw new ProposalError("The PDF can only be changed on a draft.", "NOT_EDITABLE");
+    await tx.delete(proposalFiles).where(eq(proposalFiles.proposalId, proposalId));
+    const [row] = await tx
+      .insert(proposalFiles)
+      .values({ proposalId, name, size: file.bytes.length, content: file.bytes, uploadedBy: actor.userId })
+      .returning({ id: proposalFiles.id, name: proposalFiles.name, size: proposalFiles.size });
+    await audit(tx, { actorId: actor.userId, action: "proposal.file_attached", subjectType: "proposal", subjectId: proposalId, data: { name, size: row.size } });
+    return row;
+  });
+}
+
+export async function removeProposalFile(db: DB, actor: Actor | null, proposalId: string) {
+  assertStaff(actor);
+  const [p] = await db.select({ status: proposals.status }).from(proposals).where(eq(proposals.id, proposalId));
+  if (!p || p.status !== "draft") throw new ProposalError("The PDF can only be changed on a draft.", "NOT_EDITABLE");
+  await db.delete(proposalFiles).where(eq(proposalFiles.proposalId, proposalId));
+  await audit(db, { actorId: actor.userId, action: "proposal.file_removed", subjectType: "proposal", subjectId: proposalId });
+}
+
+/** Name and size only, for showing the attachment without loading it. */
+export async function proposalFileInfo(db: DB, proposalId: string) {
+  const [row] = await db
+    .select({ name: proposalFiles.name, size: proposalFiles.size })
+    .from(proposalFiles)
+    .where(eq(proposalFiles.proposalId, proposalId));
+  return row ?? null;
+}
+
+/** The PDF for staff, or for the client once the proposal has been sent to them. */
+export async function getProposalFile(db: DB, actor: Actor | null, proposalId: string) {
+  if (!actor) return null;
+  if (!actor.internalRole) {
+    const visible = await getClientProposal(db, actor, proposalId);
+    if (!visible) return null;
+  }
+  const [row] = await db.select().from(proposalFiles).where(eq(proposalFiles.proposalId, proposalId));
+  return row ?? null;
+}
+
+/** The first bill on the chosen day: that date, or the same day of a later month if it has passed. */
+export function firstBillOnOrAfter(startsOn: Date, now: Date): Date {
+  const day = new Date(startsOn);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  while (day < today) day.setMonth(day.getMonth() + 1);
+  return day;
+}
+
 /** Copy a sent/declined proposal into a new draft for revision. */
 export async function reviseProposal(db: DB, actor: Actor | null, proposalId: string) {
   assertStaff(actor);
@@ -289,10 +368,15 @@ export async function reviseProposal(db: DB, actor: Actor | null, proposalId: st
         discount: p.discount,
         discountNote: p.discountNote,
         monthlyAmount: p.monthlyAmount,
+        monthlyStartsOn: p.monthlyStartsOn,
         terms: p.terms,
         createdBy: actor.userId,
       })
       .returning();
+    const [file] = await tx.select().from(proposalFiles).where(eq(proposalFiles.proposalId, p.id));
+    if (file) {
+      await tx.insert(proposalFiles).values({ proposalId: draft.id, name: file.name, size: file.size, content: file.content, uploadedBy: file.uploadedBy });
+    }
     await audit(tx, { actorId: actor.userId, action: "proposal.revised", subjectType: "proposal", subjectId: draft.id, data: { from: p.id } });
     return draft;
   });
@@ -381,7 +465,9 @@ export async function clientDecideProposal(
         amount: p.monthlyAmount ?? OPERATE_RETAINER[size][currency],
         currency,
         startedAt: now,
-        nextInvoiceAt: new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
+        nextInvoiceAt: p.monthlyStartsOn
+          ? firstBillOnOrAfter(p.monthlyStartsOn, now)
+          : new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
       });
     }
     await audit(tx, { actorId: actor.userId, orgId, action: "proposal.accepted", subjectType: "proposal", subjectId: p.id, data: { projectId: project.id } });

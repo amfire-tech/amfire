@@ -18,8 +18,12 @@ import { DEMO_OFFER, priceBand, priceFloor, type ProjectSize } from "@/knowledge
 import { decideQualification, demoOfferCode, getLeadDetail, submitDiscovery, type DiscoverySchema } from "@/server/leads";
 import {
   approveAndSendProposal,
+  attachProposalFile,
   clientDecideProposal,
   createProposalDraft,
+  deleteProposalDraft,
+  firstBillOnOrAfter,
+  getProposalFile,
   getClientProposal,
   ProposalError,
   proposalSubtotal,
@@ -152,23 +156,54 @@ describe("first milestone path", () => {
     assert.equal(draft.path, "operate");
     assert.ok(draft.monthlyAmount && draft.monthlyAmount > 0);
 
+    // A draft that isn't wanted can be deleted, and a new one drafted from the same recommendation.
+    await deleteProposalDraft(db, staff, draft.id);
+    assert.equal((await getLeadDetail(db, staff, lead.id))!.proposals.length, 0);
+    const fresh = await createProposalDraft(db, staff, recommendation!.id);
+
+    // The owner's own PDF goes with it; anything that isn't a PDF is refused.
+    await assert.rejects(attachProposalFile(db, staff, fresh.id, { name: "x.pdf", bytes: Buffer.from("hello") }), ProposalError);
+    await attachProposalFile(db, staff, fresh.id, { name: "Partnership.pdf", bytes: Buffer.from("%PDF-1.7 test") });
+
     const tenK = 10_000_00;
-    await updateProposalDraft(db, staff, draft.id, {
-      ...draft,
-      milestones: [{ title: "First month", description: "Everything in the partnership.", weeks: 4, amount: tenK }],
+    const fifth = new Date(Date.now() + 40 * 24 * 60 * 60 * 1000);
+    fifth.setDate(5);
+    fifth.setHours(0, 0, 0, 0);
+    await updateProposalDraft(db, staff, fresh.id, {
+      ...fresh,
+      milestones: [{ title: "November work", description: "This month's tasks.", weeks: 4, amount: 0 }],
       discount: 0,
       discountNote: null,
       monthlyAmount: tenK,
+      monthlyStartsOn: fifth,
     });
+    const draftId = fresh.id;
     // No reason typed: still approved, and the audit note says it was below the guideline.
-    const { proposal } = await approveAndSendProposal(db, owner, draft.id);
-    assert.equal(proposalTotal(proposal), tenK);
+    const { proposal } = await approveAndSendProposal(db, owner, draftId);
+    assert.equal(proposalTotal(proposal), 0);
     assert.ok(proposal.pricingOverrideNote?.includes("below"));
+    await assert.rejects(deleteProposalDraft(db, staff, draftId), ProposalError);
 
     const partner = await actorFor("ops@school-partner.test");
-    const { project } = await clientDecideProposal(db, partner, draft.id, { accept: true });
+    assert.equal((await getProposalFile(db, partner, draftId))?.name, "Partnership.pdf");
+    assert.equal(await getProposalFile(db, null, draftId), null);
+
+    const { project } = await clientDecideProposal(db, partner, draftId, { accept: true });
     const [plan] = await db.select().from(subscriptions).where(eq(subscriptions.projectId, project!.id));
     assert.equal(plan.amount, tenK);
+    assert.equal(plan.nextInvoiceAt.getTime(), fifth.getTime());
+
+    // Approving the month's only milestone leaves a monthly-plan project open.
+    const view = await getClientProject(db, partner, project!.id);
+    await updateMilestone(db, staff, view!.milestones[0].id, { status: "awaiting_approval" });
+    await clientApproveMilestone(db, partner, view!.milestones[0].id);
+    assert.equal((await getClientProject(db, partner, project!.id))!.project.status, "active");
+  });
+
+  test("a first bill date that has passed rolls on to the same day next month", () => {
+    const now = new Date(2026, 10, 20);
+    assert.equal(firstBillOnOrAfter(new Date(2026, 10, 5), now).getTime(), new Date(2026, 11, 5).getTime());
+    assert.equal(firstBillOnOrAfter(new Date(2026, 11, 5), now).getTime(), new Date(2026, 11, 5).getTime());
   });
 
   test("owner approves and sends → client organisation and Hub access are created", async () => {

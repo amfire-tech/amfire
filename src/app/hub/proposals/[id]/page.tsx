@@ -7,7 +7,7 @@ import { getDb } from "@/db";
 import { organizations } from "@/db/schema";
 import { isUuid } from "@/lib/ids";
 import { requireActor } from "@/lib/session";
-import { getClientProposal } from "@/server/proposals";
+import { getClientProposal, proposalFileInfo } from "@/server/proposals";
 import { DecisionPanel } from "./decision-panel";
 
 export const metadata = { title: "Proposal" };
@@ -20,6 +20,7 @@ export default async function HubProposalPage({ params }: PageProps<"/hub/propos
   const proposal = await getClientProposal(db, actor, id);
   if (!proposal) notFound();
   const [org] = await db.select().from(organizations).where(eq(organizations.id, proposal.clientOrgId!));
+  const file = await proposalFileInfo(db, proposal.id);
 
   return (
     <div className="space-y-6">
@@ -33,7 +34,7 @@ export default async function HubProposalPage({ params }: PageProps<"/hub/propos
         description={<StatusBadge status={proposal.status} />}
       />
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_340px]">
-        <ProposalDocument proposal={proposal} company={org.name} />
+        <ProposalDocument proposal={proposal} company={org.name} pdfHref={file ? `/hub/proposals/${proposal.id}/pdf` : undefined} />
         <div className="space-y-4 lg:sticky lg:top-6">
           {proposal.status === "sent" && <DecisionPanel proposalId={proposal.id} company={org.name} />}
           {proposal.status === "accepted" && <Notice tone="success">You accepted this proposal on {formatDate(proposal.decidedAt)}.</Notice>}

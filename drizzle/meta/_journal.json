@@ -71,6 +71,13 @@
       "when": 1793253707510,
       "tag": "0009_proposal_monthly_amount",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793267668084,
+      "tag": "0010_proposal_files",
+      "breakpoints": true
     }
   ]
 }

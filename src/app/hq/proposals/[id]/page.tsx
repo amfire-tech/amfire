@@ -8,10 +8,11 @@ import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { getProposalForStaff } from "@/server/hq";
-import { pricingFloorFor, proposalTotal } from "@/server/proposals";
+import { pricingFloorFor, proposalFileInfo, proposalTotal } from "@/server/proposals";
 import { reviseProposalAction } from "../../actions";
 import { ApprovePanel } from "./approve-panel";
 import { ProposalEditor } from "./proposal-editor";
+import { DeleteDraftButton, ProposalFileCard } from "./proposal-file";
 
 export default async function ProposalPage({ params }: PageProps<"/hq/proposals/[id]">) {
   const { id } = await params;
@@ -23,6 +24,7 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
   const { proposal, lead } = row;
   const floor = await pricingFloorFor(db, proposal);
   const total = proposalTotal(proposal);
+  const file = await proposalFileInfo(db, proposal.id);
 
   return (
     <div className="space-y-6">
@@ -59,10 +61,11 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
               discount: proposal.discount,
               discountNote: proposal.discountNote,
               monthlyAmount: proposal.monthlyAmount,
+              monthlyStartsOn: proposal.monthlyStartsOn,
               terms: proposal.terms,
             }}
           />
-          <div className="xl:sticky xl:top-6">
+          <div className="space-y-4 xl:sticky xl:top-6">
             <ApprovePanel
               proposalId={proposal.id}
               isOwner={actor.internalRole === "owner"}
@@ -70,6 +73,8 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
               guidelineText={`usually ${formatMoney(floor, proposal.currency)} or more for this size of work. Saved total ${formatMoney(total, proposal.currency)}${proposal.monthlyAmount != null ? `, then ${formatMoney(proposal.monthlyAmount, proposal.currency)} a month` : ""}.`}
               clientEmail={lead.email}
             />
+            <ProposalFileCard proposalId={proposal.id} file={file} />
+            <DeleteDraftButton proposalId={proposal.id} leadId={lead.id} />
           </div>
         </div>
       ) : (
@@ -94,7 +99,7 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
               </SubmitButton>
             </form>
           )}
-          <ProposalDocument proposal={proposal} company={lead.company} />
+          <ProposalDocument proposal={proposal} company={lead.company} pdfHref={file ? `/hq/proposals/${proposal.id}/pdf` : undefined} />
         </>
       )}
     </div>

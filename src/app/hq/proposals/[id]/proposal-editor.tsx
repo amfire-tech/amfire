@@ -17,6 +17,7 @@ type Draft = {
   discount: number;
   discountNote: string | null;
   monthlyAmount: number | null;
+  monthlyStartsOn: Date | null;
   terms: string;
 };
 
@@ -50,6 +51,7 @@ export function ProposalEditor({
   const [discount, setDiscount] = useState(initial.discount);
   const [discountNote, setDiscountNote] = useState(initial.discountNote ?? "");
   const [monthlyAmount, setMonthlyAmount] = useState(initial.monthlyAmount);
+  const [monthlyStartsOn, setMonthlyStartsOn] = useState(initial.monthlyStartsOn ? initial.monthlyStartsOn.toISOString().slice(0, 10) : "");
   const [result, setResult] = useState<ActionState>();
   const [pending, startTransition] = useTransition();
   const [dirty, setDirty] = useState(false);
@@ -79,6 +81,7 @@ export function ProposalEditor({
         discount,
         discountNote,
         monthlyAmount: path === "operate" ? monthlyAmount : null,
+        monthlyStartsOn: path === "operate" && monthlyStartsOn ? monthlyStartsOn : null,
         terms,
       });
       setResult(res);
@@ -212,7 +215,7 @@ export function ProposalEditor({
           </Field>
         </div>
         {path === "operate" && (
-          <div className="mt-4 max-w-xs">
+          <div className="mt-4 grid gap-4 md:grid-cols-2">
             <Field
               label={`Monthly plan after this (${currency})`}
               htmlFor="monthlyAmount"
@@ -227,6 +230,20 @@ export function ProposalEditor({
                 placeholder="Rate card"
                 value={monthlyAmount == null ? "" : monthlyAmount / 100}
                 onChange={(e) => touch(setMonthlyAmount)(e.target.value === "" ? null : toMinor(e.target.value))}
+                className={inputClass}
+              />
+            </Field>
+            <Field
+              label="First monthly bill on"
+              htmlFor="monthlyStartsOn"
+              optional
+              hint="Then the same day every month, e.g. the 5th. Empty: billed after onboarding."
+            >
+              <input
+                id="monthlyStartsOn"
+                type="date"
+                value={monthlyStartsOn}
+                onChange={(e) => touch(setMonthlyStartsOn)(e.target.value)}
                 className={inputClass}
               />
             </Field>

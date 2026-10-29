@@ -4,7 +4,9 @@ import type { Proposal } from "@/db/schema";
 import { formatMoney } from "@/knowledge/pricing";
 import { BulletList, Card, PathBadge, formatDate } from "./ui";
 
-export function ProposalDocument({ proposal, company }: { proposal: Proposal; company?: string }) {
+const ordinal = (n: number) => `${n}${n % 10 === 1 && n !== 11 ? "st" : n % 10 === 2 && n !== 12 ? "nd" : n % 10 === 3 && n !== 13 ? "rd" : "th"}`;
+
+export function ProposalDocument({ proposal, company, pdfHref }: { proposal: Proposal; company?: string; pdfHref?: string }) {
   const subtotal = proposal.milestones.reduce((s, m) => s + m.amount, 0);
   const discount = proposal.discount ?? 0;
   const weeks = proposal.milestones.reduce((s, m) => s + m.weeks, 0);
@@ -19,6 +21,11 @@ export function ProposalDocument({ proposal, company }: { proposal: Proposal; co
         <h2 className="mt-3 text-2xl font-semibold tracking-tight">{proposal.title}</h2>
         {company && <p className="text-muted">Prepared for {company}</p>}
         <p className="mt-4 whitespace-pre-wrap text-fg/85">{proposal.summary}</p>
+        {pdfHref && (
+          <a href={pdfHref} target="_blank" rel="noopener" className="mt-4 inline-block font-medium text-signal hover:underline">
+            Read the full proposal (PDF) ↗
+          </a>
+        )}
       </header>
 
       <div className="grid gap-8 md:grid-cols-2">
@@ -74,7 +81,14 @@ export function ProposalDocument({ proposal, company }: { proposal: Proposal; co
           </li>
           {proposal.path === "operate" && proposal.monthlyAmount != null && (
             <li className="flex items-center justify-between p-4 font-semibold">
-              <span>Then, every month</span>
+              <span>
+                Then, every month
+                {proposal.monthlyStartsOn && (
+                  <span className="block text-sm font-normal text-muted">
+                    Billed on the {ordinal(proposal.monthlyStartsOn.getDate())}, starting {formatDate(proposal.monthlyStartsOn)}
+                  </span>
+                )}
+              </span>
               <span>{formatMoney(proposal.monthlyAmount, proposal.currency)}</span>
             </li>
           )}

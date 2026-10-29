@@ -1,5 +1,6 @@
 import {
   boolean,
+  customType,
   integer,
   jsonb,
   pgSchema,
@@ -23,6 +24,10 @@ export const appSchema = pgSchema("app");
 const id = () => uuid("id").primaryKey().defaultRandom();
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow();
+const bytea = customType<{ data: Buffer; driverData: Buffer | Uint8Array }>({
+  dataType: () => "bytea",
+  fromDriver: (v) => Buffer.from(v),
+});
 
 // --- Identity & organisations ----------------------------------------------
 
@@ -223,6 +228,8 @@ export const proposals = appSchema.table("proposals", {
   discountNote: text("discount_note"),
   /** Operate only: the monthly plan price after onboarding, in minor units. Null means the rate card. */
   monthlyAmount: integer("monthly_amount"),
+  /** Operate only: date of the first monthly bill; later bills fall on the same day each month. */
+  monthlyStartsOn: timestamp("monthly_starts_on", { withTimezone: true }),
   terms: text("terms").notNull(),
   /** Set when pricing falls below the guideline floor and the owner approved it anyway. */
   pricingOverrideNote: text("pricing_override_note"),
@@ -235,6 +242,20 @@ export const proposals = appSchema.table("proposals", {
   createdBy: uuid("created_by").references(() => users.id),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
+});
+
+/** The owner's own proposal document (PDF), shown to the client alongside the proposal. One per proposal. */
+export const proposalFiles = appSchema.table("proposal_files", {
+  id: id(),
+  proposalId: uuid("proposal_id")
+    .notNull()
+    .unique()
+    .references(() => proposals.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  size: integer("size").notNull(),
+  content: bytea("content").notNull(),
+  uploadedBy: uuid("uploaded_by").references(() => users.id),
+  createdAt: createdAt(),
 });
 
 // --- Delivery --------------------------------------------------------------

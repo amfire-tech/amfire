@@ -47,8 +47,11 @@ import {
 } from "@/server/money";
 import {
   approveAndSendProposal,
+  attachProposalFile,
   createProposalDraft,
+  deleteProposalDraft,
   ProposalEdit,
+  removeProposalFile,
   reviseProposal,
   updateProposalDraft,
 } from "@/server/proposals";
@@ -136,6 +139,32 @@ export async function approveAndSendAction(proposalId: string, _prev: ActionStat
   }
   revalidatePath("/hq", "layout");
   return { ok: "Approved and sent. The client can now review it in their Client Hub." };
+}
+
+export async function deleteProposalAction(proposalId: string, leadId: string) {
+  const { db, actor } = await ctx();
+  await deleteProposalDraft(db, actor, proposalId);
+  revalidatePath("/hq", "layout");
+  redirect(`/hq/leads/${leadId}`);
+}
+
+export async function attachProposalFileAction(proposalId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { error: "Choose a PDF file." };
+  try {
+    await attachProposalFile(db, actor, proposalId, { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) });
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hq/proposals/${proposalId}`);
+  return { ok: "PDF attached. The client sees it with the proposal." };
+}
+
+export async function removeProposalFileAction(proposalId: string) {
+  const { db, actor } = await ctx();
+  await removeProposalFile(db, actor, proposalId);
+  revalidatePath(`/hq/proposals/${proposalId}`);
 }
 
 export async function reviseProposalAction(proposalId: string) {

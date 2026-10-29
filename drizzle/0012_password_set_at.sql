@@ -1,0 +1,1 @@
+ALTER TABLE "app"."users" ADD COLUMN "password_set_at" timestamp with time zone;

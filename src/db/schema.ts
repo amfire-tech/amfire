@@ -53,6 +53,8 @@ export const users = appSchema.table("users", {
   name: text("name").notNull(),
   /** Set when we emailed a one-time password; cleared once they choose their own. */
   mustChangePassword: boolean("must_change_password").notNull().default(false),
+  /** When they chose their own password; until then a proposal email carries a one-time one. */
+  passwordSetAt: timestamp("password_set_at", { withTimezone: true }),
   createdAt: createdAt(),
 });
 

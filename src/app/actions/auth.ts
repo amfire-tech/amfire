@@ -154,9 +154,11 @@ export async function setPassword(_prev: PasswordState, formData: FormData): Pro
   if (password !== String(formData.get("confirm") ?? "")) return { error: "The two passwords don't match." };
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message.includes("different") ? "Choose a password you haven't used before." : "Couldn't save the password. Please try again." };
-  // First sign-in with a one-time password: now they have their own, carry on to the page they came for.
   const db = await getDb();
   const [user] = current.user.email ? await db.select().from(users).where(eq(users.email, normalizeEmail(current.user.email))) : [];
+  // Their own password from now on: later proposal emails won't replace it with a one-time one.
+  if (user) await db.update(users).set({ passwordSetAt: new Date() }).where(eq(users.id, user.id));
+  // First sign-in with a one-time password: now they have their own, carry on to the page they came for.
   if (user?.mustChangePassword) {
     await db.update(users).set({ mustChangePassword: false }).where(eq(users.id, user.id));
     await audit(db, { actorId: user.id, action: "auth.password_changed_from_one_time", subjectType: "user", subjectId: user.id });

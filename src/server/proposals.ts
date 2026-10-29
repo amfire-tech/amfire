@@ -3,7 +3,6 @@ import * as z from "zod";
 import type { DB } from "@/db";
 import { site } from "@/config/site";
 import {
-  auditEvents,
   leads,
   memberships,
   milestones,
@@ -219,15 +218,8 @@ export async function approveAndSendProposal(
 
     const [existingUser] = await tx.select().from(users).where(eq(users.email, email));
     const contact = existingUser ?? (await tx.insert(users).values({ email, name: lead.name }).returning())[0];
-    // Someone who has never signed in gets a one-time password with this email.
-    const [signedInBefore] = existingUser
-      ? await tx
-          .select({ id: auditEvents.id })
-          .from(auditEvents)
-          .where(and(eq(auditEvents.actorId, existingUser.id), eq(auditEvents.action, "auth.signed_in")))
-          .limit(1)
-      : [];
-    const needsPassword = !signedInBefore || contact.mustChangePassword;
+    // Until they choose their own password, every proposal email carries a fresh one-time password.
+    const needsPassword = !contact.passwordSetAt;
     await tx
       .insert(memberships)
       .values({ userId: contact.id, orgId, role: "client_admin" })

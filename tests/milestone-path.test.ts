@@ -14,6 +14,7 @@ import { AccessDenied, loadActor, type Actor } from "@/server/access";
 import { runSolutionArchitect } from "@/server/agents/solution-architect";
 import { consumeLoginToken, createLoginToken, findSessionUser } from "@/server/auth";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
+import { fromHeader } from "@/server/notify";
 import { DEMO_OFFER, priceBand, priceFloor, type ProjectSize } from "@/knowledge/pricing";
 import { decideQualification, demoOfferCode, getLeadDetail, submitDiscovery, type DiscoverySchema } from "@/server/leads";
 import {
@@ -24,6 +25,7 @@ import {
   deleteProposalDraft,
   firstBillOnOrAfter,
   getProposalFile,
+  signInSteps,
   getClientProposal,
   ProposalError,
   proposalSubtotal,
@@ -198,6 +200,17 @@ describe("first milestone path", () => {
     await updateMilestone(db, staff, view!.milestones[0].id, { status: "awaiting_approval" });
     await clientApproveMilestone(db, partner, view!.milestones[0].id);
     assert.equal((await getClientProject(db, partner, project!.id))!.project.status, "active");
+  });
+
+  test("first sign-in: the email explains the steps, and the flag sends them to choose a password", async () => {
+    const steps = signInSteps("ops@school-partner.test", "Kp7m-X2qR-9tNw");
+    assert.ok(steps.includes("ops@school-partner.test") && steps.includes("Kp7m-X2qR-9tNw") && steps.includes("Choose your own password"));
+    const [u] = await db.select().from(users).where(eq(users.email, "ops@school-partner.test"));
+    await db.update(users).set({ mustChangePassword: true }).where(eq(users.id, u.id));
+    assert.equal((await actorFor("ops@school-partner.test")).mustChangePassword, true);
+    await db.update(users).set({ mustChangePassword: false }).where(eq(users.id, u.id));
+    assert.equal(fromHeader("AMFIRE <hello@amfire.in>"), "amfire <hello@amfire.in>");
+    assert.equal(fromHeader("hello@amfire.in"), "amfire <hello@amfire.in>");
   });
 
   test("a first bill date that has passed rolls on to the same day next month", () => {

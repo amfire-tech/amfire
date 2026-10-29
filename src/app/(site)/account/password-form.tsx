@@ -5,10 +5,11 @@ import { setPassword, type PasswordState } from "@/app/actions/auth";
 import { SubmitButton } from "@/components/forms";
 import { Field, Notice, inputClass } from "@/components/ui";
 
-export function PasswordForm() {
+export function PasswordForm({ next }: { next?: string }) {
   const [state, action] = useActionState<PasswordState, FormData>(setPassword, undefined);
   return (
     <form action={action} className="space-y-4" key={state?.ok}>
+      {next && <input type="hidden" name="next" value={next} />}
       <Field label="New password" htmlFor="password" hint="At least 10 characters.">
         <input id="password" name="password" type="password" autoComplete="new-password" minLength={10} required className={inputClass} />
       </Field>

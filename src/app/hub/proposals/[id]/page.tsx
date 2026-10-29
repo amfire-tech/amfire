@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
+import { signOutAndReturn } from "@/app/actions/auth";
+import { SubmitButton } from "@/components/forms";
 import { ProposalDocument } from "@/components/proposal-document";
-import { Notice, PageHeader, StatusBadge, formatDate } from "@/components/ui";
+import { Card, CardTitle, Notice, PageHeader, StatusBadge, formatDate } from "@/components/ui";
 import { getDb } from "@/db";
 import { organizations } from "@/db/schema";
 import { isUuid } from "@/lib/ids";
@@ -18,7 +20,11 @@ export default async function HubProposalPage({ params }: PageProps<"/hub/propos
   const actor = await requireActor(`/hub/proposals/${id}`);
   const db = await getDb();
   const proposal = await getClientProposal(db, actor, id);
-  if (!proposal) notFound();
+  if (!proposal) {
+    // The owner opening a client's link (e.g. testing with their own email) sees it in HQ.
+    if (actor.internalRole) redirect(`/hq/proposals/${id}`);
+    return <WrongAccount email={actor.email} next={`/hub/proposals/${id}`} />;
+  }
   const [org] = await db.select().from(organizations).where(eq(organizations.id, proposal.clientOrgId!));
   const file = await proposalFileInfo(db, proposal.id);
 
@@ -44,5 +50,21 @@ export default async function HubProposalPage({ params }: PageProps<"/hub/propos
         </div>
       </div>
     </div>
+  );
+}
+
+/** Signed in, but the proposal was sent to a different email address. */
+function WrongAccount({ email, next }: { email: string; next: string }) {
+  return (
+    <Card className="mx-auto max-w-lg">
+      <CardTitle>This proposal was sent to a different email</CardTitle>
+      <p className="text-sm text-muted">
+        You&apos;re signed in as <strong className="text-fg">{email}</strong>. Sign out, then sign in with the email address the proposal was sent to.
+      </p>
+      <form action={signOutAndReturn} className="mt-4">
+        <input type="hidden" name="next" value={next} />
+        <SubmitButton pendingLabel="Signing out…">Sign out and switch account</SubmitButton>
+      </form>
+    </Card>
   );
 }

@@ -1,7 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
+import { site } from "@/config/site";
 import {
+  auditEvents,
   leads,
   memberships,
   milestones,
@@ -30,7 +32,8 @@ import {
 } from "@/knowledge/pricing";
 import { assertClientOrg, assertOwner, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
-import { afterResponse, notifyClient } from "./client-notify";
+import { afterResponse, notifyClient, type PrivateLines } from "./client-notify";
+import { emailConfigured } from "./notify";
 import { demoOfferCode } from "./leads";
 
 export class ProposalError extends Error {
@@ -216,6 +219,15 @@ export async function approveAndSendProposal(
 
     const [existingUser] = await tx.select().from(users).where(eq(users.email, email));
     const contact = existingUser ?? (await tx.insert(users).values({ email, name: lead.name }).returning())[0];
+    // Someone who has never signed in gets a one-time password with this email.
+    const [signedInBefore] = existingUser
+      ? await tx
+          .select({ id: auditEvents.id })
+          .from(auditEvents)
+          .where(and(eq(auditEvents.actorId, existingUser.id), eq(auditEvents.action, "auth.signed_in")))
+          .limit(1)
+      : [];
+    const needsPassword = !signedInBefore || contact.mustChangePassword;
     await tx
       .insert(memberships)
       .values({ userId: contact.id, orgId, role: "client_admin" })
@@ -249,21 +261,59 @@ export async function approveAndSendProposal(
       subjectId: proposalId,
       data: { total: proposalTotal(sent), currency: sent.currency, pricingOverrideNote: overrideNote },
     });
-    return { proposal: sent, clientEmail: contact.email };
+    return { proposal: sent, clientEmail: contact.email, contactId: contact.id, needsPassword };
   });
   const p = result.proposal;
-  await afterResponse(() =>
-    notifyClient(db, p.clientOrgId!, {
-      subject: `Your proposal from AMFIRE: ${p.title}`,
-      lines: [
-        `Your proposal for ${p.title} is ready: the scope, milestones, price and timeline, all in one place.`,
-        `You can accept it or ask for changes in your Client Hub. Sign in with this email address — no password needed.`,
-      ],
-      path: `/hub/proposals/${p.id}`,
-      action: "Read your proposal",
-    }),
-  );
-  return result;
+  await afterResponse(async () => {
+    let privateFor: PrivateLines | undefined;
+    // A password is only worth making if we can email it.
+    if (result.needsPassword && emailConfigured()) {
+      try {
+        const { issueOneTimePassword } = await import("@/lib/supabase/admin");
+        const password = await issueOneTimePassword(result.clientEmail);
+        if (password) {
+          await db.update(users).set({ mustChangePassword: true }).where(eq(users.id, result.contactId));
+          privateFor = {
+            email: result.clientEmail,
+            lines: [signInSteps(result.clientEmail, password)],
+            logged: signInSteps(result.clientEmail, "[one-time password, not stored]"),
+          };
+        }
+      } catch (err) {
+        // They can still sign in with an email link.
+        console.error("[proposals] one-time password failed", err instanceof Error ? err.message : err);
+      }
+    }
+    await notifyClient(
+      db,
+      p.clientOrgId!,
+      {
+        subject: `Your proposal from amfire: ${p.title}`,
+        lines: [
+          `Your proposal for ${p.title} is ready: the scope, milestones, price and timeline, all in one place.`,
+          privateFor
+            ? "You can read it, accept it or ask for changes in your Client Hub."
+            : `You can read it, accept it or ask for changes in your Client Hub. To sign in, open the link below, enter this email address and choose "Email link": we'll email you a one-time sign-in link. If you've set a password, use that instead.`,
+        ],
+        path: `/hub/proposals/${p.id}`,
+        action: "Read your proposal",
+      },
+      { privateFor },
+    );
+  });
+  return { proposal: result.proposal, clientEmail: result.clientEmail };
+}
+
+/** How to sign in the first time, with the one-time password. */
+export function signInSteps(email: string, password: string) {
+  return [
+    "How to sign in the first time:",
+    `1. Open the link below (or go to ${site.url}/login).`,
+    `2. Choose "Password" and enter your email: ${email}`,
+    `3. Enter your one-time password: ${password}`,
+    "4. Choose your own password. You'll be asked to do this once, then you'll use it from now on.",
+    `Prefer no password? Choose "Email link" instead and we'll email you a one-time sign-in link.`,
+  ].join("\n");
 }
 
 /** Drafts only: a sent proposal is withdrawn by revising it, so the client's record stays intact. */
@@ -447,7 +497,7 @@ export async function clientDecideProposal(
       projectId: project.id,
       orgId,
       authorId: actor.userId,
-      body: "Proposal accepted. AMFIRE will confirm the kick-off date and first tasks here.",
+      body: "Proposal accepted. amfire will confirm the kick-off date and first tasks here.",
     });
     await tx
       .update(leads)

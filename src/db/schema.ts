@@ -51,6 +51,8 @@ export const users = appSchema.table("users", {
   id: id(),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
+  /** Set when we emailed a one-time password; cleared once they choose their own. */
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   createdAt: createdAt(),
 });
 

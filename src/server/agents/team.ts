@@ -214,9 +214,9 @@ function lastTouch(w: World, lead: Lead) {
 
 const hub = (path = "") => `${site.url}/hub${path}`;
 
-/** "— Navanish, AMFIRE", or just "— AMFIRE" while the owner's name is the default. */
+/** "— Navanish, amfire", or just "— amfire" while the owner's name is the default. */
 function signatureFor(ownerFirstName: string) {
-  return ownerFirstName.toUpperCase() === "AMFIRE" ? "\n\n— AMFIRE" : `\n\n— ${ownerFirstName}, AMFIRE`;
+  return ownerFirstName.toUpperCase() === "AMFIRE" ? "\n\n— amfire" : `\n\n— ${ownerFirstName}, amfire`;
 }
 
 // --- The agents -------------------------------------------------------------------------
@@ -556,7 +556,7 @@ export function clientSuccess(w: World): AgentOutput {
         channel: to.channel,
         recipientName: contact.name,
         recipient: to.recipient,
-        draft: `Hi ${first(contact.name)}, checking in from AMFIRE. How is everything working for your team so far? Anything you'd like us to change or add?${sign}`,
+        draft: `Hi ${first(contact.name)}, checking in from amfire. How is everything working for your team so far? Anything you'd like us to change or add?${sign}`,
         fingerprint: `check_in:${org.id}:${weekKey(w.now)}`,
         data: { point: "tell us how everything is working for your team" },
       });
@@ -745,7 +745,7 @@ export function mergeMessages(pending: (ApprovalDraft & { id: string; role: stri
         channel: lead.channel,
         recipientName: lead.recipientName,
         recipient: lead.recipient,
-        draft: `Hi ${first(lead.recipientName ?? "there")}, a quick note from AMFIRE with a few things together:\n${points.map((p) => `• Could you ${p}?`).join("\n")}\n\nIf it's easier, we can cover all of it on a 10-minute call this week.${signatureFor(ownerFirstName)}`,
+        draft: `Hi ${first(lead.recipientName ?? "there")}, a quick note from amfire with a few things together:\n${points.map((p) => `• Could you ${p}?`).join("\n")}\n\nIf it's easier, we can cover all of it on a 10-minute call this week.${signatureFor(ownerFirstName)}`,
         fingerprint: `combined:${members
           .map((m) => m.id)
           .sort()

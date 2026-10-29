@@ -12,6 +12,8 @@ export type Actor = {
   internalRole: "owner" | "staff" | null;
   /** Client organisations this user belongs to. */
   clientOrgIds: string[];
+  /** Signed in with a one-time password and hasn't chosen their own yet. */
+  mustChangePassword?: boolean;
 };
 
 export class AccessDenied extends Error {
@@ -21,7 +23,7 @@ export class AccessDenied extends Error {
   }
 }
 
-export async function loadActor(db: DB, user: { id: string; email: string; name: string }): Promise<Actor> {
+export async function loadActor(db: DB, user: { id: string; email: string; name: string; mustChangePassword?: boolean }): Promise<Actor> {
   const rows = await db
     .select({ orgId: memberships.orgId, role: memberships.role, kind: organizations.kind })
     .from(memberships)
@@ -37,7 +39,7 @@ export async function loadActor(db: DB, user: { id: string; email: string; name:
       clientOrgIds.push(row.orgId);
     }
   }
-  return { userId: user.id, email: user.email, name: user.name, internalRole, clientOrgIds };
+  return { userId: user.id, email: user.email, name: user.name, internalRole, clientOrgIds, mustChangePassword: user.mustChangePassword ?? false };
 }
 
 function isInternalRole(role: MemberRole): role is "owner" | "staff" {

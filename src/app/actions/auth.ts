@@ -78,8 +78,8 @@ export async function requestLoginLink(_prev: LoginState, formData: FormData): P
         const link = `${await origin()}/auth/verify?token_hash=${encodeURIComponent(tokenHash)}&type=magiclink${next ? `&next=${encodeURIComponent(next)}` : ""}`;
         await sendEmail({
           to: email,
-          subject: "Your AMFIRE sign-in link",
-          text: `Hi,\n\nUse this link to sign in to AMFIRE:\n${link}\n\nIt works once and expires in an hour. If you didn't ask for it, you can ignore this email.\n\n— AMFIRE`,
+          subject: "Your amfire sign-in link",
+          text: `Hi,\n\nUse this link to sign in to amfire:\n${link}\n\nIt works once and expires in an hour. If you didn't ask for it, you can ignore this email.\n\n— amfire`,
         });
         return { sent: true };
       }
@@ -154,6 +154,14 @@ export async function setPassword(_prev: PasswordState, formData: FormData): Pro
   if (password !== String(formData.get("confirm") ?? "")) return { error: "The two passwords don't match." };
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: error.message.includes("different") ? "Choose a password you haven't used before." : "Couldn't save the password. Please try again." };
+  // First sign-in with a one-time password: now they have their own, carry on to the page they came for.
+  const db = await getDb();
+  const [user] = current.user.email ? await db.select().from(users).where(eq(users.email, normalizeEmail(current.user.email))) : [];
+  if (user?.mustChangePassword) {
+    await db.update(users).set({ mustChangePassword: false }).where(eq(users.id, user.id));
+    await audit(db, { actorId: user.id, action: "auth.password_changed_from_one_time", subjectType: "user", subjectId: user.id });
+    redirect(await landingFor(user.email, safeNext(formData.get("next"))));
+  }
   return { ok: "Password saved. Next time, sign in with your email and this password." };
 }
 
@@ -205,4 +213,11 @@ export async function completeSignIn(formData: FormData) {
 export async function signOut() {
   await endSession();
   redirect("/");
+}
+
+/** Signed in with the wrong email: sign out and come back to the same page after signing in again. */
+export async function signOutAndReturn(formData: FormData) {
+  await endSession();
+  const next = safeNext(formData.get("next"));
+  redirect(`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`);
 }

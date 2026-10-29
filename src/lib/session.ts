@@ -40,6 +40,8 @@ export const getActor = cache(async (): Promise<Actor | null> => {
 export async function requireActor(next = "/hub"): Promise<Actor> {
   const actor = await getActor();
   if (!actor) redirect(`/login?next=${encodeURIComponent(next)}`);
+  // Signed in with the one-time password from an email: choose a password first.
+  if (actor.mustChangePassword) redirect(`/account?next=${encodeURIComponent(next)}`);
   return actor;
 }
 

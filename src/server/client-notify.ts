@@ -30,17 +30,29 @@ export async function clientRecipients(db: Pick<DB, "select">, orgId: string) {
   return lead?.email ? [{ email: lead.email, name: lead.name }] : [];
 }
 
-export function clientEmailText(name: string, m: ClientMessage) {
+export function clientEmailText(name: string, m: ClientMessage, extra: string[] = []) {
   return [
     `Hi ${name.split(" ")[0] || "there"},`,
     ...m.lines,
+    ...extra,
     `${m.action}: ${site.url}${m.path}`,
-    `Questions? Just reply to this email.\n\n— AMFIRE`,
+    `Questions? Just reply to this email.\n\n— amfire`,
   ].join("\n\n");
 }
 
+/**
+ * Lines for one recipient only, e.g. their one-time password. Sent in their
+ * email but never stored: the log keeps `logged` in their place.
+ */
+export type PrivateLines = { email: string; lines: string[]; logged: string };
+
 /** Emails everyone at the client. Never throws: a failed email mustn't undo the work that triggered it. */
-export async function notifyClient(db: DB, orgId: string, m: ClientMessage, opts: { dedupeKey?: string } = {}) {
+export async function notifyClient(
+  db: DB,
+  orgId: string,
+  m: ClientMessage,
+  opts: { dedupeKey?: string; privateFor?: PrivateLines } = {},
+) {
   if (!emailConfigured()) return { sent: 0 };
   let sent = 0;
   try {
@@ -52,11 +64,12 @@ export async function notifyClient(db: DB, orgId: string, m: ClientMessage, opts
         const [already] = await db.select({ id: notifications.id }).from(notifications).where(eq(notifications.dedupeKey, dedupeKey));
         if (already) continue;
       }
-      const text = clientEmailText(p.name, m);
+      const own = opts.privateFor && opts.privateFor.email.toLowerCase() === p.email.toLowerCase() ? opts.privateFor : null;
+      const text = clientEmailText(p.name, m, own ? [own.logged] : []);
       let status = "sent";
       let error: string | null = null;
       try {
-        await sendEmail({ to: p.email, subject: m.subject, text });
+        await sendEmail({ to: p.email, subject: m.subject, text: own ? clientEmailText(p.name, m, own.lines) : text });
         sent += 1;
       } catch (err) {
         status = "failed";

@@ -57,7 +57,7 @@ export function sendLink(a: Pick<Approval, "channel" | "recipient">, text: strin
   if (a.channel === "linkedin") return `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`;
   if (a.channel === "whatsapp" && a.recipient) return whatsappLink(a.recipient, text);
   if (a.channel === "email" && a.recipient && !emailConfigured()) {
-    return `mailto:${a.recipient}?subject=${encodeURIComponent("AMFIRE")}&body=${encodeURIComponent(text)}`;
+    return `mailto:${a.recipient}?subject=${encodeURIComponent("amfire")}&body=${encodeURIComponent(text)}`;
   }
   return undefined;
 }
@@ -72,7 +72,7 @@ export async function invoiceContact(db: Pick<DB, "select">, orgId: string) {
 
 export function invoiceMessage(inv: Pick<Invoice, "id" | "number" | "title" | "total" | "currency" | "dueAt">, name: string, ownerFirstName = "AMFIRE") {
   const due = inv.dueAt ? ` It's due on ${inv.dueAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}.` : "";
-  const sign = ownerFirstName.toUpperCase() === "AMFIRE" ? "— AMFIRE" : `— ${ownerFirstName}, AMFIRE`;
+  const sign = ownerFirstName.toUpperCase() === "AMFIRE" ? "— amfire" : `— ${ownerFirstName}, amfire`;
   return `Hi ${name.split(" ")[0]}, here is invoice ${inv.number} for ${formatMoney(inv.total, inv.currency)} (${inv.title}).${due} You can view, download and pay it here: ${site.url}/hub/invoices/${inv.id}\n\nThank you!\n${sign}`;
 }
 
@@ -92,7 +92,7 @@ export async function shareInvoice(db: DB, actor: Actor | null, invoiceId: strin
   const message = text ?? invoiceMessage(inv, contact.name, me?.name.split(" ")[0]);
   let emailed = false;
   if (contact.email && emailConfigured()) {
-    await sendEmail({ to: contact.email, subject: `Invoice ${inv.number} from AMFIRE`, text: message });
+    await sendEmail({ to: contact.email, subject: `Invoice ${inv.number} from amfire`, text: message });
     emailed = true;
   }
   const link = contact.phone ? whatsappLink(contact.phone, message) : !emailed && contact.email ? sendLink({ channel: "email", recipient: contact.email }, message) : undefined;
@@ -152,7 +152,7 @@ export async function approve(db: DB, actor: Actor | null, approvalId: string, e
     await postProjectUpdate(db, actor, a.data.projectId, text);
     note = "Posted to the client's Hub.";
   } else if (a.channel === "email" && a.recipient && emailConfigured()) {
-    await sendEmail({ to: a.recipient, subject: a.kind === "send_invoice" ? "Your invoice from AMFIRE" : "A note from AMFIRE", text });
+    await sendEmail({ to: a.recipient, subject: a.kind === "send_invoice" ? "Your invoice from amfire" : "A note from amfire", text });
     note = a.kind === "send_invoice" ? `Invoice sent and emailed to ${a.recipient}.` : `Emailed to ${a.recipient}.`;
   } else {
     link = sendLink(a, text);

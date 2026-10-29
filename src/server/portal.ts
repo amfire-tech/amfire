@@ -240,8 +240,8 @@ export async function inviteTeammate(db: DB, actor: Actor | null, orgId: string,
     if (!emailConfigured()) return;
     await sendEmail({
       to: data.email,
-      subject: `${actor.name} added you to ${org?.name ?? "their"} Client Hub at AMFIRE`,
-      text: `Hi ${data.name.split(" ")[0]},\n\n${actor.name} added you to ${org?.name ?? "their"} Client Hub, where you can follow projects, approvals and invoices with AMFIRE.\n\nSign in with this email address (no password needed): ${site.url}/login\n\n— AMFIRE`,
+      subject: `${actor.name} added you to ${org?.name ?? "their"} Client Hub at amfire`,
+      text: `Hi ${data.name.split(" ")[0]},\n\n${actor.name} added you to ${org?.name ?? "their"} Client Hub, where you can follow projects, approvals and invoices with amfire.\n\nTo sign in, open ${site.url}/login, enter this email address and choose "Email link": we'll email you a one-time sign-in link.\n\n— amfire`,
     }).catch(() => {});
   });
   return result;

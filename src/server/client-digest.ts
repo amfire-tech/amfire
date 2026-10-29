@@ -57,7 +57,7 @@ export async function composeClientDigest(db: DB, orgId: string, now = new Date(
   const lines = [...sections, ...(waiting.length ? [`Waiting on you:\n${waiting.join("\n")}`] : ["Nothing is waiting on you this week."])];
   const project = active[0] ?? ps[0];
   return {
-    subject: waiting.length ? `Your week with AMFIRE — ${waiting.length} thing${waiting.length === 1 ? "" : "s"} waiting on you` : "Your week with AMFIRE",
+    subject: waiting.length ? `Your week with amfire — ${waiting.length} thing${waiting.length === 1 ? "" : "s"} waiting on you` : "Your week with amfire",
     lines: [`Here's where things stand this week.`, ...lines],
     path: project ? `/hub/projects/${project.id}` : "/hub",
     action: "Open your Client Hub",

@@ -14,6 +14,9 @@ type Draft = {
   outOfScope: string[];
   assumptions: string[];
   milestones: ProposalMilestone[];
+  discount: number;
+  discountNote: string | null;
+  monthlyAmount: number | null;
   terms: string;
 };
 
@@ -23,19 +26,19 @@ const toLines = (s: string) =>
     .map((l) => l.trim())
     .filter(Boolean);
 
+/** Rupees/dollars typed in a field → minor units. */
+const toMinor = (v: string) => Math.max(0, Math.round((Number(v) || 0) * 100));
+
 export function ProposalEditor({
   proposalId,
   initial,
   currency,
-  discount = 0,
-  discountNote,
+  path,
 }: {
   proposalId: string;
   initial: Draft;
   currency: string;
-  /** Applied after the milestones, e.g. the free-demo offer. Not editable here. */
-  discount?: number;
-  discountNote?: string | null;
+  path: string;
 }) {
   const [title, setTitle] = useState(initial.title);
   const [summary, setSummary] = useState(initial.summary);
@@ -44,6 +47,9 @@ export function ProposalEditor({
   const [assumptions, setAssumptions] = useState(initial.assumptions.join("\n"));
   const [terms, setTerms] = useState(initial.terms);
   const [milestones, setMilestones] = useState(initial.milestones);
+  const [discount, setDiscount] = useState(initial.discount);
+  const [discountNote, setDiscountNote] = useState(initial.discountNote ?? "");
+  const [monthlyAmount, setMonthlyAmount] = useState(initial.monthlyAmount);
   const [result, setResult] = useState<ActionState>();
   const [pending, startTransition] = useTransition();
   const [dirty, setDirty] = useState(false);
@@ -70,6 +76,9 @@ export function ProposalEditor({
         outOfScope: toLines(outOfScope),
         assumptions: toLines(assumptions),
         milestones,
+        discount,
+        discountNote,
+        monthlyAmount: path === "operate" ? monthlyAmount : null,
         terms,
       });
       setResult(res);
@@ -109,7 +118,7 @@ export function ProposalEditor({
               {weeks} weeks · {formatMoney(total, currency)}
               {discount > 0 && (
                 <span className="block">
-                  {discountNote ?? "Discount"} −{formatMoney(discount, currency)} · client pays{" "}
+                  {discountNote || "Discount"} −{formatMoney(discount, currency)} · client pays{" "}
                   <strong className="text-fg">{formatMoney(Math.max(0, total - discount), currency)}</strong>
                 </span>
               )}
@@ -144,7 +153,7 @@ export function ProposalEditor({
                     step={100}
                     inputMode="numeric"
                     value={m.amount / 100}
-                    onChange={(e) => updateMilestone(i, { amount: Math.max(0, Math.round((Number(e.target.value) || 0) * 100)) })}
+                    onChange={(e) => updateMilestone(i, { amount: toMinor(e.target.value) })}
                     className={inputClass}
                   />
                 </Field>
@@ -177,6 +186,52 @@ export function ProposalEditor({
         >
           Add milestone
         </Button>
+
+        <div className="mt-6 grid gap-4 border-t border-line pt-5 md:grid-cols-[150px_1fr]">
+          <Field label={`Discount (${currency})`} htmlFor="discount" hint="0 for none.">
+            <input
+              id="discount"
+              type="number"
+              min={0}
+              step={100}
+              inputMode="numeric"
+              value={discount / 100}
+              onChange={(e) => touch(setDiscount)(toMinor(e.target.value))}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Discount shown as" htmlFor="discountNote" optional>
+            <input
+              id="discountNote"
+              value={discountNote}
+              maxLength={200}
+              placeholder="Discount"
+              onChange={(e) => touch(setDiscountNote)(e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+        </div>
+        {path === "operate" && (
+          <div className="mt-4 max-w-xs">
+            <Field
+              label={`Monthly plan after this (${currency})`}
+              htmlFor="monthlyAmount"
+              hint="What the client pays each month once they accept. Empty uses the rate card. Mention it in the terms too."
+            >
+              <input
+                id="monthlyAmount"
+                type="number"
+                min={0}
+                step={100}
+                inputMode="numeric"
+                placeholder="Rate card"
+                value={monthlyAmount == null ? "" : monthlyAmount / 100}
+                onChange={(e) => touch(setMonthlyAmount)(e.target.value === "" ? null : toMinor(e.target.value))}
+                className={inputClass}
+              />
+            </Field>
+          </div>
+        )}
       </Card>
 
       <Card>

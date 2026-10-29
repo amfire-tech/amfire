@@ -64,6 +64,13 @@
       "when": 1793011488725,
       "tag": "0008_proof_partners",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793253707510,
+      "tag": "0009_proposal_monthly_amount",
+      "breakpoints": true
     }
   ]
 }

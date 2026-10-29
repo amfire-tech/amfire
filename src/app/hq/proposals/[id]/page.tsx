@@ -48,8 +48,7 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
           <ProposalEditor
             proposalId={proposal.id}
             currency={proposal.currency}
-            discount={proposal.discount}
-            discountNote={proposal.discountNote}
+            path={proposal.path}
             initial={{
               title: proposal.title,
               summary: proposal.summary,
@@ -57,6 +56,9 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
               outOfScope: proposal.outOfScope,
               assumptions: proposal.assumptions,
               milestones: proposal.milestones,
+              discount: proposal.discount,
+              discountNote: proposal.discountNote,
+              monthlyAmount: proposal.monthlyAmount,
               terms: proposal.terms,
             }}
           />
@@ -65,7 +67,7 @@ export default async function ProposalPage({ params }: PageProps<"/hq/proposals/
               proposalId={proposal.id}
               isOwner={actor.internalRole === "owner"}
               belowGuideline={total < floor}
-              guidelineText={`minimum ${formatMoney(floor, proposal.currency)} for this size of work (saved total ${formatMoney(total, proposal.currency)})`}
+              guidelineText={`usually ${formatMoney(floor, proposal.currency)} or more for this size of work. Saved total ${formatMoney(total, proposal.currency)}${proposal.monthlyAmount != null ? `, then ${formatMoney(proposal.monthlyAmount, proposal.currency)} a month` : ""}.`}
               clientEmail={lead.email}
             />
           </div>

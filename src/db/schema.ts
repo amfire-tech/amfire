@@ -221,6 +221,8 @@ export const proposals = appSchema.table("proposals", {
   discount: integer("discount").notNull().default(0),
   /** What the discount is, shown on the proposal: "Free-demo offer · DEMO5K-…". */
   discountNote: text("discount_note"),
+  /** Operate only: the monthly plan price after onboarding, in minor units. Null means the rate card. */
+  monthlyAmount: integer("monthly_amount"),
   terms: text("terms").notNull(),
   /** Set when pricing falls below the guideline floor and the owner approved it anyway. */
   pricingOverrideNote: text("pricing_override_note"),

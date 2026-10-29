@@ -72,6 +72,12 @@ export function ProposalDocument({ proposal, company }: { proposal: Proposal; co
             <span>Total · about {weeks} weeks</span>
             <span>{formatMoney(Math.max(0, subtotal - discount), proposal.currency)}</span>
           </li>
+          {proposal.path === "operate" && proposal.monthlyAmount != null && (
+            <li className="flex items-center justify-between p-4 font-semibold">
+              <span>Then, every month</span>
+              <span>{formatMoney(proposal.monthlyAmount, proposal.currency)}</span>
+            </li>
+          )}
         </ol>
       </section>
 

@@ -20,6 +20,7 @@ import {
   defaultTerms,
   isCurrency,
   milestoneTemplate,
+  formatMoney,
   OPERATE_RETAINER,
   priceFloor,
   PRICING_CURRENCY,
@@ -34,7 +35,7 @@ import { demoOfferCode } from "./leads";
 export class ProposalError extends Error {
   constructor(
     message: string,
-    readonly code: "NOT_FOUND" | "NOT_EDITABLE" | "PRICING_BELOW_GUIDELINE" | "NO_CLIENT_EMAIL" | "INVALID",
+    readonly code: "NOT_FOUND" | "NOT_EDITABLE" | "NO_CLIENT_EMAIL" | "INVALID",
   ) {
     super(message);
     this.name = "ProposalError";
@@ -96,6 +97,7 @@ export async function createProposalDraft(
         // Everyone who books a free demo gets the free-demo offer.
         discount: DEMO_OFFER.amount[currency],
         discountNote: `Free-demo offer · ${demoOfferCode(lead.publicRef)}`,
+        monthlyAmount: rec.path === "operate" ? OPERATE_RETAINER[size][currency] : null,
         terms: [defaultTerms(rec.path, size, currency), DEMO_OFFER.terms(currency)].join("\n"),
         createdBy: actor.userId,
       })
@@ -134,9 +136,19 @@ export const ProposalEdit = z.object({
     )
     .min(1, "Add at least one milestone.")
     .max(12),
+  /** Taken off the milestones; 0 removes it. */
+  discount: z.number().int().min(0).max(100_000_000_00).default(0),
+  discountNote: z
+    .string()
+    .trim()
+    .max(200)
+    .nullish()
+    .transform((v) => v || null),
+  /** Operate only. Null falls back to the rate card. */
+  monthlyAmount: z.number().int().min(0).max(100_000_000_00).nullish().transform((v) => v ?? null),
   terms: z.string().trim().min(10).max(4000),
 });
-export type ProposalEdit = z.infer<typeof ProposalEdit>;
+export type ProposalEdit = z.input<typeof ProposalEdit>;
 
 export async function updateProposalDraft(db: DB, actor: Actor | null, proposalId: string, edit: ProposalEdit) {
   assertStaff(actor);
@@ -179,11 +191,12 @@ export async function approveAndSendProposal(
   if (proposal.status !== "draft") throw new ProposalError("This proposal has already been sent.", "NOT_EDITABLE");
   ProposalEdit.parse(proposal);
 
+  // The guideline is advice: the owner sets the price. Going below it is noted in the audit history.
   const floor = await pricingFloorFor(db, proposal);
-  const overrideNote = opts.pricingOverrideNote?.trim() || null;
-  if (proposalSubtotal(proposal) < floor && !overrideNote) {
-    throw new ProposalError("The total is below the pricing guideline. Record a reason to approve it.", "PRICING_BELOW_GUIDELINE");
-  }
+  const belowGuideline = proposalSubtotal(proposal) < floor;
+  const overrideNote = belowGuideline
+    ? opts.pricingOverrideNote?.trim() || `Owner's price, below the ${formatMoney(floor, proposalCurrency(proposal))} guideline.`
+    : null;
 
   const result = await db.transaction(async (tx) => {
     const [lead] = await tx.select().from(leads).where(eq(leads.id, proposal.leadId));
@@ -275,6 +288,7 @@ export async function reviseProposal(db: DB, actor: Actor | null, proposalId: st
         currency: p.currency,
         discount: p.discount,
         discountNote: p.discountNote,
+        monthlyAmount: p.monthlyAmount,
         terms: p.terms,
         createdBy: actor.userId,
       })
@@ -364,7 +378,7 @@ export async function clientDecideProposal(
         orgId,
         projectId: project.id,
         title: `${p.title} — monthly plan`,
-        amount: OPERATE_RETAINER[size][currency],
+        amount: p.monthlyAmount ?? OPERATE_RETAINER[size][currency],
         currency,
         startedAt: now,
         nextInvoiceAt: new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),

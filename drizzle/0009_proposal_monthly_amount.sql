@@ -1,0 +1,1 @@
+ALTER TABLE "app"."proposals" ADD COLUMN "monthly_amount" integer;

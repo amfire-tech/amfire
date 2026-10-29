@@ -9,7 +9,7 @@ import { before, describe, test } from "node:test";
 import { eq } from "drizzle-orm";
 import type * as z from "zod";
 import { openPglite, type DB } from "@/db";
-import { agentRuns, memberships, organizations, users } from "@/db/schema";
+import { agentRuns, memberships, organizations, subscriptions, users } from "@/db/schema";
 import { AccessDenied, loadActor, type Actor } from "@/server/access";
 import { runSolutionArchitect } from "@/server/agents/solution-architect";
 import { consumeLoginToken, createLoginToken, findSessionUser } from "@/server/auth";
@@ -138,21 +138,37 @@ describe("first milestone path", () => {
     assert.equal(inr.discount, DEMO_OFFER.amount.INR);
   });
 
-  test("clients cannot see drafts; staff cannot approve; owner must justify below-guideline pricing", async () => {
+  test("clients cannot see drafts; staff cannot approve", async () => {
     await assert.rejects(approveAndSendProposal(db, staff, proposalId), AccessDenied);
+  });
 
-    const detail = await getLeadDetail(db, staff, leadId);
-    const draft = detail!.proposals[0];
-    await updateProposalDraft(db, staff, proposalId, {
-      ...draft,
-      milestones: draft.milestones.map((m) => ({ ...m, amount: 100 })),
-    });
-    await assert.rejects(
-      approveAndSendProposal(db, owner, proposalId),
-      (err: unknown) => err instanceof ProposalError && err.code === "PRICING_BELOW_GUIDELINE",
+  test("the owner sets the price: below the guideline, no discount, own monthly plan", async () => {
+    const { lead, recommendation } = await submitDiscovery(
+      db,
+      answers({ goal: "keep-running", email: "ops@school-partner.test", company: "School Partner" }),
     );
-    // Restore guideline pricing.
-    await updateProposalDraft(db, staff, proposalId, draft);
+    await decideQualification(db, staff, lead.id, "qualified");
+    const draft = await createProposalDraft(db, staff, recommendation!.id);
+    assert.equal(draft.path, "operate");
+    assert.ok(draft.monthlyAmount && draft.monthlyAmount > 0);
+
+    const tenK = 10_000_00;
+    await updateProposalDraft(db, staff, draft.id, {
+      ...draft,
+      milestones: [{ title: "First month", description: "Everything in the partnership.", weeks: 4, amount: tenK }],
+      discount: 0,
+      discountNote: null,
+      monthlyAmount: tenK,
+    });
+    // No reason typed: still approved, and the audit note says it was below the guideline.
+    const { proposal } = await approveAndSendProposal(db, owner, draft.id);
+    assert.equal(proposalTotal(proposal), tenK);
+    assert.ok(proposal.pricingOverrideNote?.includes("below"));
+
+    const partner = await actorFor("ops@school-partner.test");
+    const { project } = await clientDecideProposal(db, partner, draft.id, { accept: true });
+    const [plan] = await db.select().from(subscriptions).where(eq(subscriptions.projectId, project!.id));
+    assert.equal(plan.amount, tenK);
   });
 
   test("owner approves and sends → client organisation and Hub access are created", async () => {

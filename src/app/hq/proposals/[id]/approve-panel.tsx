@@ -34,7 +34,7 @@ export function ApprovePanel({
           Add their email on the lead page. The proposal is sent through the Client Hub, which needs it.
         </Notice>
       )}
-      <p className="mt-3 text-sm">Pricing guideline: {guidelineText}</p>
+      <p className="mt-3 text-sm text-muted">Pricing guideline: {guidelineText}</p>
 
       {!isOwner ? (
         <div className="mt-4">
@@ -42,17 +42,17 @@ export function ApprovePanel({
         </div>
       ) : (
         <form action={action} className="mt-4 space-y-4">
-          {(belowGuideline || state?.code === "PRICING_BELOW_GUIDELINE") && (
+          {belowGuideline && (
             <Field
-              label="Reason for pricing below the guideline"
+              label="Note on the price"
               htmlFor="pricingOverrideNote"
-              hint="Recorded in the audit history."
-              error={state?.code === "PRICING_BELOW_GUIDELINE" ? state.error : undefined}
+              optional
+              hint="Your price is below the guideline, which is fine. A note here is kept in the audit history."
             >
               <textarea id="pricingOverrideNote" name="pricingOverrideNote" rows={2} className={inputClass} />
             </Field>
           )}
-          {state?.error && state.code !== "PRICING_BELOW_GUIDELINE" && <Notice tone="error">{state.error}</Notice>}
+          {state?.error && <Notice tone="error">{state.error}</Notice>}
           {state?.ok && <Notice tone="success">{state.ok}</Notice>}
           <SubmitButton className="w-full" pendingLabel="Sending…">
             Approve and send to client

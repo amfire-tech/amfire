@@ -11,6 +11,7 @@ const ERRORS: Record<string, string> = {
   expired: "That sign-in link has expired or was already used. Request a new one below.",
   "no-access": "That account doesn't have access to AMFIRE yet. Use the email address we have for you, or contact us.",
   google: "Google sign-in couldn't start. Try again, or use your password or an email link.",
+  switch: "Please sign in with the email address this link was sent to.",
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {

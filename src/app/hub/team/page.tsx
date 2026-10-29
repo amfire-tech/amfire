@@ -1,14 +1,14 @@
 import { ActionForm } from "@/components/action-form";
 import { Card, CardTitle, EmptyState, Field, PageHeader, formatDate, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { getTeam } from "@/server/portal";
 import { inviteTeammateAction, removeTeammateAction } from "../actions";
 
 export const metadata = { title: "Team" };
 
 export default async function TeamPage() {
-  const actor = await requireActor("/hub/team");
+  const actor = await requireClientActor("/hub/team");
   const orgId = actor.clientOrgIds[0];
   if (!orgId) return <EmptyState title="No account yet." />;
   const { members, canManage } = await getTeam(await getDb(), actor, orgId);

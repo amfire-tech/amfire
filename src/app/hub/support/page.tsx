@@ -2,7 +2,7 @@ import { ActionForm } from "@/components/action-form";
 import { Card, CardTitle, EmptyState, Field, PageHeader, StatusBadge, cx, formatDateTime, inputClass } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { getDb } from "@/db";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { listClientRequests } from "@/server/portal";
 import { getClientHome } from "@/server/projects";
 import { replyToRequestAction, supportRequestAction } from "../actions";
@@ -10,7 +10,7 @@ import { replyToRequestAction, supportRequestAction } from "../actions";
 export const metadata = { title: "Support" };
 
 export default async function SupportPage() {
-  const actor = await requireActor("/hub/support");
+  const actor = await requireClientActor("/hub/support");
   const db = await getDb();
   const [threads, home] = await Promise.all([listClientRequests(db, actor), getClientHome(db, actor)]);
   const orgId = actor.clientOrgIds[0];

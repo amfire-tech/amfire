@@ -3,7 +3,7 @@ import { ButtonLink, Card, EmptyState, Notice, PageHeader, ProgressBar, StatusBa
 import { contact } from "@/config/site";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { getClientActivity, getClientOverview, getClientTodo } from "@/server/portal";
 import { ActivityList } from "./activity-list";
 import { Concierge } from "./concierge";
@@ -16,7 +16,7 @@ function greeting() {
 }
 
 export default async function HubHome() {
-  const actor = await requireActor("/hub");
+  const actor = await requireClientActor("/hub");
 
   if (actor.clientOrgIds.length === 0) {
     return (

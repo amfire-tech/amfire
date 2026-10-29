@@ -1,11 +1,11 @@
 import { EmptyState, PageHeader } from "@/components/ui";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { Concierge } from "../concierge";
 
 export const metadata = { title: "Ask AMFIRE AI" };
 
 export default async function AskPage() {
-  const actor = await requireActor("/hub/ask");
+  const actor = await requireClientActor("/hub/ask");
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader

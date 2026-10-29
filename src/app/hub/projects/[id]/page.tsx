@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ActionForm } from "@/components/action-form";
 import { Card, CardTitle, EmptyState, Notice, PageHeader, ProgressBar, StatusBadge, formatDate, formatDateTime, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
-import { requireActor } from "@/lib/session";
+import { requireClientActor, switchAccountUrl } from "@/lib/session";
 import { getClientProject } from "@/server/projects";
 import { changeRequestAction, completeChecklistAction, decideChangeAction, feedbackAction, requestMilestoneChangesAction } from "../../actions";
 import { ApproveMilestoneButton, SupportRequestForm } from "./client-forms";
@@ -15,9 +15,9 @@ export const metadata = { title: "Project" };
 export default async function HubProjectPage({ params }: PageProps<"/hub/projects/[id]">) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const actor = await requireActor(`/hub/projects/${id}`);
+  const actor = await requireClientActor(`/hub/projects/${id}`);
   const data = await getClientProject(await getDb(), actor, id);
-  if (!data) notFound();
+  if (!data) redirect(switchAccountUrl(`/hub/projects/${id}`));
   const { project, milestones, tasks, updates, requests, progress, changeRequests, feedback, checklist } = data;
   const toRate = milestones.filter((m) => m.status === "done" && !feedback.some((f) => f.milestoneId === m.id)).slice(-1);
   const needed = checklist.filter((c) => c.status === "open");

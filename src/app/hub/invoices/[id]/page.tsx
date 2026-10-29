@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { InvoiceDocument } from "@/components/invoice-document";
 import { PrintButton } from "@/components/print-button";
 import { Card, CardTitle, Notice, PageHeader, buttonClass, formatDate } from "@/components/ui";
@@ -7,7 +7,7 @@ import { contact } from "@/config/site";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
-import { requireActor } from "@/lib/session";
+import { requireClientActor, switchAccountUrl } from "@/lib/session";
 import { getInvoiceForClient, isOverdue, upiLink } from "@/server/money";
 
 export const metadata = { title: "Invoice" };
@@ -15,9 +15,9 @@ export const metadata = { title: "Invoice" };
 export default async function HubInvoicePage({ params }: PageProps<"/hub/invoices/[id]">) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const actor = await requireActor(`/hub/invoices/${id}`);
+  const actor = await requireClientActor(`/hub/invoices/${id}`);
   const data = await getInvoiceForClient(await getDb(), actor, id);
-  if (!data) notFound();
+  if (!data) redirect(switchAccountUrl(`/hub/invoices/${id}`));
   const { invoice: i, org, paid, balance, payments } = data;
   const upi = upiLink(i, balance);
   const bank = process.env.PAYMENT_BANK_DETAILS?.replace(/\\n/g, "\n");

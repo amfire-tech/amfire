@@ -3,13 +3,13 @@ import { Money, StatTile } from "@/components/hq";
 import { Card, CardTitle, EmptyState, InvoiceBadge, PageHeader, StatusBadge, Table, formatDate } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { getClientBilling } from "@/server/portal";
 
 export const metadata = { title: "Billing" };
 
 export default async function BillingPage() {
-  const actor = await requireActor("/hub/billing");
+  const actor = await requireClientActor("/hub/billing");
   const b = await getClientBilling(await getDb(), actor);
   const upi = process.env.PAYMENT_UPI_ID;
 

@@ -3,10 +3,10 @@ import { isUuid } from "@/lib/ids";
 import { getActor } from "@/lib/session";
 import { getProposalFile } from "@/server/proposals";
 
-/** Streams a proposal's attached PDF to staff, or to the client it was sent to. */
-export async function proposalPdfResponse(id: string): Promise<Response> {
+/** Streams a proposal's attached PDF: in HQ to staff, in the Client Hub to the client it was sent to. */
+export async function proposalPdfResponse(id: string, via: "hq" | "hub"): Promise<Response> {
   if (!isUuid(id)) return new Response("Not found", { status: 404 });
-  const file = await getProposalFile(await getDb(), await getActor(), id);
+  const file = await getProposalFile(await getDb(), await getActor(), id, via);
   if (!file) return new Response("Not found", { status: 404 });
   return new Response(new Uint8Array(file.content), {
     headers: {

@@ -2,14 +2,14 @@ import Link from "next/link";
 import { Card, EmptyState, PageHeader, ProgressBar, StatusBadge, formatDate } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { getClientHome } from "@/server/projects";
 import { proposalTotal } from "@/server/proposals";
 
 export const metadata = { title: "Projects" };
 
 export default async function ProjectsPage() {
-  const actor = await requireActor("/hub/projects");
+  const actor = await requireClientActor("/hub/projects");
   const { projects, proposals } = await getClientHome(await getDb(), actor);
 
   return (

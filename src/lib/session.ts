@@ -45,6 +45,22 @@ export async function requireActor(next = "/hub"): Promise<Actor> {
   return actor;
 }
 
+/**
+ * Where a Client Hub link goes when the signed-in account may not see it: the
+ * session is signed out and the person signs in again, landing back on `next`.
+ * Nothing about the page (or whether it exists) is shown to the wrong account.
+ */
+export function switchAccountUrl(next: string) {
+  return `/auth/switch?next=${encodeURIComponent(next)}`;
+}
+
+/** The Client Hub is for client accounts only; anyone else (including AMFIRE staff) must sign in as the client. */
+export async function requireClientActor(next: string): Promise<Actor> {
+  const actor = await requireActor(next);
+  if (actor.internalRole || actor.clientOrgIds.length === 0) redirect(switchAccountUrl(next));
+  return actor;
+}
+
 export async function requireStaffActor(): Promise<Actor & { internalRole: "owner" | "staff" }> {
   const actor = await requireActor("/hq");
   if (!actor.internalRole) redirect("/hub");

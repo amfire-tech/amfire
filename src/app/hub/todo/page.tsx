@@ -4,7 +4,7 @@ import { ActionForm } from "@/components/action-form";
 import { ButtonLink, Card, EmptyState, InvoiceBadge, PageHeader, formatDate, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { getClientTodo } from "@/server/portal";
 import { completeChecklistAction, decideChangeAction } from "../actions";
 import { ApproveMilestoneButton } from "../projects/[id]/client-forms";
@@ -24,7 +24,7 @@ function Group({ title, hint, children }: { title: string; hint: string; childre
 }
 
 export default async function TodoPage() {
-  const actor = await requireActor("/hub/todo");
+  const actor = await requireClientActor("/hub/todo");
   const t = await getClientTodo(await getDb(), actor);
 
   return (

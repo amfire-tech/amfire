@@ -187,8 +187,12 @@ describe("first milestone path", () => {
     await assert.rejects(deleteProposalDraft(db, staff, draftId), ProposalError);
 
     const partner = await actorFor("ops@school-partner.test");
-    assert.equal((await getProposalFile(db, partner, draftId))?.name, "Partnership.pdf");
-    assert.equal(await getProposalFile(db, null, draftId), null);
+    assert.equal((await getProposalFile(db, partner, draftId, "hub"))?.name, "Partnership.pdf");
+    assert.equal(await getProposalFile(db, partner, draftId, "hq"), null);
+    assert.equal(await getProposalFile(db, null, draftId, "hub"), null);
+    // Staff read it in HQ, never through the client's link.
+    assert.equal((await getProposalFile(db, owner, draftId, "hq"))?.name, "Partnership.pdf");
+    assert.equal(await getProposalFile(db, owner, draftId, "hub"), null);
 
     const { project } = await clientDecideProposal(db, partner, draftId, { accept: true });
     const [plan] = await db.select().from(subscriptions).where(eq(subscriptions.projectId, project!.id));

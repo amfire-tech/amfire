@@ -1,14 +1,12 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { signOutAndReturn } from "@/app/actions/auth";
-import { SubmitButton } from "@/components/forms";
 import { ProposalDocument } from "@/components/proposal-document";
-import { Card, CardTitle, Notice, PageHeader, StatusBadge, buttonClass, formatDate } from "@/components/ui";
+import { Notice, PageHeader, StatusBadge, formatDate } from "@/components/ui";
 import { getDb } from "@/db";
 import { organizations } from "@/db/schema";
 import { isUuid } from "@/lib/ids";
-import { requireActor } from "@/lib/session";
+import { requireClientActor, switchAccountUrl } from "@/lib/session";
 import { getClientProposal, proposalFileInfo } from "@/server/proposals";
 import { DecisionPanel } from "./decision-panel";
 
@@ -17,12 +15,11 @@ export const metadata = { title: "Proposal" };
 export default async function HubProposalPage({ params }: PageProps<"/hub/proposals/[id]">) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
-  const actor = await requireActor(`/hub/proposals/${id}`);
+  const actor = await requireClientActor(`/hub/proposals/${id}`);
   const db = await getDb();
   const proposal = await getClientProposal(db, actor, id);
-  // Signed in as someone else (often the owner, testing a client's link in the same browser):
-  // say so plainly, never switch them into HQ.
-  if (!proposal) return <WrongAccount email={actor.email} staff={!!actor.internalRole} proposalId={id} />;
+  // Not this account's proposal: sign out and sign in as the person it was sent to.
+  if (!proposal) redirect(switchAccountUrl(`/hub/proposals/${id}`));
   const [org] = await db.select().from(organizations).where(eq(organizations.id, proposal.clientOrgId!));
   const file = await proposalFileInfo(db, proposal.id);
 
@@ -48,31 +45,5 @@ export default async function HubProposalPage({ params }: PageProps<"/hub/propos
         </div>
       </div>
     </div>
-  );
-}
-
-/** Signed in, but the proposal was sent to a different email address. */
-function WrongAccount({ email, staff, proposalId }: { email: string; staff: boolean; proposalId: string }) {
-  return (
-    <Card className="mx-auto max-w-lg">
-      <CardTitle>This proposal was sent to a different email</CardTitle>
-      <p className="text-sm text-muted">
-        This browser is signed in as <strong className="text-fg">{email}</strong>
-        {staff ? ", the amfire team account" : ""}. The proposal opens only for the email address it was sent to.
-        {staff && " Your client signs in with their own email and sees only their Client Hub, never HQ."}
-      </p>
-      <p className="mt-2 text-sm text-muted">To see it as the client, sign out here (or use a private window) and sign in with their email.</p>
-      <div className="mt-4 flex flex-wrap gap-3">
-        <form action={signOutAndReturn}>
-          <input type="hidden" name="next" value={`/hub/proposals/${proposalId}`} />
-          <SubmitButton pendingLabel="Signing out…">Sign out and switch account</SubmitButton>
-        </form>
-        {staff && (
-          <Link href={`/hq/proposals/${proposalId}`} className={buttonClass("secondary")}>
-            Open it in HQ
-          </Link>
-        )}
-      </div>
-    </Card>
   );
 }

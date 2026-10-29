@@ -1,13 +1,13 @@
 import { PageHeader } from "@/components/ui";
 import { getDb } from "@/db";
-import { requireActor } from "@/lib/session";
+import { requireClientActor } from "@/lib/session";
 import { getClientActivity } from "@/server/portal";
 import { ActivityList } from "../activity-list";
 
 export const metadata = { title: "Activity" };
 
 export default async function ActivityPage() {
-  const actor = await requireActor("/hub/activity");
+  const actor = await requireClientActor("/hub/activity");
   const items = await getClientActivity(await getDb(), actor);
   return (
     <div className="space-y-6">

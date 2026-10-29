@@ -364,13 +364,14 @@ export async function proposalFileInfo(db: DB, proposalId: string) {
   return row ?? null;
 }
 
-/** The PDF for staff, or for the client once the proposal has been sent to them. */
-export async function getProposalFile(db: DB, actor: Actor | null, proposalId: string) {
+/**
+ * The PDF through HQ (staff only) or through the Client Hub (only the client it
+ * was sent to: staff get nothing there, so the two never mix).
+ */
+export async function getProposalFile(db: DB, actor: Actor | null, proposalId: string, via: "hq" | "hub") {
   if (!actor) return null;
-  if (!actor.internalRole) {
-    const visible = await getClientProposal(db, actor, proposalId);
-    if (!visible) return null;
-  }
+  if (via === "hq" && !actor.internalRole) return null;
+  if (via === "hub" && (actor.internalRole || !(await getClientProposal(db, actor, proposalId)))) return null;
   const [row] = await db.select().from(proposalFiles).where(eq(proposalFiles.proposalId, proposalId));
   return row ?? null;
 }

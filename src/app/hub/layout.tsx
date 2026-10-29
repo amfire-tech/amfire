@@ -12,10 +12,11 @@ import { HubNav } from "./nav";
 export const metadata: Metadata = { title: { default: "Client Hub", template: "%s · AMFIRE Client Hub" }, robots: { index: false } };
 
 export default async function HubLayout({ children }: LayoutProps<"/hub">) {
-  // Signed out: each page sends the visitor to sign in and back to that exact page
+  // Signed out, or not a client account (e.g. the owner): each page signs them out and
+  // sends them to sign in and back to that exact page, so nothing of the Hub is shown
   // (an email's "Review it here" link must land on the milestone, not the Hub home).
   const actor = await getActor();
-  if (!actor) return <>{children}</>;
+  if (!actor || actor.internalRole || actor.clientOrgIds.length === 0) return <>{children}</>;
   const todo = actor.clientOrgIds.length ? (await getClientTodo(await getDb(), actor)).count : 0;
   return (
     <div className="flex min-h-full flex-1 flex-col bg-subtle lg:flex-row">
@@ -57,11 +58,6 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
               <Link href="/account" className="text-muted underline-offset-4 hover:text-fg hover:underline">
                 Password
               </Link>
-              {actor.internalRole && (
-                <Link href="/hq" className="text-muted underline-offset-4 hover:text-fg hover:underline">
-                  HQ
-                </Link>
-              )}
               <form action={signOut}>
                 <button className="text-muted underline-offset-4 hover:text-fg hover:underline">Sign out</button>
               </form>

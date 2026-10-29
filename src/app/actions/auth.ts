@@ -216,10 +216,3 @@ export async function signOut() {
   await endSession();
   redirect("/");
 }
-
-/** Signed in with the wrong email: sign out and come back to the same page after signing in again. */
-export async function signOutAndReturn(formData: FormData) {
-  await endSession();
-  const next = safeNext(formData.get("next"));
-  redirect(`/login${next ? `?next=${encodeURIComponent(next)}` : ""}`);
-}

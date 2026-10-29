@@ -22,6 +22,10 @@ export type EmailContent = {
   showMethod: boolean;
   closing: string;
   replyLabel: string;
+  /** Typed into their reply when they tap the reply button, e.g. "Yes, 15 minutes works. How about…" */
+  replyBody?: string;
+  /** Shown under the signature: the most-read line of a cold email. */
+  ps?: string;
   signName: string;
   signRole: string;
   footer: string;
@@ -129,7 +133,8 @@ export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
   const p = (s: string, last: boolean) => `<p style="margin:0${last ? "" : " 0 16px"};">${inline(s)}</p>`;
   const opening = paragraphs(c.opening);
   const closing = paragraphs(c.closing);
-  const replyHref = `mailto:${f.replyTo}?subject=${encodeURIComponent(`Re: ${f.subject}`)}`;
+  // One tap opens a reply with the yes already written; they only add a time.
+  const replyHref = `mailto:${f.replyTo}?subject=${encodeURIComponent(`Re: ${f.subject}`)}${c.replyBody ? `&body=${encodeURIComponent(c.replyBody)}` : ""}`;
   const phoneDigits = f.phone.replace(/\D/g, "");
   const headline = c.headline
     .split("\n")
@@ -209,11 +214,8 @@ export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding:10px 24px 34px;">
-        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-          <td class="stack stack-gap" style="padding:0 6px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>${pill(replyHref, c.replyLabel || "Reply to this email", true)}</tr></table></td>
-          <td class="stack" style="padding:0 6px;"><table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center"><tr>${pill(f.whatsappUrl, "WhatsApp me", false)}</tr></table></td>
-        </tr></table>
+      <td align="center" style="padding:6px 24px 34px;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>${pill(replyHref, c.replyLabel || "Reply to this email", true)}</tr></table>
       </td>
     </tr>
     <tr>
@@ -224,10 +226,11 @@ export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
         <p style="margin:0; font-size:14px;">
           <a href="tel:+${phoneDigits}" style="color:#1c1917; text-decoration:none;">${esc(f.phone)}</a>
           &nbsp;<span style="color:#c9bfd9;">|</span>&nbsp;
-          <a href="mailto:${esc(f.replyTo)}" style="color:#1c1917; text-decoration:none;">${esc(f.replyTo)}</a>
+          <a href="${esc(f.whatsappUrl)}" target="_blank" style="color:#1c1917; text-decoration:none;">WhatsApp</a>
           &nbsp;<span style="color:#c9bfd9;">|</span>&nbsp;
           <a href="https://www.amfire.in" target="_blank" style="color:#e8590c; text-decoration:none;">amfire.in</a>
         </p>
+        ${c.ps ? `<p style="margin:18px 0 0; padding-top:14px; border-top:1px solid #dcdff3; font-size:15px; line-height:23px; color:#3f3a36;"><b style="color:#1c1917;">P.S.</b> ${inline(c.ps)}</p>` : ""}
       </td>
     </tr>
   </table>
@@ -255,6 +258,7 @@ export function renderEmailText(c: EmailContent, f: EmailFrame) {
   }
   out.push(...paragraphs(c.closing).flatMap((s) => [plain(s), ""]));
   out.push("Warm regards,", c.signName, c.signRole, `${f.phone} · ${f.replyTo} · amfire.in`);
+  if (c.ps) out.push("", `P.S. ${plain(c.ps)}`);
   if (c.footer) out.push("", plain(c.footer));
   return out.join("\n");
 }
@@ -272,9 +276,11 @@ export function defaultEmailContent(o: { business: string; contactName?: string 
     button: o.demoUrl ? { label: "Open what I made for you", url: o.demoUrl, note: "" } : null,
     findingsTitle: "What a new client notices today",
     findings: [],
-    showMethod: true,
-    closing: "I’ll put the quality of our work against anyone’s in the market, and the price is the part people don’t believe until they see it. I would rather show you both than write them here.\n\nAll I’m asking for is **15 minutes**, at whatever time suits you.",
-    replyLabel: "Pick a 15-minute slot",
+    showMethod: false,
+    closing: "The website is only the first step. The rest is what we call the **FIRM Method**, and it’s easier to show than to write.\n\n**Worth 15 minutes next week?**",
+    replyLabel: "Yes, book 15 minutes",
+    replyBody: "Hi, yes, 15 minutes works. A good time for me is: ",
+    ps: "",
     signName: o.ownerName,
     signRole: "Founder, amfire · Build · Operate · Automate",
     footer: "Not relevant? Reply “no” and I won’t write again.",

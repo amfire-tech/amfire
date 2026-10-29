@@ -158,6 +158,12 @@ export function EmailComposer({
             <Field label="Reply button" htmlFor="replyLabel">
               <input id="replyLabel" value={c.replyLabel} onChange={(e) => setContent({ replyLabel: e.target.value })} className={inputClass} />
             </Field>
+            <Field label="Their reply, already typed" htmlFor="replyBody" optional hint="Tapping the button opens a reply with this written in, so they only add a time.">
+              <input id="replyBody" value={c.replyBody ?? ""} onChange={(e) => setContent({ replyBody: e.target.value })} className={inputClass} />
+            </Field>
+            <Field label="P.S." htmlFor="ps" optional hint="Under your signature. The line most people read.">
+              <textarea id="ps" rows={2} value={c.ps ?? ""} onChange={(e) => setContent({ ps: e.target.value })} className={inputClass} />
+            </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Your name" htmlFor="signName">
                 <input id="signName" value={c.signName} onChange={(e) => setContent({ signName: e.target.value })} className={inputClass} />

@@ -147,6 +147,10 @@
   .changes h4 { margin: 0 0 12px; font: 600 16px var(--sans); }
   .changes ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; color: #44403c; }
   .changes small { display: block; margin-top: 14px; color: var(--muted); }
+  .changes .next { margin: 16px 0 12px; font-size: 14px; color: var(--ink); }
+  .changes .book-btn { width: 100%; justify-content: center; }
+  .changes .wa { display: block; text-align: center; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .ribbon .book { color: #fff; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
   .toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 40px); opacity: 0; background: var(--ink); color: #fff; padding: 14px 20px; border-radius: 14px; font-size: 14px; max-width: calc(100vw - 32px); transition: .3s; z-index: 50; }
   .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
@@ -159,7 +163,7 @@
 </head>
 <body>
 
-<div class="ribbon">A concept homepage <b>amfire</b> made for B.M. Chatrath &amp; Co. · not your live site, nothing here is published</div>
+<div class="ribbon">A concept homepage <b>amfire</b> made for B.M. Chatrath &amp; Co. (not published) · <a class="book" href="mailto:hello@amfire.in?subject=15%20minutes%3A%20the%20B.M.%20Chatrath%20homepage&amp;body=Hi%20Navanish%2C%20I%20saw%20the%20homepage.%2015%20minutes%20works.%20A%20good%20time%20for%20me%20is%3A%20">Like it? Book 15 minutes →</a></div>
 
 <header>
   <div class="wrap nav">
@@ -345,6 +349,9 @@
     <li>A 3-field enquiry with no captcha, instead of 10 required fields.</li>
     <li>Fresh content and a footer that doesn’t say “last updated 2016”.</li>
   </ol>
+  <p class="next">This homepage is one piece of what we call the FIRM Method. The rest takes 15 minutes to show.</p>
+  <a class="btn btn-red book-btn" href="mailto:hello@amfire.in?subject=15%20minutes%3A%20the%20B.M.%20Chatrath%20homepage&amp;body=Hi%20Navanish%2C%20I%20saw%20the%20homepage.%2015%20minutes%20works.%20A%20good%20time%20for%20me%20is%3A%20">Book 15 minutes with amfire</a>
+  <a class="wa" href="https://wa.me/919373010143?text=Hi%20Navanish%2C%20I%20saw%20the%20homepage%20you%20made%20for%20B.M.%20Chatrath%20%26%20Co." target="_blank" rel="noopener">or WhatsApp +91 93730 10143</a>
   <small>Made by amfire from your public website only.</small>
 </div>
 <div class="toast" id="toast" role="status"></div>

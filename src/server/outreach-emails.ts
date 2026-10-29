@@ -32,6 +32,8 @@ export const EmailContentSchema = z.object({
   showMethod: z.boolean(),
   closing: z.string().trim().max(3000),
   replyLabel: line(60),
+  replyBody: line(300).optional(),
+  ps: line(400).optional(),
   signName: z.string().trim().min(1, "Add your name for the signature.").max(80),
   signRole: line(120),
   footer: line(300),

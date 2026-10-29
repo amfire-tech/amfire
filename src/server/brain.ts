@@ -25,7 +25,7 @@ import { assertOwner, assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
 import { CrmError } from "./crm";
 import { mrr, sendInvoice } from "./money";
-import { emailConfigured, sendEmail } from "./notify";
+import { emailConfigured, sendEmail, setBriefEmails } from "./notify";
 import { postProjectUpdate } from "./projects";
 
 export async function listInbox(db: DB, actor: Actor | null) {
@@ -245,6 +245,17 @@ export async function updateAgentSetting(db: DB, actor: Actor | null, role: stri
   const values = { role, enabled: data.enabled, dailyBudgetMicroUsd: Math.round(data.dailyBudgetUsd * 1_000_000), updatedAt: new Date() };
   await db.insert(agentSettings).values(values).onConflictDoUpdate({ target: agentSettings.role, set: values });
   await audit(db, { actorId: actor.userId, action: "agent.settings_changed", subjectType: "agent", data: values });
+}
+
+export const BriefEmailsInput = z.array(z.string().trim().toLowerCase().email("That isn't a valid email address.")).max(10, "Ten addresses at most.");
+
+/** Saves who gets the morning brief by email. An empty list falls back to BRIEF_EMAIL / OWNER_EMAIL. */
+export async function updateBriefEmails(db: DB, actor: Actor | null, emails: string[]) {
+  assertOwner(actor);
+  const list = [...new Set(BriefEmailsInput.parse(emails))];
+  await setBriefEmails(db, list);
+  await audit(db, { actorId: actor.userId, action: "brief.recipients_changed", subjectType: "settings", data: { emails: list } });
+  return list;
 }
 
 // --- Investor update -------------------------------------------------------------------------

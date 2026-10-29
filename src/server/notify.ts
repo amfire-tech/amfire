@@ -2,8 +2,10 @@
 // Business Cloud API. Both are off until configured, and every attempt —
 // sent, failed or skipped — is logged so HQ can show what happened.
 
+import { eq } from "drizzle-orm";
+import * as z from "zod";
 import type { DB } from "@/db";
-import { notifications, type BriefBody } from "@/db/schema";
+import { appSettings, notifications, type BriefBody } from "@/db/schema";
 import { site } from "@/config/site";
 
 export function emailConfigured() {
@@ -68,23 +70,40 @@ export function briefAsText(headline: string, body: BriefBody) {
     .join("\n");
 }
 
-/** Where the morning brief is emailed: BRIEF_EMAIL, or the owner's sign-in address. */
-export function briefEmail() {
-  return process.env.BRIEF_EMAIL?.trim() || process.env.OWNER_EMAIL?.trim() || null;
+const BRIEF_EMAILS_KEY = "brief_emails";
+
+/** Where the morning brief is emailed: the list set in HQ, else BRIEF_EMAIL, else the owner's sign-in address. */
+export async function briefEmails(db: DB): Promise<string[]> {
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, BRIEF_EMAILS_KEY));
+  const saved = z.array(z.string()).safeParse(row?.value);
+  if (saved.success && saved.data.length) return saved.data;
+  const fallback = process.env.BRIEF_EMAIL?.trim() || process.env.OWNER_EMAIL?.trim();
+  return fallback ? [fallback] : [];
 }
 
-/** Sends the brief to the owner on every configured channel. */
+/** True when the list comes from HQ rather than the environment. */
+export async function briefEmailsSaved(db: DB) {
+  const [row] = await db.select().from(appSettings).where(eq(appSettings.key, BRIEF_EMAILS_KEY));
+  return Array.isArray(row?.value) && row.value.length > 0;
+}
+
+export async function setBriefEmails(db: DB, emails: string[]) {
+  const values = { key: BRIEF_EMAILS_KEY, value: emails, updatedAt: new Date() };
+  await db.insert(appSettings).values(values).onConflictDoUpdate({ target: appSettings.key, set: values });
+}
+
+/** Sends the brief to the owner on every configured channel, and by email to each address set in HQ. */
 export async function deliverBrief(db: DB, headline: string, body: BriefBody) {
   const text = briefAsText(headline, body);
-  const to = briefEmail();
-  const results: { channel: string; status: string }[] = [];
+  const emails = await briefEmails(db);
+  const results: { channel: string; recipient: string | undefined; status: string }[] = [];
   const attempts: { channel: string; recipient: string | undefined; configured: boolean; send: () => Promise<void> }[] = [
-    {
+    ...(emails.length ? emails : [undefined]).map((to) => ({
       channel: "email",
-      recipient: to ?? undefined,
+      recipient: to,
       configured: emailConfigured() && !!to,
       send: () => sendEmail({ to: to!, subject: `AMFIRE brief: ${headline}`, text }),
-    },
+    })),
     {
       channel: "whatsapp",
       recipient: process.env.OWNER_WHATSAPP,
@@ -105,7 +124,7 @@ export async function deliverBrief(db: DB, headline: string, body: BriefBody) {
       }
     }
     await db.insert(notifications).values({ channel: a.channel, recipient: a.recipient ?? null, subject: headline, body: text, status, error });
-    results.push({ channel: a.channel, status });
+    results.push({ channel: a.channel, recipient: a.recipient, status });
   }
   return results;
 }

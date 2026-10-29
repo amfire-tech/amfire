@@ -27,8 +27,8 @@ import {
 } from "@/server/projects";
 import { assertOwner, assertStaff } from "@/server/access";
 import { latestBrief, runTeam } from "@/server/agents/team";
-import { briefEmail, deliverBrief } from "@/server/notify";
-import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting } from "@/server/brain";
+import { briefEmails, deliverBrief } from "@/server/notify";
+import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting, updateBriefEmails } from "@/server/brain";
 import { addFact, logInteraction, retireFact, setLeadOutcome, updateBilling, updateDeal } from "@/server/crm";
 import { sendClientDigests } from "@/server/client-digest";
 import { replyToRequest } from "@/server/portal";
@@ -413,10 +413,39 @@ export async function emailBriefAction(): Promise<ActionState> {
   try {
     assertOwner(actor);
     const brief = (await latestBrief(db))?.brief ?? (await runTeam(db, { triggeredBy: actor.userId })).brief;
-    const [email] = (await deliverBrief(db, brief.headline, brief.body)).filter((r) => r.channel === "email");
+    const emails = (await deliverBrief(db, brief.headline, brief.body)).filter((r) => r.channel === "email");
     revalidatePath("/hq/agents");
-    if (email?.status === "sent") return { ok: `Brief emailed to ${briefEmail()}.` };
-    return { error: email?.status === "failed" ? "The email couldn't be sent. See “Brief deliveries” below for the reason." : "Email isn't set up yet (NOTIFY_FROM_EMAIL and RESEND_API_KEY)." };
+    const sent = emails.filter((r) => r.status === "sent").map((r) => r.recipient);
+    if (sent.length === emails.length && sent.length) return { ok: `Brief emailed to ${sent.join(", ")}.` };
+    if (sent.length) return { error: `Emailed ${sent.join(", ")}, but some addresses failed. See “Brief deliveries” below.` };
+    return { error: emails.some((r) => r.status === "failed") ? "The email couldn't be sent. See “Brief deliveries” below for the reason." : "Email isn't set up yet (NOTIFY_FROM_EMAIL and RESEND_API_KEY)." };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function addBriefEmailAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const email = String(formData.get("email") ?? "").trim().toLowerCase();
+    const current = await briefEmails(db);
+    if (current.includes(email)) return { error: `${email} already gets the brief.` };
+    await updateBriefEmails(db, actor, [...current, email]);
+    revalidatePath("/hq/agents");
+    return { ok: `${email} will get the morning brief.` };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function removeBriefEmailAction(email: string): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    const current = await briefEmails(db);
+    if (current.length <= 1) return { error: "Keep at least one address, or the brief has nowhere to go." };
+    await updateBriefEmails(db, actor, current.filter((e) => e !== email));
+    revalidatePath("/hq/agents");
+    return { ok: `Removed ${email}.` };
   } catch (err) {
     return toActionError(err);
   }

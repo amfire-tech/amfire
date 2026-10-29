@@ -616,6 +616,13 @@ export const agentSettings = appSchema.table("agent_settings", {
   updatedAt: updatedAt(),
 });
 
+/** Owner settings edited in HQ, one row per key (e.g. "brief_emails": the morning brief's recipients). */
+export const appSettings = appSchema.table("app_settings", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: updatedAt(),
+});
+
 /** The Chief of Staff's brief, one per team run. */
 export const briefs = appSchema.table("briefs", {
   id: id(),

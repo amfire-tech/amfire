@@ -15,7 +15,7 @@ import { site } from "@/config/site";
 import { canUseAi, DATA_RULE, generateJson } from "./agents/llm";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
-import { briefEmail, emailConfigured, sendEmail } from "./notify";
+import { briefEmails, emailConfigured, sendEmail } from "./notify";
 import { OutreachError } from "./outreach";
 
 const HOUR = 60 * 60 * 1000;
@@ -114,7 +114,8 @@ export async function recordDemoView(db: DB, slug: string, opts: { viewerIsStaff
   if (!p.doNotContact && ["to_contact", "trying", "talking", "meeting"].includes(p.status)) {
     await db.update(prospects).set({ nextFollowUpAt: now, updatedAt: now }).where(eq(prospects.id, p.id));
   }
-  const to = briefEmail();
+  // The call-now alert is for the owner: the first brief address, not the whole list.
+  const [to] = await briefEmails(db);
   if (to && emailConfigured()) {
     try {
       await sendEmail({

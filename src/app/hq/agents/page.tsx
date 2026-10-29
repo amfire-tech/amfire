@@ -9,9 +9,9 @@ import { aiConfigured } from "@/server/agents/solution-architect";
 import { latestSignals, teamSettings } from "@/server/agents/team";
 import { approvalStats } from "@/server/brain";
 import { listAgentRuns } from "@/server/hq";
-import { briefEmail, emailConfigured, whatsappConfigured } from "@/server/notify";
+import { briefEmails, briefEmailsSaved, emailConfigured, whatsappConfigured } from "@/server/notify";
 import { desc } from "drizzle-orm";
-import { emailBriefAction, runTeamAction, sendClientDigestsAction, updateAgentSettingAction } from "../actions";
+import { addBriefEmailAction, emailBriefAction, removeBriefEmailAction, runTeamAction, sendClientDigestsAction, updateAgentSettingAction } from "../actions";
 
 export const metadata = { title: "AI team" };
 
@@ -20,12 +20,14 @@ const SEVERITY_DOT = { critical: "bg-danger", warn: "bg-[#f79009]", info: "bg-li
 export default async function AgentsPage() {
   const actor = await requireStaffActor();
   const db = await getDb();
-  const [team, latest, stats, runs, sent] = await Promise.all([
+  const [team, latest, stats, runs, sent, recipients, recipientsSaved] = await Promise.all([
     teamSettings(db),
     latestSignals(db),
     approvalStats(db),
     listAgentRuns(db, actor),
     db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(6),
+    briefEmails(db),
+    briefEmailsSaved(db),
   ]);
   const totalCost = runs.reduce((s, r) => s + (r.costMicroUsd ?? 0), 0) / 1_000_000;
   const isOwner = actor.internalRole === "owner";
@@ -48,7 +50,7 @@ export default async function AgentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted">
           Last run: {latest.run ? `${formatDateTime(latest.run.startedAt)} (${latest.run.triggeredBy ? "by hand" : "scheduled"})` : "never"} · scheduled every morning at
-          8:00 IST · brief by email {emailConfigured() && briefEmail() ? `to ${briefEmail()}` : "off"}, WhatsApp {whatsappConfigured() ? "on" : "off"}.
+          8:00 IST · brief by email {emailConfigured() && recipients.length ? `to ${recipients.join(", ")}` : "off"}, WhatsApp {whatsappConfigured() ? "on" : "off"}.
         </p>
         {isOwner && emailConfigured() && (
           <div className="flex flex-wrap gap-2">
@@ -57,6 +59,37 @@ export default async function AgentsPage() {
           </div>
         )}
       </div>
+
+      {isOwner && (
+        <Card>
+          <h2 className="font-semibold">Morning brief by email</h2>
+          <p className="text-sm text-muted">
+            Every address here gets the 8:00 IST brief. New-demo &ldquo;call now&rdquo; alerts go to the first one.
+            {!recipientsSaved && recipients.length > 0 && " This address comes from the server settings until you add one here."}
+            {!emailConfigured() && " Email sending isn't set up yet (RESEND_API_KEY and NOTIFY_FROM_EMAIL), so nothing goes out."}
+          </p>
+          {recipients.length > 0 && (
+            <ul className="mt-3 divide-y divide-line rounded-lg border border-line text-sm">
+              {recipients.map((email) => (
+                <li key={email} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                  <span>{email}</span>
+                  {recipients.length > 1 && (
+                    <ActionForm action={removeBriefEmailAction.bind(null, email)} submitLabel="Remove" size="sm" variant="ghost" pendingLabel="Removing…" inline />
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+          <ActionForm key={recipients.join()} action={addBriefEmailAction} submitLabel="Add email" size="sm" pendingLabel="Adding…" inline className="mt-3">
+            <div>
+              <label htmlFor="brief-email" className="block text-sm font-medium">
+                New address
+              </label>
+              <input id="brief-email" name="email" type="email" required placeholder="name@example.com" className={`${inputClass} mt-1.5 sm:!w-72`} />
+            </div>
+          </ActionForm>
+        </Card>
+      )}
 
       <div className="grid items-start gap-4 lg:grid-cols-2">
         {team.map((t) => {

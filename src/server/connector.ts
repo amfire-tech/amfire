@@ -39,6 +39,8 @@ import {
   getProspectEngine,
   loadStats,
   recordFeedback,
+  removeContact,
+  removeSignal,
   runLearning,
   startPlay,
   stopPlay,
@@ -392,6 +394,24 @@ export const TOOLS: Tool[] = [
     async (db, actor, { prospectId, play }) => {
       const p = await startPlay(db, actor, prospectId, play);
       return { id: p.id, play: p.play, step: p.playStep, nextFollowUpAt: p.nextFollowUpAt };
+    },
+  ),
+  tool(
+    "remove_contact",
+    "Remove a person from a prospect when they were added by mistake (wrong school or firm, left the job). Use get_prospect to find the contact id.",
+    z.object({ contactId: z.uuid() }),
+    async (db, actor, { contactId }) => {
+      const c = await removeContact(db, actor, contactId);
+      return { removed: c.name, prospectId: c.prospectId };
+    },
+  ),
+  tool(
+    "remove_signal",
+    "Remove a signal that was wrong (not true, or for another organisation). For one that was true but has gone stale, use record_feedback with signal_stale instead, so the engine learns from it.",
+    z.object({ signalId: z.uuid() }),
+    async (db, actor, { signalId }) => {
+      const s = await removeSignal(db, actor, signalId);
+      return { removed: s.title, prospectId: s.prospectId };
     },
   ),
   tool("stop_play", "Stop a prospect's play, with the reason.", z.object({ prospectId: z.uuid(), reason: z.string().optional() }), async (db, actor, { prospectId, reason }) => {

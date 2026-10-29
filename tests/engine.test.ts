@@ -212,6 +212,15 @@ describe("engine, end to end", () => {
     assert.equal(again.skipped.length, 3);
   });
 
+  test("campuses of one chain on one domain stay separate; the homepage still counts as the same organisation", async () => {
+    const [keshav] = await upsertTargets(db, owner, [{ prospect: { name: "Orbit School, Keshav Nagar", kind: "school", area: "Keshav Nagar", website: "https://www.orbit-school.example.in/keshav-nagar" } }], { now });
+    const [mundhwa] = await upsertTargets(db, owner, [{ prospect: { name: "Orbit School, Mundhwa", kind: "school", area: "Mundhwa", website: "https://www.orbit-school.example.in/mundhwa" } }], { now });
+    assert.equal(mundhwa.created, true);
+    assert.notEqual(mundhwa.id, keshav.id);
+    const [home] = await upsertTargets(db, owner, [{ prospect: { name: "Orbit Schools", kind: "school", area: "Pune", website: "https://orbit-school.example.in" } }], { now });
+    assert.equal(home.created, false); // the bare homepage matches one of them
+  });
+
   test("a signal for another segment is refused", async () => {
     await assert.rejects(upsertTargets(db, owner, [{ prospectId: schoolId, signals: [{ type: "peer_review_phase4", title: "3 partners", observedAt: "2025-12-31" }] }], { now }), /signal for CA firms/);
   });
@@ -306,6 +315,9 @@ describe("engine, end to end", () => {
     assert.ok(firm.score > 0 && firm.reason.startsWith("4 partners doing statutory audits"));
     const found = await call("find_targets", { segment: "ca_firm", near: { area: "shivajinagar", km: 2 } });
     assert.equal(found[0].name, "Kulkarni & Associates");
+    const detail = await call("get_prospect", { id: firm.id });
+    const removed = await call("remove_contact", { contactId: detail.engine.contacts[0].id });
+    assert.equal(removed.removed, "CA Meera Kulkarni");
     await call("start_play", { prospectId: firm.id });
     const queue = await call("get_engine_queue", { segment: "ca_firm" });
     assert.equal(queue.due[0].next.play, "ca_peer_review");

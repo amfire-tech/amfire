@@ -45,7 +45,7 @@ import {
   stepDue,
   type StatRow,
 } from "./engine-core";
-import { OutreachError, ProspectInput, addProspects, hostKey, istDayStart, nameKey, phoneKey } from "./outreach";
+import { OutreachError, ProspectInput, addProspects, istDayStart, nameKey, phoneKey, sameSite } from "./outreach";
 
 const DAY = 24 * 60 * 60 * 1000;
 const ACTIVE: ProspectStatus[] = ["to_contact", "trying", "talking", "meeting"];
@@ -191,10 +191,9 @@ export type TargetInput = z.input<typeof TargetInput>;
 /** The prospect already on the desk with the same phone, website, or name in the same area. */
 async function findExisting(db: DB, input: { name: string; phone?: string | null; website?: string | null; area?: string | null }) {
   const phone = phoneKey(input.phone);
-  const host = hostKey(input.website ?? null);
   const key = nameKey(input.name, input.area);
   const all = await db.select({ id: prospects.id, name: prospects.name, area: prospects.area, phone: prospects.phone, website: prospects.website }).from(prospects);
-  return all.find((p) => (phone && phoneKey(p.phone) === phone) || (host && hostKey(p.website) === host) || nameKey(p.name, p.area) === key) ?? null;
+  return all.find((p) => (phone && phoneKey(p.phone) === phone) || sameSite(p.website, input.website) || nameKey(p.name, p.area) === key) ?? null;
 }
 
 /**

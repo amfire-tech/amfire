@@ -135,6 +135,24 @@ export function hostKey(website: string | null | undefined) {
   }
 }
 
+function siteKey(website: string | null | undefined) {
+  const host = hostKey(website);
+  if (!host) return null;
+  const path = new URL(website!).pathname.replace(/\/+$/, "").toLowerCase();
+  return { host, path };
+}
+
+/**
+ * Two websites belong to the same business when they're the same page, or one
+ * is the other's homepage. Separate pages on one domain are different
+ * prospects: a chain's campuses, or sellers on IndiaMART.
+ */
+export function sameSite(a: string | null | undefined, b: string | null | undefined) {
+  const x = siteKey(a);
+  const y = siteKey(b);
+  return !!x && !!y && x.host === y.host && (x.path === y.path || x.path === "" || y.path === "");
+}
+
 export const nameKey = (name: string, area: string | null | undefined) => `${name.toLowerCase().replace(/[^a-z0-9]+/g, "")}|${(area ?? "").toLowerCase().trim()}`;
 
 /** Adds prospects, skipping any already on the desk (same phone, website, or name in the same area). */
@@ -148,20 +166,19 @@ export async function addProspects(db: DB, actor: Actor | null, inputs: Prospect
     .select({ name: prospects.name, area: prospects.area, phone: prospects.phone, website: prospects.website })
     .from(prospects);
   const phones = new Set(existing.map((p) => phoneKey(p.phone)).filter(Boolean));
-  const hosts = new Set(existing.map((p) => hostKey(p.website)).filter(Boolean));
+  const sites = existing.map((p) => p.website).filter((w): w is string => !!w);
   const names = new Set(existing.map((p) => nameKey(p.name, p.area)));
 
   const created: Prospect[] = [];
   const skipped: { name: string; reason: string }[] = [];
   for (const p of parsed) {
     const phone = phoneKey(p.phone);
-    const host = hostKey(p.website);
     const key = nameKey(p.name, p.area);
     if (phone && phones.has(phone)) {
       skipped.push({ name: p.name, reason: "same phone number already on the desk" });
       continue;
     }
-    if (host && hosts.has(host)) {
+    if (p.website && sites.some((w) => sameSite(w, p.website))) {
       skipped.push({ name: p.name, reason: "same website already on the desk" });
       continue;
     }
@@ -197,7 +214,7 @@ export async function addProspects(db: DB, actor: Actor | null, inputs: Prospect
       .returning();
     created.push(row);
     if (phone) phones.add(phone);
-    if (host) hosts.add(host);
+    if (p.website) sites.push(p.website);
     names.add(key);
   }
   if (created.length > 0) {

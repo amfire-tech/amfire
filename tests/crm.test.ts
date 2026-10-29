@@ -98,7 +98,7 @@ describe("money", () => {
     ctx = await wonClient("Acme Parts", "sam@acme.test");
   });
 
-  test("GST only when AMFIRE is registered: 18% on rupees, nothing on dollars", () => {
+  test("GST only when amfire is registered: 18% on rupees, nothing on dollars", () => {
     const saved = process.env.AMFIRE_GSTIN;
     delete process.env.AMFIRE_GSTIN;
     assert.equal(invoiceAmounts(100_000_00, "INR").tax, 0, "an unregistered business can't charge GST");
@@ -109,7 +109,7 @@ describe("money", () => {
     else process.env.AMFIRE_GSTIN = saved;
   });
 
-  test("CGST + SGST inside AMFIRE's state, IGST outside it", () => {
+  test("CGST + SGST inside amfire's state, IGST outside it", () => {
     process.env.AMFIRE_STATE = "Maharashtra";
     const inv = { tax: 18_000_00, taxRate: 1800 };
     assert.deepEqual(

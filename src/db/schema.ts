@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 
 // ---------------------------------------------------------------------------
-// Shared business records. The website, AMFIRE HQ and the Client Hub are three
+// Shared business records. The website, amfire HQ and the Client Hub are three
 // interfaces over these same tables — a lead never has to explain their
 // problem twice after becoming a client.
 // ---------------------------------------------------------------------------
@@ -474,7 +474,7 @@ export const invoices = appSchema.table(
     paymentLinkUrl: text("payment_link_url"),
     /** The client's state when the invoice was sent; decides CGST + SGST or IGST. */
     placeOfSupply: text("place_of_supply"),
-    /** A record of money received before AMFIRE HQ (e.g. a past project), not an invoice that was issued from here. */
+    /** A record of money received before amfire HQ (e.g. a past project), not an invoice that was issued from here. */
     isRecord: boolean("is_record").notNull().default(false),
     sentBy: uuid("sent_by").references(() => users.id),
     createdAt: createdAt(),
@@ -1029,7 +1029,7 @@ export const notifications = appSchema.table("notifications", {
   createdAt: createdAt(),
 });
 
-/** A conversation on a client's support request: the client and AMFIRE reply back and forth. */
+/** A conversation on a client's support request: the client and amfire reply back and forth. */
 export const supportMessages = appSchema.table(
   "support_messages",
   {
@@ -1037,7 +1037,7 @@ export const supportMessages = appSchema.table(
     requestId: uuid("request_id").notNull().references(() => supportRequests.id, { onDelete: "cascade" }),
     orgId: uuid("org_id").notNull().references(() => organizations.id),
     authorId: uuid("author_id").references(() => users.id),
-    /** True when written by AMFIRE staff. */
+    /** True when written by amfire staff. */
     fromStaff: boolean("from_staff").notNull().default(false),
     body: text("body").notNull(),
     createdAt: createdAt(),

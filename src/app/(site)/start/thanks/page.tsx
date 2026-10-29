@@ -25,7 +25,7 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
           Thank you{result ? `, ${result.firstName}` : ""}.
         </h1>
         <p className="mt-3 text-fg/75">
-          Your free demo request is in. A person at AMFIRE will call or email you to fix a time. Nothing is agreed until you approve a written proposal.
+          Your free demo request is in. A person at amfire will call or email you to fix a time. Nothing is agreed until you approve a written proposal.
         </p>
 
         {result && (
@@ -92,7 +92,7 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <a
-              href={contact.whatsapp("Hi AMFIRE, I just booked a free demo.")}
+              href={contact.whatsapp("Hi amfire, I just booked a free demo.")}
               target="_blank"
               rel="noopener noreferrer"
               className={buttonClass("inverse")}

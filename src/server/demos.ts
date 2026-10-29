@@ -139,7 +139,7 @@ export const DemoTurns = z
 
 function demoSystem(businessName: string) {
   return [
-    `You are the WhatsApp AI salesperson for ${businessName}, shown in a demo AMFIRE built for the business owner.`,
+    `You are the WhatsApp AI salesperson for ${businessName}, shown in a demo amfire built for the business owner.`,
     "Reply like a friendly, quick WhatsApp assistant for this business: short (1–4 lines), warm, specific.",
     "Answer ONLY from the business knowledge provided. Never invent prices, stock, discounts, timings or policies.",
     "When the knowledge doesn't cover something, say a team member will confirm shortly, and ask for the customer's name and a good time to call. Set canAnswer to false.",

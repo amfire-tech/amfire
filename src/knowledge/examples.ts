@@ -242,7 +242,7 @@ export const EXAMPLES: Example[] = [
       "The owner has no idea which marketing spend brings customers",
     ],
     solution:
-      "AMFIRE becomes the showroom's technology partner for one monthly fee: the website is refreshed and maintained, the Google Business Profile is corrected, Instagram gets regular posts, local SEO and small ad campaigns run every month, and every enquiry is routed to one WhatsApp number.",
+      "amfire becomes the showroom's technology partner for one monthly fee: the website is refreshed and maintained, the Google Business Profile is corrected, Instagram gets regular posts, local SEO and small ad campaigns run every month, and every enquiry is routed to one WhatsApp number.",
     flow: [
       { step: "Free review", detail: "Website, Google listing, social media, domain and email checked" },
       { step: "Take over safely", detail: "Domain, hosting, email and social accounts moved into the owner's name" },

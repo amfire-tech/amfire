@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: PageProps<"/demo/[slug]">): P
   const demo = await getPublicDemo(await getDb(), slug);
   return {
     title: demo ? `${demo.businessName}: your AI salesperson` : "Demo",
-    description: demo ? `A demo AMFIRE built for ${demo.businessName}: an AI salesperson that answers customers on WhatsApp, 24×7.` : undefined,
+    description: demo ? `A demo amfire built for ${demo.businessName}: an AI salesperson that answers customers on WhatsApp, 24×7.` : undefined,
     robots: { index: false, follow: false },
   };
 }
@@ -21,13 +21,13 @@ export default async function DemoPage({ params }: PageProps<"/demo/[slug]">) {
   const { slug } = await params;
   const demo = await getPublicDemo(await getDb(), slug);
   if (!demo) notFound();
-  const wa = contact.whatsapp(`Hi AMFIRE, I tried the AI salesperson demo for ${demo.businessName}. I'd like to set it up.`);
+  const wa = contact.whatsapp(`Hi amfire, I tried the AI salesperson demo for ${demo.businessName}. I'd like to set it up.`);
 
   return (
     <main className="flex-1 bg-subtle">
       <header className="border-b border-line bg-surface">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
-          <Link href="/" aria-label="AMFIRE home">
+          <Link href="/" aria-label="amfire home">
             <Logo className="h-6" />
           </Link>
           <a href={wa} target="_blank" rel="noopener noreferrer" className={buttonClass("primary", "sm")}>
@@ -77,7 +77,7 @@ export default async function DemoPage({ params }: PageProps<"/demo/[slug]">) {
           )}
 
           <section className="rounded-card bg-surface p-6 ring-1 ring-line">
-            <h2 className="text-xl font-semibold">What AMFIRE does</h2>
+            <h2 className="text-xl font-semibold">What amfire does</h2>
             <ul className="mt-3 space-y-2 text-fg/85">
               <li>✓ Set up the AI salesperson in 48 hours, trained on your catalogue, prices and FAQs</li>
               <li>✓ You see every chat and can take over any conversation</li>
@@ -87,7 +87,7 @@ export default async function DemoPage({ params }: PageProps<"/demo/[slug]">) {
             <p className="mt-4 text-sm text-muted">Setup is free for our first founding clients on the monthly Operate plan.</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <a href={wa} target="_blank" rel="noopener noreferrer" className={buttonClass("primary")}>
-                WhatsApp AMFIRE
+                WhatsApp amfire
               </a>
               <a href={contact.call} className={buttonClass("secondary")}>
                 Call {site.contactPhone}
@@ -96,7 +96,7 @@ export default async function DemoPage({ params }: PageProps<"/demo/[slug]">) {
           </section>
 
           <p className="text-xs text-muted">
-            This is a demo built by AMFIRE from {demo.businessName}’s public information, to show what’s possible. It isn’t connected to your WhatsApp, and answers may be incomplete.
+            This is a demo built by amfire from {demo.businessName}’s public information, to show what’s possible. It isn’t connected to your WhatsApp, and answers may be incomplete.
           </p>
         </div>
 

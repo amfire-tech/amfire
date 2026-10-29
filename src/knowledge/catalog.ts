@@ -160,7 +160,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
       quote: "“Half my office spends the day answering ‘stock hai?’ and ‘order kahan pahuncha?’”",
       tried: "Tried a WhatsApp group and an off-the-shelf app — neither handled dealer-wise prices and credit limits.",
       amfire:
-        "AMFIRE sat with the sales team, listed the questions dealers ask, and built a simple dealer app: live stock, each dealer's own prices, credit limit, and order tracking — connected to Tally.",
+        "amfire sat with the sales team, listed the questions dealers ask, and built a simple dealer app: live stock, each dealer's own prices, credit limit, and order tracking — connected to Tally.",
       result: "Dealers check for themselves any time of day. The phone rings for real business.",
       exampleSlug: "dealer-ordering-app",
     },
@@ -202,7 +202,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     headline: "Your complete tech team — without hiring one.",
     audience: "For owners who want everything online handled for them",
     persona:
-      "Website, hosting, email, software, social media, SEO, ads, leads, online sales — it all needs someone who knows technology. Hiring a team is expensive and hard to manage. AMFIRE becomes your technology partner and handles all of it, A to Z, for one monthly fee — from bringing in leads and following them up to showing you where your sales and revenue stand — so you can focus on running your business.",
+      "Website, hosting, email, software, social media, SEO, ads, leads, online sales — it all needs someone who knows technology. Hiring a team is expensive and hard to manage. amfire becomes your technology partner and handles all of it, A to Z, for one monthly fee — from bringing in leads and following them up to showing you where your sales and revenue stand — so you can focus on running your business.",
     story: {
       owner: "A family-run furniture showroom",
       where: "Nagpur",
@@ -210,7 +210,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
       quote: "“My nephew made the website years ago. Now nobody looks after it, and customers can't find us online.”",
       tried: "Looked at hiring a web developer and a digital marketer — close to ₹70,000 a month in salaries alone.",
       amfire:
-        "AMFIRE took over everything online: refreshed and maintained the website, fixed the Google Business Profile, posts on Instagram every week, runs local SEO and ads, and sends every enquiry to the showroom's WhatsApp.",
+        "amfire took over everything online: refreshed and maintained the website, fixed the Google Business Profile, posts on Instagram every week, runs local SEO and ads, and sends every enquiry to the showroom's WhatsApp.",
       result: "The owner gets one monthly report and one number to call — and spends their time on the showroom floor.",
       exampleSlug: "online-presence-for-showroom",
     },
@@ -266,7 +266,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
       quote: "“Every wrong design number means a wrong parcel and an unhappy customer.”",
       tried: "Hired one more person for order entry — the work grew, and so did the mistakes.",
       amfire:
-        "AMFIRE mapped the order process step by step and automated it: orders are read from WhatsApp, checked against stock and credit, confirmed by staff with one tap, posted to Tally with the e-invoice, and confirmed to the customer.",
+        "amfire mapped the order process step by step and automated it: orders are read from WhatsApp, checked against stock and credit, confirmed by staff with one tap, posted to Tally with the e-invoice, and confirmed to the customer.",
       result: "Staff confirm orders instead of re-typing them, and orders go out the same day.",
       exampleSlug: "whatsapp-orders-into-tally",
     },

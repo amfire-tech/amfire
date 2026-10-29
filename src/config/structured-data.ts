@@ -1,4 +1,4 @@
-// schema.org descriptions of AMFIRE, rendered as JSON-LD on the public site.
+// schema.org descriptions of amfire, rendered as JSON-LD on the public site.
 
 import { FOUNDERS } from "@/config/founders";
 import { site } from "@/config/site";

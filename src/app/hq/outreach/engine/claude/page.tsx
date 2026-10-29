@@ -10,7 +10,7 @@ import { KeyForm } from "./key-form";
 
 export const metadata = { title: "Your Claude" };
 
-const ROUTINE_PROMPT = "Run the run-hunts skill (.claude/skills/run-hunts/SKILL.md): claim the next AMFIRE HQ hunt for me, research it with the signal-hunt skill, and report back.";
+const ROUTINE_PROMPT = "Run the run-hunts skill (.claude/skills/run-hunts/SKILL.md): claim the next amfire HQ hunt for me, research it with the signal-hunt skill, and report back.";
 const CRON = "30 3-15 * * *";
 
 export default async function ClaudeRunnerPage() {
@@ -71,15 +71,15 @@ export default async function ClaudeRunnerPage() {
               signed in to <strong>your own</strong> Claude account, and connect GitHub so it can read <code className="text-xs">amfire-tech/amfire</code>.
             </Step>
             <Step>
-              Create an environment called <strong>AMFIRE hunts</strong>. Set network access to <strong>Full</strong> (research needs the open web and www.amfire.in), and add the environment variable{" "}
+              Create an environment called <strong>amfire hunts</strong>. Set network access to <strong>Full</strong> (research needs the open web and www.amfire.in), and add the environment variable{" "}
               <code className="text-xs">AMFIRE_HQ_TOKEN</code> = your key.
             </Step>
             <Step>
-              Create a routine: repository <code className="text-xs">amfire-tech/amfire</code>, environment <strong>AMFIRE hunts</strong>, schedule every hour from 9 am to 9 pm India time (
+              Create a routine: repository <code className="text-xs">amfire-tech/amfire</code>, environment <strong>amfire hunts</strong>, schedule every hour from 9 am to 9 pm India time (
               <code className="text-xs">{CRON}</code> in UTC), and this prompt:
               <code className="mt-1.5 block rounded bg-subtle px-2 py-1.5 text-xs select-all">{ROUTINE_PROMPT}</code>
             </Step>
-            <Step>Or open Claude Code and say “set up my AMFIRE hunt routine”; Claude creates it in your account, and you add the key to the environment.</Step>
+            <Step>Or open Claude Code and say “set up my amfire hunt routine”; Claude creates it in your account, and you add the key to the environment.</Step>
           </ol>
           <p className="mt-4 text-sm text-muted">An hour with nothing queued ends in seconds. A 25-lead hunt is heavy: on Pro that may be one or two hunts per usage window.</p>
         </Card>

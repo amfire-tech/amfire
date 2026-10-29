@@ -5,7 +5,7 @@ import { FOUNDERS, type Founder } from "@/config/founders";
 
 export const metadata: Metadata = {
   title: "About Us — Founders and Principles",
-  description: "Meet the people behind AMFIRE, a technology partner for Indian businesses that want simple, reliable software, automation and IT.",
+  description: "Meet the people behind amfire, a technology partner for Indian businesses that want simple, reliable software, automation and IT.",
   alternates: { canonical: "/about" },
 };
 
@@ -64,12 +64,12 @@ export default function AboutPage() {
     <>
       <section className="relative isolate overflow-hidden">
         <Container className="py-12 sm:py-24">
-          <Eyebrow>About AMFIRE</Eyebrow>
+          <Eyebrow>About amfire</Eyebrow>
           <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
             A technology partner with a <span className="text-brand">remarkably simple</span> way of working.
           </h1>
           <p className="mt-6 max-w-2xl text-lg text-muted">
-            AMFIRE helps Indian businesses build the software they need, operate the systems they depend on and automate the work
+            amfire helps Indian businesses build the software they need, operate the systems they depend on and automate the work
             that slows them down. We combine careful engineering with AI-assisted tooling — and keep people in charge of every
             decision that matters.
           </p>
@@ -78,7 +78,7 @@ export default function AboutPage() {
       {FOUNDERS.length > 0 && (
         <section aria-labelledby="founders" className="border-t border-line">
           <Container className="py-14 sm:py-20">
-            <Eyebrow>The people behind AMFIRE</Eyebrow>
+            <Eyebrow>The people behind amfire</Eyebrow>
             <h2 id="founders" className="mt-3 text-3xl font-semibold tracking-tight">
               You work with {FOUNDERS.length > 1 ? "the founders" : "a founder"} — directly.
             </h2>

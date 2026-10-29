@@ -141,7 +141,7 @@ export function JourneyVideo() {
               }
             }}
             onTimeUpdate={onTime}
-            aria-label="Video walkthrough of the AMFIRE client journey, from booking a free demo to approving a milestone in the Client Hub. Press to pause or play."
+            aria-label="Video walkthrough of the amfire client journey, from booking a free demo to approving a milestone in the Client Hub. Press to pause or play."
           >
             <source src={`/media/client-journey.mp4?v=${journey.version ?? ""}`} type="video/mp4" />
             Your browser can&apos;t play this video. The steps are listed alongside.

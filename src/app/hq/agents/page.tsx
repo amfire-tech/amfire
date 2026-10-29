@@ -40,8 +40,8 @@ export default async function AgentsPage() {
           <>
             Seven agents, each watching one part of the business. They share what they find, draft everything, and send nothing without you.{" "}
             {aiConfigured()
-              ? "AMFIRE AI is on: drafts are rewritten in your voice and the brief gets a summary."
-              : "AMFIRE AI is off, so agents use their rules and templates — everything still works."}
+              ? "amfire AI is on: drafts are rewritten in your voice and the brief gets a summary."
+              : "amfire AI is off, so agents use their rules and templates — everything still works."}
           </>
         }
         actions={<ActionForm action={runTeamAction} submitLabel="Run the team now" pendingLabel="Team is working…" size="sm" />}

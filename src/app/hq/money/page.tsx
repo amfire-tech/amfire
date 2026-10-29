@@ -94,7 +94,7 @@ export default async function MoneyPage() {
         <p className="text-sm text-muted">
           Finance creates invoices by itself when a client approves a milestone and every month for monthly plans, then asks you to send each one. For anything
           else, create one here.{" "}
-          {gstRegistered() ? "GST is added to rupee invoices." : "No GST is added: set AMFIRE_GSTIN once AMFIRE is GST-registered."}
+          {gstRegistered() ? "GST is added to rupee invoices." : "No GST is added: set AMFIRE_GSTIN once amfire is GST-registered."}
         </p>
         {clients.length > 0 && (
           <Card>

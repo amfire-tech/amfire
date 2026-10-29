@@ -73,7 +73,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
               .filter((u) => u.includes("linkedin.com/company"))
               .map((u) => (
                 <a key={u} href={u} target="_blank" rel="noopener noreferrer" className="inline-block py-1.5 underline-offset-4 hover:text-white hover:underline">
-                  Follow AMFIRE on LinkedIn
+                  Follow amfire on LinkedIn
                 </a>
               ))}
             <p className="mt-2 text-xs text-white/50">{site.availability.hours}</p>
@@ -85,7 +85,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
           </div>
         </Container>
         <Container className="relative flex flex-col gap-2 border-t border-white/10 py-6 text-xs text-white/40 sm:flex-row sm:justify-between">
-          <span>© {new Date().getFullYear()} AMFIRE</span>
+          <span>© {new Date().getFullYear()} amfire</span>
           <span>Case studies are real client projects. Examples marked illustrative are scenarios, not client work.</span>
         </Container>
       </footer>

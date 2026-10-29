@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { cx } from "@/components/ui";
 
 // Hero visual: each service told as a tiny story — the owner's problem,
-// then what AMFIRE does about it. Cycles gently; pauses on hover/focus and
+// then what amfire does about it. Cycles gently; pauses on hover/focus and
 // never auto-advances with reduced motion.
 
 const MODES = [
@@ -33,7 +33,7 @@ export function ModeShowcase() {
     >
       <div aria-hidden className="bg-brand absolute -inset-6 -z-10 animate-float rounded-[3rem] opacity-20 blur-3xl" />
       <div className="rounded-[1.75rem] bg-surface p-3 shadow-[0_40px_100px_-40px_rgba(0,0,0,0.5)] ring-1 ring-line">
-        <div role="tablist" aria-label="What AMFIRE does" className="grid grid-cols-3 gap-1 rounded-2xl bg-subtle p-1">
+        <div role="tablist" aria-label="What amfire does" className="grid grid-cols-3 gap-1 rounded-2xl bg-subtle p-1">
           {MODES.map((m, i) => (
             <button
               key={m.id}
@@ -92,7 +92,7 @@ function Problem({ who, children }: { who: string; children: React.ReactNode }) 
 function Solution({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-auto rounded-xl bg-ink p-3 text-white">
-      <p className="text-[11px] font-medium text-white/60">What AMFIRE does</p>
+      <p className="text-[11px] font-medium text-white/60">What amfire does</p>
       <div className="mt-1 text-sm">{children}</div>
     </div>
   );

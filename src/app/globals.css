@@ -7,7 +7,7 @@
   display: none;
 }
 
-/* AMFIRE brand tokens — constant in both themes */
+/* amfire brand tokens — constant in both themes */
 @theme {
   --color-ink: #080808;
   --color-signal: #ff453a;

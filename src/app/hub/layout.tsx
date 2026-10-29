@@ -9,7 +9,7 @@ import { getActor } from "@/lib/session";
 import { getClientTodo } from "@/server/portal";
 import { HubNav } from "./nav";
 
-export const metadata: Metadata = { title: { default: "Client Hub", template: "%s · AMFIRE Client Hub" }, robots: { index: false } };
+export const metadata: Metadata = { title: { default: "Client Hub", template: "%s · amfire Client Hub" }, robots: { index: false } };
 
 export default async function HubLayout({ children }: LayoutProps<"/hub">) {
   // Signed out, or not a client account (e.g. the owner): each page signs them out and
@@ -30,7 +30,7 @@ export default async function HubLayout({ children }: LayoutProps<"/hub">) {
               href={contact.whatsapp()}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={`WhatsApp AMFIRE on ${site.contactPhone}`}
+              aria-label={`WhatsApp amfire on ${site.contactPhone}`}
               className="grid size-10 place-items-center rounded-full text-[#128c4b] ring-1 ring-line lg:hidden"
             >
               <WhatsAppIcon className="size-5" />

@@ -149,13 +149,13 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
         <section>
           <Container className="py-14 sm:py-20">
             <SectionHeading
-              eyebrow="Hire a team or partner with AMFIRE?"
+              eyebrow="Hire a team or partner with amfire?"
               title="Compare the cost of an in-house tech team"
               description={
                 <>
                   <ForCurrency currency="INR">A fresher costs around ₹25,000 a month, an experienced person ₹40,000–45,000</ForCurrency>
                   <ForCurrency currency="USD">A junior hire costs around $4,000 a month, an experienced one $6,000–8,000</ForCurrency> — and
-                  most businesses need two or three. Here&apos;s how that compares with AMFIRE.
+                  most businesses need two or three. Here&apos;s how that compares with amfire.
                 </>
               }
             />

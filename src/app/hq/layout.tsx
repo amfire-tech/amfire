@@ -5,7 +5,7 @@ import { Logo } from "@/components/ui";
 import { requireStaffActor } from "@/lib/session";
 import { HqNav } from "./nav";
 
-export const metadata: Metadata = { title: { default: "HQ", template: "%s · AMFIRE HQ" }, robots: { index: false } };
+export const metadata: Metadata = { title: { default: "HQ", template: "%s · amfire HQ" }, robots: { index: false } };
 
 export default async function HqLayout({ children }: LayoutProps<"/hq">) {
   const actor = await requireStaffActor();
@@ -14,7 +14,7 @@ export default async function HqLayout({ children }: LayoutProps<"/hq">) {
       <aside className="border-b border-line bg-surface print:hidden lg:sticky lg:top-0 lg:h-dvh lg:w-60 lg:shrink-0 lg:border-r lg:border-b-0">
         <div className="flex h-full flex-col gap-4 p-4 lg:p-5">
           <div className="flex items-center justify-between lg:block">
-            <Link href="/hq" className="flex items-center gap-2" aria-label="AMFIRE HQ home">
+            <Link href="/hq" className="flex items-center gap-2" aria-label="amfire HQ home">
               <Logo className="h-6" /> <span className="text-sm font-medium text-muted">HQ</span>
             </Link>
             <div className="flex items-center gap-3 lg:hidden">

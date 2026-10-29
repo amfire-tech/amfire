@@ -54,7 +54,7 @@ export function switchAccountUrl(next: string) {
   return `/auth/switch?next=${encodeURIComponent(next)}`;
 }
 
-/** The Client Hub is for client accounts only; anyone else (including AMFIRE staff) must sign in as the client. */
+/** The Client Hub is for client accounts only; anyone else (including amfire staff) must sign in as the client. */
 export async function requireClientActor(next: string): Promise<Actor> {
   const actor = await requireActor(next);
   if (actor.internalRole || actor.clientOrgIds.length === 0) redirect(switchAccountUrl(next));

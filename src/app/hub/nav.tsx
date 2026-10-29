@@ -6,7 +6,7 @@ import { cx } from "@/components/ui";
 
 const ITEMS = [
   { href: "/hub", label: "Home", exact: true },
-  { href: "/hub/ask", label: "Ask AMFIRE AI" },
+  { href: "/hub/ask", label: "Ask amfire AI" },
   { href: "/hub/todo", label: "To-do", badge: "todo" },
   { href: "/hub/projects", label: "Projects", also: ["/hub/proposals"] },
   { href: "/hub/billing", label: "Billing", also: ["/hub/invoices"] },

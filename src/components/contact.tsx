@@ -1,4 +1,4 @@
-// Ways to reach a real person at AMFIRE: email, a call or WhatsApp.
+// Ways to reach a real person at amfire: email, a call or WhatsApp.
 
 import { cx } from "./ui";
 

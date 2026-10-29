@@ -15,7 +15,7 @@ import {
 } from "./screens";
 
 /**
- * The "How it works" product film: the real client journey on AMFIRE —
+ * The "How it works" product film: the real client journey on amfire —
  * booking a free demo, discovery, the proposal, following the project,
  * approving milestones and delivery — told with one headline per step above
  * the site's own screens (./screens.tsx), shown full width and never cropped.
@@ -371,12 +371,12 @@ export function Reel({ t, onReady }: { t: number; onReady?: () => void }) {
 
   /* --- pages, each pushed in from the right over the one before --- */
   const pages: { key: keyof typeof cams; from: number; to: number; title: string; node: ReactNode }[] = [
-    { key: "start", from: -1, to: D + 8.7, title: "Book a free demo · AMFIRE", node: <StartScreen s={book} /> },
-    { key: "thanks", from: D + 8.7, to: P, title: "Thank you · AMFIRE", node: <ThanksScreen /> },
-    { key: "home", from: P, to: P + 2.9, title: "Home · AMFIRE Client Hub", node: <HubHomeScreen press={press(t, P + 2.1)} /> },
-    { key: "proposal", from: P + 2.9, to: J, title: "Proposal · AMFIRE Client Hub", node: <ProposalScreen s={proposal} /> },
-    { key: "project", from: J, to: V, title: "Project · AMFIRE Client Hub", node: <ProjectScreen s={project} /> },
-    { key: "done", from: V, to: 99, title: "Home · AMFIRE Client Hub", node: <HubHomeScreen delivered /> },
+    { key: "start", from: -1, to: D + 8.7, title: "Book a free demo · amfire", node: <StartScreen s={book} /> },
+    { key: "thanks", from: D + 8.7, to: P, title: "Thank you · amfire", node: <ThanksScreen /> },
+    { key: "home", from: P, to: P + 2.9, title: "Home · amfire Client Hub", node: <HubHomeScreen press={press(t, P + 2.1)} /> },
+    { key: "proposal", from: P + 2.9, to: J, title: "Proposal · amfire Client Hub", node: <ProposalScreen s={proposal} /> },
+    { key: "project", from: J, to: V, title: "Project · amfire Client Hub", node: <ProjectScreen s={project} /> },
+    { key: "done", from: V, to: 99, title: "Home · amfire Client Hub", node: <HubHomeScreen delivered /> },
   ];
   const title = pages.filter((p) => t >= p.from).pop()!.title;
 
@@ -395,7 +395,7 @@ export function Reel({ t, onReady }: { t: number; onReady?: () => void }) {
         style={{ opacity: 1 - span(t, B - 0.6, 0.6, inOut), transform: `translateY(${-40 * span(t, B - 0.6, 0.7, inOut)}px)` }}
       >
         <div style={{ transform: `scale(${lerp(1.04, 1, span(t, 0, 1.0))})` }}>
-          <Image src="/brand/amfire-logo.png" alt="AMFIRE" width={1200} height={325} priority className="h-[80px] w-auto" />
+          <Image src="/brand/amfire-logo.png" alt="amfire" width={1200} height={325} priority className="h-[80px] w-auto" />
         </div>
         <h1 className="mt-14 text-[92px] leading-[1.06] font-semibold tracking-[-0.035em]">
           <span className="block" style={rise(t, 0.1, 30, 0.6)}>
@@ -504,7 +504,7 @@ export function Reel({ t, onReady }: { t: number; onReady?: () => void }) {
       {/* 7 · End card */}
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center" style={{ opacity: span(t, E + 0.4, 0.8) }}>
         <div style={rise(t, E + 0.4, 16, 0.9)}>
-          <Image src="/brand/amfire-logo.png" alt="AMFIRE" width={1200} height={325} className="h-[64px] w-auto" />
+          <Image src="/brand/amfire-logo.png" alt="amfire" width={1200} height={325} className="h-[64px] w-auto" />
         </div>
         <h2 className="mt-14 text-[88px] leading-[1.1] font-semibold tracking-[-0.035em]">
           <span className="block" style={rise(t, E + 0.7, 30, 0.9)}>

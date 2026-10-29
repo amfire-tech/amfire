@@ -178,5 +178,5 @@ export async function supportRequestAction(
   }
   if (projectId) revalidatePath(`/hub/projects/${projectId}`);
   revalidatePath("/hub/support");
-  return { ok: "Sent. A person at AMFIRE will reply." };
+  return { ok: "Sent. A person at amfire will reply." };
 }

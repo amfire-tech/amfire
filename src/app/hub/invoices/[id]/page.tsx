@@ -70,7 +70,7 @@ export default async function HubInvoicePage({ params }: PageProps<"/hub/invoice
               {!i.paymentLinkUrl && !upi && !bank && <p>We’ll share payment details with you directly.</p>}
               <p className="text-muted">
                 Paid already? Send the reference on{" "}
-                <a href={contact.whatsapp(`Hi AMFIRE, I've paid invoice ${i.number}. Reference: `)} target="_blank" rel="noopener noreferrer" className="underline">
+                <a href={contact.whatsapp(`Hi amfire, I've paid invoice ${i.number}. Reference: `)} target="_blank" rel="noopener noreferrer" className="underline">
                   WhatsApp
                 </a>{" "}
                 and we’ll mark it paid.

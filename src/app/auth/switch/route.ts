@@ -1,4 +1,4 @@
-// A Client Hub link opened by the wrong account (another client, or AMFIRE staff
+// A Client Hub link opened by the wrong account (another client, or amfire staff
 // in the same browser): sign that session out, then sign in again and return to
 // the link. The wrong account never sees the page or learns whether it exists.
 

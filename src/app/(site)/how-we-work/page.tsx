@@ -4,7 +4,7 @@ import { ButtonLink, Container } from "@/components/ui";
 export const metadata: Metadata = {
   title: "How We Work — Discovery, Milestones and Approvals",
   alternates: { canonical: "/how-we-work" },
-  description: "Discovery, scope, delivery, approvals and support — what to expect when you work with AMFIRE.",
+  description: "Discovery, scope, delivery, approvals and support — what to expect when you work with amfire.",
 };
 
 const STAGES = [

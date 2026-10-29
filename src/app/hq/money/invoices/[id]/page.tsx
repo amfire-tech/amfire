@@ -102,7 +102,7 @@ export default async function InvoicePage({ params }: PageProps<"/hq/money/invoi
                     <ActionForm action={shareInvoiceAction.bind(null, i.id)} submitLabel={`Email it to ${contactLead.email}`} size="sm" />
                   ) : (
                     <a
-                      href={`mailto:${contactLead.email}?subject=${encodeURIComponent(`Invoice ${i.number} from AMFIRE`)}&body=${encodeURIComponent(message)}`}
+                      href={`mailto:${contactLead.email}?subject=${encodeURIComponent(`Invoice ${i.number} from amfire`)}&body=${encodeURIComponent(message)}`}
                       className={buttonClass("secondary", "sm")}
                     >
                       Email it ↗

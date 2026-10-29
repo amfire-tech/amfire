@@ -19,7 +19,7 @@ export default async function SupportPage() {
     <div className="space-y-6">
       <PageHeader
         title="Support"
-        description={`Questions, problems, or something we got wrong — a person at AMFIRE replies ${site.availability.firstResponse}, and you'll get the reply by email too.`}
+        description={`Questions, problems, or something we got wrong — a person at amfire replies ${site.availability.firstResponse}, and you'll get the reply by email too.`}
       />
 
       <div className="grid items-start gap-6 lg:grid-cols-[1fr_1.3fr]">
@@ -81,7 +81,7 @@ export default async function SupportPage() {
                         m.fromStaff ? "bg-subtle ring-1 ring-line" : "ml-auto bg-fg text-page",
                       )}
                     >
-                      {m.fromStaff && <span className="mb-1 block text-xs font-semibold text-muted">AMFIRE</span>}
+                      {m.fromStaff && <span className="mb-1 block text-xs font-semibold text-muted">amfire</span>}
                       {m.body}
                       <span className={cx("mt-1 block text-[11px]", m.fromStaff ? "text-muted" : "text-page/60")}>{formatDateTime(m.createdAt)}</span>
                     </li>

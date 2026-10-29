@@ -43,7 +43,7 @@ async function landingFor(email: string, next: string | null) {
   return (await loadActor(db, user)).internalRole ? "/hq" : "/hub";
 }
 
-/** Signs in only people who already have an AMFIRE account; anyone else is signed straight back out. */
+/** Signs in only people who already have an amfire account; anyone else is signed straight back out. */
 async function admit(supabase: NonNullable<Awaited<ReturnType<typeof createSupabaseServer>>>, email: string | undefined, next: string | null): Promise<never> {
   const db = await getDb();
   const [user] = email ? await db.select().from(users).where(eq(users.email, normalizeEmail(email))) : [];

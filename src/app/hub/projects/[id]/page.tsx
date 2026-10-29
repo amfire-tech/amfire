@@ -199,7 +199,7 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
 
       <div className="grid items-start gap-6 lg:grid-cols-2">
         <Card>
-          <CardTitle>Updates from AMFIRE</CardTitle>
+          <CardTitle>Updates from amfire</CardTitle>
           {updates.length === 0 ? (
             <EmptyState title="No updates yet." />
           ) : (
@@ -216,7 +216,7 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
 
         {sent.length > 0 && (
           <Card>
-            <CardTitle>Sent to AMFIRE</CardTitle>
+            <CardTitle>Sent to amfire</CardTitle>
             <ul className="space-y-2 text-sm">
               {sent.map((c) => (
                 <li key={c.id} className="flex items-start gap-2">

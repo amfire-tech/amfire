@@ -1,4 +1,4 @@
-// Read-only proposal, identical for AMFIRE and the client.
+// Read-only proposal, identical for amfire and the client.
 
 import type { Proposal } from "@/db/schema";
 import { formatMoney } from "@/knowledge/pricing";

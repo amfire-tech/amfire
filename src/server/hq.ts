@@ -1,4 +1,4 @@
-// Read models for AMFIRE HQ. The overview surfaces exceptions and decisions,
+// Read models for amfire HQ. The overview surfaces exceptions and decisions,
 // not routine activity.
 
 import { and, asc, count, desc, eq, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "Our Work — Client Case Studies and Examples",
   alternates: { canonical: "/work" },
   description:
-    "Live projects AMFIRE has delivered — Skillship's AI school platform and MyGreenHome's website — plus examples of how Build, Operate and Automate work for Indian businesses.",
+    "Live projects amfire has delivered — Skillship's AI school platform and MyGreenHome's website — plus examples of how Build, Operate and Automate work for Indian businesses.",
 };
 
 export default function WorkPage() {

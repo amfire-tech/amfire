@@ -70,9 +70,9 @@ export async function invoiceContact(db: Pick<DB, "select">, orgId: string) {
   return lead ?? null;
 }
 
-export function invoiceMessage(inv: Pick<Invoice, "id" | "number" | "title" | "total" | "currency" | "dueAt">, name: string, ownerFirstName = "AMFIRE") {
+export function invoiceMessage(inv: Pick<Invoice, "id" | "number" | "title" | "total" | "currency" | "dueAt">, name: string, ownerFirstName = "amfire") {
   const due = inv.dueAt ? ` It's due on ${inv.dueAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}.` : "";
-  const sign = ownerFirstName.toUpperCase() === "AMFIRE" ? "— amfire" : `— ${ownerFirstName}, amfire`;
+  const sign = ownerFirstName.toLowerCase() === "amfire" ? "— amfire" : `— ${ownerFirstName}, amfire`;
   return `Hi ${name.split(" ")[0]}, here is invoice ${inv.number} for ${formatMoney(inv.total, inv.currency)} (${inv.title}).${due} You can view, download and pay it here: ${site.url}/hub/invoices/${inv.id}\n\nThank you!\n${sign}`;
 }
 
@@ -290,7 +290,7 @@ export async function draftInvestorUpdate(db: DB, actor: Actor | null, opts: { s
   const won = monthLeads.filter((l) => l.status === "won").length;
 
   const draft = [
-    `AMFIRE update — ${month}`,
+    `amfire update — ${month}`,
     "",
     "Numbers",
     `• Revenue collected: ${money(lastMonth)} (month before: ${money(monthBefore)})`,

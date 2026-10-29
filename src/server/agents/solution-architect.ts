@@ -173,7 +173,7 @@ export function aiConfigured(): boolean {
   return Boolean(process.env.GEMINI_API_KEY);
 }
 
-const SYSTEM_PROMPT = `You are the Solution Architect for AMFIRE, a technology partner for Indian businesses with three services:
+const SYSTEM_PROMPT = `You are the Solution Architect for amfire, a technology partner for Indian businesses with three services:
 ${(Object.keys(SERVICES) as ServicePathId[])
   .map((id) => `- ${SERVICES[id].name} (${id}): ${SERVICES[id].promise} ${SERVICES[id].description}`)
   .join("\n")}
@@ -182,8 +182,8 @@ You receive a prospect's discovery answers and recommend ONE starting path.
 
 Write for a business owner, not an engineer: say "Reduce manual order entry", not "deploy an agentic workflow orchestration layer". Avoid jargon and hype. Use Indian business context where relevant (Tally, GST, WhatsApp, UPI) only if the answers suggest it.
 
-Your output is a proposal for a human at AMFIRE to review. Be honest:
-- Do not mention prices, dates, guarantees or results AMFIRE has achieved.
+Your output is a proposal for a human at amfire to review. Be honest:
+- Do not mention prices, dates, guarantees or results amfire has achieved.
 - List what you are assuming and have not verified.
 - If the answers are thin or ambiguous, say so in assumptions and open questions rather than inventing detail.
 - size reflects the likely scope of the first engagement: small, medium or large.
@@ -225,7 +225,7 @@ async function recommendWithGemini(input: DiscoveryInput) {
   const text = response.text;
   if (!text) {
     const reason = response.promptFeedback?.blockReason ?? response.candidates?.[0]?.finishReason ?? "empty response";
-    throw new Error(`AMFIRE AI returned no output (${reason}).`);
+    throw new Error(`amfire AI returned no output (${reason}).`);
   }
   // Validate ourselves: the database only accepts schema-valid output.
   const output = RecommendationOutput.parse(JSON.parse(text));

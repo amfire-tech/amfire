@@ -49,7 +49,10 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
         description="Everyone you plan to contact, every call and message, and what's working. Count the work; the results follow."
         actions={
           <>
-            <ButtonLink href="/hq/outreach/call">Start calling{board.readyToContact ? ` · ${board.readyToContact} due` : ""}</ButtonLink>
+            <ButtonLink href="/hq/outreach/engine">Signal engine</ButtonLink>
+            <ButtonLink href="/hq/outreach/call" variant="secondary">
+              Start calling{board.readyToContact ? ` · ${board.readyToContact} due` : ""}
+            </ButtonLink>
             <ButtonLink href="#add" variant="secondary">
               Add prospects
             </ButtonLink>
@@ -179,10 +182,12 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
                           <Link href={`/hq/outreach/${p.id}`} className="font-medium underline-offset-4 hover:underline">
                             {p.name}
                           </Link>
-                          <div className="text-xs text-muted">{[p.area, p.industry, `Tier ${p.tier}`, p.kind === "ca_firm" ? "CA firm" : p.kind === "network" ? "Network" : null].filter(Boolean).join(" · ")}</div>
+                          <div className="text-xs text-muted">
+                            {[p.area, p.industry, `Tier ${p.tier} · ${p.score}`, p.kind === "ca_firm" ? "CA firm" : p.kind === "school" ? "School" : p.kind === "network" ? "Network" : null].filter(Boolean).join(" · ")}
+                          </div>
                         </td>
                         <td className="max-w-xs text-fg/80">
-                          <span className="line-clamp-2">{p.signal ?? "—"}</span>
+                          <span className="line-clamp-2">{p.reason ?? p.signal ?? "—"}</span>
                         </td>
                         <td>
                           <Chip>{prospectStatusLabel(p.status)}</Chip>

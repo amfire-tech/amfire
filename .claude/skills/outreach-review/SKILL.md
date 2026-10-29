@@ -19,7 +19,10 @@ Using the amfire-hq connector:
    have transcripts). On Sundays use the last 7 days.
 3. `list_notes` — your previous reviews, so you can check whether yesterday's advice
    was followed and whether it worked.
-4. For anything interesting, `get_prospect` for the full history.
+4. For anything interesting, `get_prospect` for the full history (it includes the
+   engine's view: people, dated signals, feedback and the next play step).
+5. `get_engine_insights` — what the signal engine has learned per segment, and its last
+   run's lessons.
 
 ## Analyse
 
@@ -43,6 +46,23 @@ Using the amfire-hq connector:
   morning research run reads this.
 - If a playbook change is warranted (a better objection reply, a new opener), write it as
   a separate `add_note` with kind `playbook`. Don't edit code.
+
+## Teach the signal engine
+
+The engine learns from outcomes on its own, but you can tell it *why*:
+
+- For every conversation whose note or transcript shows whether the reason mattered,
+  `record_feedback` with the touch's `signalId`: `reason_relevant` ("yes, we're hiring for
+  exactly that"), `reason_wrong` (the reason meant nothing to them), `signal_stale` (the
+  job was filled, the principal left), `bad_fit`, `wrong_contact` or `great_lead`.
+- When the owner tells you about a touch that was a play step, log it with `log_touch`
+  including `playStep` and `variant` from `get_prospect`'s `engine.next`, so the step and
+  the message variant get the credit.
+- Then `run_learning`. In the review, add **What the engine learned**: its two most
+  useful lessons and the biggest weight moves, in plain words.
+- Build **Tomorrow's plan** from `get_engine_queue`: play steps due first (by channel:
+  visits grouped by area), then warm leads to start plays for. Tell the research run which
+  signal types to hunt: the top learned one plus one untested one.
 
 ## Write the review
 

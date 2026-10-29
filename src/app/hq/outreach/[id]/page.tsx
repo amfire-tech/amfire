@@ -7,6 +7,7 @@ import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { CHANNEL_LABELS, PROSPECT_KINDS, fillTemplate, formatIst, hookFor, objectionLabel, outcomeLabel, prospectStatusLabel, type TouchChannel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
 import { whatsappLink } from "@/server/brain";
+import { getProspectEngine } from "@/server/engine";
 import { RESPONSE_TEST_CHANNELS, getProspect } from "@/server/outreach";
 import {
   convertToLeadAction,
@@ -17,6 +18,7 @@ import {
   startResponseTestAction,
   updateProspectAction,
 } from "../actions";
+import { EnginePanel } from "../engine-ui";
 import { TouchForm } from "../touch-form";
 
 export const metadata = { title: "Prospect" };
@@ -27,8 +29,9 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
   const actor = await requireStaffActor();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const found = await getProspect(await getDb(), actor, id);
-  if (!found) notFound();
+  const db = await getDb();
+  const [found, engine] = await Promise.all([getProspect(db, actor, id), getProspectEngine(db, actor, id)]);
+  if (!found || !engine) notFound();
   const { prospect: p, history, lead, demo, responseTests, referral } = found;
 
   return (
@@ -118,6 +121,8 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
             </Card>
           )}
 
+          <EnginePanel prospect={p} engine={engine} />
+
           <Card>
             <CardTitle>Log a touch</CardTitle>
             <TouchForm action={logTouchAction.bind(null, p.id)} />
@@ -173,7 +178,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
         </div>
 
         <aside className="space-y-6">
-          {p.kind !== "ca_firm" && (
+          {(p.kind === "business" || p.kind === "network") && (
             <Card>
               <CardTitle aside={demo && <span className="text-sm text-muted">{demo.views} {demo.views === 1 ? "view" : "views"}</span>}>Demo page</CardTitle>
               {demo ? (
@@ -213,7 +218,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
             </Card>
           )}
 
-          {p.kind !== "ca_firm" && (
+          {(p.kind === "business" || p.kind === "network") && (
             <Card>
               <CardTitle>Response-time test</CardTitle>
               <p className="-mt-2 mb-3 text-sm text-muted">Send them a genuine enquiry, start the timer, and tap when they reply. Tell them about the test when you pitch.</p>

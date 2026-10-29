@@ -21,8 +21,10 @@ import {
   type OutcomeId,
   type ProspectStatus,
 } from "@/knowledge/outreach";
+import { playFor } from "@/knowledge/engine";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
+import { advancePlay } from "./engine-core";
 import { addManualLead, ManualLeadSchema } from "./leads";
 
 export class OutreachError extends Error {
@@ -124,7 +126,7 @@ export function phoneKey(phone: string | null | undefined) {
   return digits.length >= 10 ? digits.slice(-10) : digits || null;
 }
 
-function hostKey(website: string | null | undefined) {
+export function hostKey(website: string | null | undefined) {
   if (!website) return null;
   try {
     return new URL(website).hostname.replace(/^www\./, "").toLowerCase();
@@ -133,7 +135,7 @@ function hostKey(website: string | null | undefined) {
   }
 }
 
-const nameKey = (name: string, area: string | null | undefined) => `${name.toLowerCase().replace(/[^a-z0-9]+/g, "")}|${(area ?? "").toLowerCase().trim()}`;
+export const nameKey = (name: string, area: string | null | undefined) => `${name.toLowerCase().replace(/[^a-z0-9]+/g, "")}|${(area ?? "").toLowerCase().trim()}`;
 
 /** Adds prospects, skipping any already on the desk (same phone, website, or name in the same area). */
 export async function addProspects(db: DB, actor: Actor | null, inputs: ProspectInput[], opts: { source?: "owner" | "claude" | "import" } = {}) {
@@ -325,6 +327,11 @@ export const TouchInput = z
     durationSec: z.coerce.number().int().min(0).max(36_000).optional().nullable(),
     followUpAt: z.coerce.date().optional().nullable(),
     occurredAt: z.coerce.date().optional().nullable(),
+    // For the signal engine: who it was with, the reason used, and the play step and message variant.
+    contactId: z.uuid().optional().nullable().or(z.literal("").transform(() => undefined)),
+    signalId: z.uuid().optional().nullable().or(z.literal("").transform(() => undefined)),
+    playStep: z.coerce.number().int().min(0).max(50).optional().nullable(),
+    variant: optional(40),
   })
   .refine((t) => (outcomeFor(t.outcome)?.channels as readonly string[]).includes(t.channel), {
     message: "That outcome doesn't fit this channel.",
@@ -339,6 +346,11 @@ export async function logTouch(db: DB, actor: Actor | null, input: z.input<typeo
     const [p] = await tx.select().from(prospects).where(eq(prospects.id, data.prospectId));
     if (!p) throw new OutreachError("Prospect not found.");
     const occurredAt = data.occurredAt ?? now;
+    // The engine learns from which reason, play step and variant each touch used.
+    const onPlay = !!p.play && !p.playEndedReason;
+    const currentStep = onPlay ? playFor(p.play)?.steps[p.playStep] : undefined;
+    const isStep = !!currentStep && data.channel !== "note" && (data.playStep != null ? data.playStep === p.playStep : data.channel === currentStep.channel);
+    const topSignal = p.scoreParts?.top?.[0]?.signalId;
     const [touch] = await tx
       .insert(touches)
       .values({
@@ -350,19 +362,30 @@ export async function logTouch(db: DB, actor: Actor | null, input: z.input<typeo
         durationSec: data.durationSec ?? null,
         loggedBy: opts.loggedBy ?? "owner",
         authorId: opts.loggedBy === "claude" ? null : actor.userId,
+        contactId: data.contactId ?? null,
+        signalId: data.signalId ?? (data.channel !== "note" && topSignal && /^[0-9a-f-]{36}$/i.test(topSignal) ? topSignal : null),
+        play: isStep ? p.play : null,
+        playStep: isStep ? p.playStep : null,
+        variant: isStep ? (data.variant ?? null) : null,
         occurredAt,
       })
       .returning();
     const next = applyOutcome(p, data.outcome, { now, followUpAt: data.followUpAt ?? undefined, objection: data.objection });
+    const step = onPlay ? advancePlay(p, { channel: data.channel, outcome: data.outcome, playStep: data.playStep }, now) : null;
+    const settled = next.status === "lead" || next.status === "partner";
+    const finished = step?.ended && "finished" in step && !settled;
     const [prospect] = await tx
       .update(prospects)
       .set({
-        status: next.status,
-        statusReason: next.statusReason === undefined ? p.statusReason : next.statusReason,
+        status: finished ? "not_now" : next.status,
+        statusReason: finished ? "Play finished without a reply" : next.statusReason === undefined ? p.statusReason : next.statusReason,
         missedCalls: next.missedCalls,
-        nextFollowUpAt: next.nextFollowUpAt,
+        // The play sets the next step's date unless a person asked for a specific time.
+        nextFollowUpAt: finished ? new Date(now.getTime() + 60 * DAY) : step && !step.ended && !data.followUpAt ? step.nextFollowUpAt : next.nextFollowUpAt,
         doNotContact: next.doNotContact ?? p.doNotContact,
         lastTouchAt: data.channel === "note" ? p.lastTouchAt : occurredAt,
+        ...(step?.playStep !== undefined ? { playStep: step.playStep } : {}),
+        ...(step?.ended ? { playEndedReason: step.playEndedReason } : {}),
         updatedAt: now,
       })
       .where(eq(prospects.id, p.id))
@@ -409,7 +432,7 @@ export async function convertToLead(db: DB, actor: Actor | null, prospectId: str
 
   const { lead } = await addManualLead(db, actor, {
     source,
-    sourceNote: `Outreach desk${p.area ? ` · ${p.area}` : ""}${p.kind === "ca_firm" ? " · CA firm" : ""}`,
+    sourceNote: `Outreach desk${p.area ? ` · ${p.area}` : ""}${p.kind === "ca_firm" ? " · CA firm" : p.kind === "school" ? " · School" : ""}`,
     name: p.contactName || `${p.name} (owner)`,
     company: p.name,
     email: email.success ? (email.data ?? "") : "",
@@ -420,7 +443,10 @@ export async function convertToLead(db: DB, actor: Actor | null, prospectId: str
 
   const carried = history.filter((t) => t.channel !== "note" || t.note);
   if (carried.length > 0) await db.insert(interactions).values(carried.map((t) => touchInteraction(lead.id, t, t.authorId)));
-  await db.update(prospects).set({ status: "lead", leadId: lead.id, nextFollowUpAt: null, updatedAt: new Date() }).where(eq(prospects.id, p.id));
+  await db
+    .update(prospects)
+    .set({ status: "lead", leadId: lead.id, nextFollowUpAt: null, playEndedReason: p.play && !p.playEndedReason ? "Became a lead" : p.playEndedReason, updatedAt: new Date() })
+    .where(eq(prospects.id, p.id));
   await audit(db, { actorId: actor.userId, action: "prospect.converted", subjectType: "prospect", subjectId: p.id, data: { leadId: lead.id } });
   return lead;
 }

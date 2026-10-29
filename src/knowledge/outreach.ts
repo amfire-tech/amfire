@@ -97,7 +97,8 @@ export function objectionLabel(id: string) {
 
 export const PROSPECT_KINDS = [
   { id: "business", label: "Business" },
-  { id: "ca_firm", label: "CA firm (partner)" },
+  { id: "school", label: "School" },
+  { id: "ca_firm", label: "CA firm" },
   { id: "network", label: "Someone I know" },
 ] as const;
 export type ProspectKind = (typeof PROSPECT_KINDS)[number]["id"];
@@ -151,7 +152,7 @@ export const HOOK = {
     "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Meta has launched a free AI salesperson inside WhatsApp Business that replies to customers 24×7 from your own catalogue. Most businesses haven't switched it on yet. I made a quick demo for {business}, may I send it?",
 } as const;
 
-/** CA firms are partners, not buyers: their clients are the businesses we want. */
+/** The referral partner programme: a CA firm introduces its clients (see FIRM_HOOK for selling to the firm itself). */
 export const PARTNER_HOOK = {
   name: "CA partner programme",
   callScript: [
@@ -182,9 +183,45 @@ export const NETWORK_HOOK = {
     "Hi {contact}! Some news: I've started my own company, AMFIRE. We set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups for businesses. I'm taking 5 founding clients at a special price. Could I take 15 minutes to show you? And who's one business owner you'd suggest I talk to?",
 } as const;
 
+/**
+ * Schools buy the Skillship programme, sold by AMFIRE as Skillship's channel
+ * partner under the Skillship name. Lead with the CBSE CT & AI curriculum, not
+ * with "AI"; never say "Premium".
+ */
+export const SCHOOL_HOOK = {
+  name: "CT & AI readiness (Skillship)",
+  callScript: [
+    "Namaste {contact}, I'm {owner} from Skillship, Pune. Two minutes?",
+    "CBSE's new Computational Thinking & AI curriculum starts in Classes 3–8 this session. How is the school preparing the teachers for it?",
+    "(Listen.) Most schools we meet have the syllabus but no trained teacher or lab yet.",
+    "We made a one-page readiness note for {business}, with what schools nearby are doing. Can I drop it off, or send it on WhatsApp?",
+    "(Close:) Could I take 15 minutes this week to walk you through it, Thursday or Friday?",
+  ],
+  whatsapp:
+    "Namaste {contact}, {owner} from Skillship here, as we just discussed. Here is the CT & AI readiness note for {business}: {demo}\n\nI'll call you tomorrow to hear what you think.",
+  coldWhatsapp:
+    "Namaste {contact}, I'm {owner} from Skillship, Pune. CBSE's new CT & AI curriculum starts in Classes 3–8 this session, and we made a one-page readiness note for {business} with what schools nearby are doing. May I send it?",
+} as const;
+
+/** CA firms buy the AMFIRE FIRM Method. The price is never in a script: it comes at the end of the pitch. */
+export const FIRM_HOOK = {
+  name: "Peer review readiness (FIRM Method)",
+  callScript: [
+    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Two minutes?",
+    "Peer review Phase IV applies from 31 December: firms with three or more partners doing audits need the certificate before taking a statutory audit. Is {business} ready?",
+    "(Listen.) The reviewers look for documented systems: engagement records, quality checks, data security. That's what we set up and run for firms.",
+    "We made a one-page readiness check for {business}. Can I send it?",
+    "(Close:) Could I come by for 15 minutes this week, Wednesday or Thursday?",
+  ],
+  whatsapp:
+    "Namaste {contact}, {owner} from AMFIRE here, as we just discussed. Here is the peer review readiness check for {business}: {demo}\n\nWhen could I come by for 15 minutes?",
+  coldWhatsapp:
+    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Peer review Phase IV applies from 31 December for firms with 3+ partners doing audits. We made a one-page readiness check for {business}. May I send it?",
+} as const;
+
 /** The script for a prospect's kind. */
 export function hookFor(kind: string) {
-  return kind === "ca_firm" ? PARTNER_HOOK : kind === "network" ? NETWORK_HOOK : HOOK;
+  return kind === "school" ? SCHOOL_HOOK : kind === "ca_firm" ? FIRM_HOOK : kind === "network" ? NETWORK_HOOK : HOOK;
 }
 
 /** "27 Oct, 11:00 am" in India time, whatever the server's time zone. */

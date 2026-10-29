@@ -1,6 +1,7 @@
 import {
   boolean,
   customType,
+  doublePrecision,
   integer,
   jsonb,
   pgSchema,
@@ -9,6 +10,7 @@ import {
   timestamp,
   uuid,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // ---------------------------------------------------------------------------
@@ -690,7 +692,7 @@ export const prospects = appSchema.table(
     city: text("city").notNull().default("Pune"),
     area: text("area"),
     industry: text("industry"),
-    /** "business", "ca_firm" (referral partner) or "network" (someone the owner knows). */
+    /** "business", "school", "ca_firm" or "network" (someone the owner knows). */
     kind: text("kind").notNull().default("business"),
     /** A = gets a personal demo, B = an audit page, C = a researched call. */
     tier: text("tier").notNull().default("C"),
@@ -717,12 +719,44 @@ export const prospects = appSchema.table(
     /** Where the research came from (a listing, a job ad, a review). */
     sourceUrl: text("source_url"),
     notes: text("notes"),
+    // --- Signal engine (src/server/engine.ts) ---
+    /** Fit facts, e.g. { board: "CBSE", students: 900 } or { partners: 4 } (FIT_RULES in knowledge/engine.ts). */
+    facts: jsonb("facts").$type<Record<string, string | number | boolean>>().notNull().default({}),
+    pincode: text("pincode"),
+    /** From the Google Maps link when it has them, for distance filters. */
+    lat: doublePrecision("lat"),
+    lng: doublePrecision("lng"),
+    /** How the score was made: fit, trigger, timing and reach (0–1), the signals behind it and what's missing. */
+    scoreParts: jsonb("score_parts").$type<ScoreParts>(),
+    /** The one-sentence reason to contact them now, from their strongest signal. */
+    reason: text("reason"),
+    scoredAt: timestamp("scored_at", { withTimezone: true }),
+    /** The personal asset the play sends: readiness report, check or demo link. */
+    assetUrl: text("asset_url"),
+    /** The play (sequence of touches) they're on, the next step's index and when it started. */
+    play: text("play"),
+    playStep: integer("play_step").notNull().default(0),
+    playStartedAt: timestamp("play_started_at", { withTimezone: true }),
+    /** Why the play stopped: they replied, finished, opted out. */
+    playEndedReason: text("play_ended_reason"),
     createdBy: uuid("created_by").references(() => users.id),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [index("prospects_status_idx").on(t.status), index("prospects_follow_up_idx").on(t.nextFollowUpAt), index("prospects_phone_idx").on(t.phone)],
 );
+
+export type ScoreParts = {
+  fit: number;
+  trigger: number;
+  timing: number;
+  reach: number;
+  timingLabel?: string;
+  /** The signals that made the trigger score, strongest first. */
+  top: { signalId: string; type: string; contribution: number }[];
+  /** Research that would sharpen the score: facts, a decision maker, a signal. */
+  missing: string[];
+};
 
 /** One attempt to reach a prospect: a call, a message, a visit. Claude adds the transcript and analysis of recorded calls. */
 export const touches = appSchema.table(
@@ -746,11 +780,127 @@ export const touches = appSchema.table(
     /** "owner" or "claude". */
     loggedBy: text("logged_by").notNull().default("owner"),
     authorId: uuid("author_id").references(() => users.id),
+    // What the engine learns from: who it was with, the reason used, and the play step and message variant.
+    contactId: uuid("contact_id").references(() => prospectContacts.id, { onDelete: "set null" }),
+    signalId: uuid("signal_id").references(() => buyingSignals.id, { onDelete: "set null" }),
+    play: text("play"),
+    playStep: integer("play_step"),
+    variant: text("variant"),
     occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
     createdAt: createdAt(),
   },
   (t) => [index("touches_prospect_idx").on(t.prospectId), index("touches_occurred_idx").on(t.occurredAt)],
 );
+
+/** The people at a school or firm: principal, trustee, partner, coordinator. Several per prospect. */
+export const prospectContacts = appSchema.table(
+  "prospect_contacts",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id")
+      .notNull()
+      .references(() => prospects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Their title, e.g. "Principal", "Managing partner". */
+    title: text("title"),
+    /** CONTACT_ROLES in knowledge/engine.ts: decision_maker, budget_owner, champion, influencer, gatekeeper. */
+    role: text("role").notNull().default("decision_maker"),
+    phone: text("phone"),
+    email: text("email"),
+    linkedinUrl: text("linkedin_url"),
+    /** Where the name and details were published. */
+    sourceUrl: text("source_url"),
+    notes: text("notes"),
+    doNotContact: boolean("do_not_contact").notNull().default(false),
+    createdAt: createdAt(),
+  },
+  (t) => [index("prospect_contacts_prospect_idx").on(t.prospectId)],
+);
+
+/** A dated reason to contact a prospect now: a job ad, a new principal, a deadline. Fades with time. */
+export const buyingSignals = appSchema.table(
+  "buying_signals",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id")
+      .notNull()
+      .references(() => prospects.id, { onDelete: "cascade" }),
+    /** SIGNAL_TYPES in knowledge/engine.ts. */
+    type: text("type").notNull(),
+    /** One line with specifics: "Hiring a robotics teacher at ₹30k, Naukri, 20 Oct". */
+    title: text("title").notNull(),
+    detail: text("detail"),
+    sourceUrl: text("source_url"),
+    /** When it happened (the ad's date, the day they joined); the fade is counted from here. */
+    observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+    /** After this it no longer counts. */
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    /** How sure the researcher is that it's real and current, 0–1. */
+    confidence: doublePrecision("confidence").notNull().default(0.8),
+    /** "claude", "owner" or "engine". */
+    foundBy: text("found_by").notNull().default("claude"),
+    /** Same type and source on the same prospect is one signal. */
+    dedupeKey: text("dedupe_key").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("buying_signals_prospect_idx").on(t.prospectId), uniqueIndex("buying_signals_dedupe_idx").on(t.prospectId, t.dedupeKey)],
+);
+
+/** What the owner or Claude told the engine about a lead or a reason (FEEDBACK_KINDS). */
+export const engineFeedback = appSchema.table(
+  "engine_feedback",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id")
+      .notNull()
+      .references(() => prospects.id, { onDelete: "cascade" }),
+    signalId: uuid("signal_id").references(() => buyingSignals.id, { onDelete: "set null" }),
+    touchId: uuid("touch_id").references(() => touches.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(),
+    note: text("note"),
+    /** "owner" or "claude". */
+    givenBy: text("given_by").notNull().default("owner"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("engine_feedback_prospect_idx").on(t.prospectId)],
+);
+
+/**
+ * What the engine has learned: for each segment and dimension (a signal type,
+ * a channel, a play step, a message variant, an area, a fit band, an hour)
+ * how many tries, how many turned into a conversation, a meeting, a win, and
+ * the weight it now uses. Rebuilt from the raw history on every learning run.
+ */
+export const engineStats = appSchema.table(
+  "engine_stats",
+  {
+    id: id(),
+    segment: text("segment").notNull(),
+    dimension: text("dimension").notNull(),
+    key: text("key").notNull(),
+    trials: doublePrecision("trials").notNull().default(0),
+    successes: doublePrecision("successes").notNull().default(0),
+    meetings: integer("meetings").notNull().default(0),
+    wins: integer("wins").notNull().default(0),
+    /** The rate the engine uses now: the prior, moved by the evidence. */
+    weight: doublePrecision("weight").notNull(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [uniqueIndex("engine_stats_key_idx").on(t.segment, t.dimension, t.key)],
+);
+
+/** One learning run: how many prospects it rescored and what changed, so the owner can see the engine learn. */
+export const engineRuns = appSchema.table("engine_runs", {
+  id: id(),
+  trigger: text("trigger").notNull(),
+  prospectsScored: integer("prospects_scored").notNull().default(0),
+  touchesRead: integer("touches_read").notNull().default(0),
+  /** Weights that moved: [{ segment, dimension, key, from, to, trials }]. */
+  changes: jsonb("changes").$type<{ segment: string; dimension: string; key: string; from: number | null; to: number; trials: number }[]>().notNull().default([]),
+  /** Plain-language lessons for the owner and for tomorrow's research. */
+  insights: jsonb("insights").$type<string[]>().notNull().default([]),
+  ranAt: timestamp("ran_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /**
  * A prospect's personal demo page (/demo/{slug}): "your AI salesperson",
@@ -892,5 +1042,9 @@ export type Touch = typeof touches.$inferSelect;
 export type OutreachNote = typeof outreachNotes.$inferSelect;
 export type Demo = typeof demos.$inferSelect;
 export type ResponseTest = typeof responseTests.$inferSelect;
+export type ProspectContact = typeof prospectContacts.$inferSelect;
+export type BuyingSignal = typeof buyingSignals.$inferSelect;
+export type EngineStat = typeof engineStats.$inferSelect;
+export type EngineRun = typeof engineRuns.$inferSelect;
 export type ServicePath = (typeof servicePath.enumValues)[number];
 export type MemberRole = (typeof memberRole.enumValues)[number];

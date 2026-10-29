@@ -31,8 +31,8 @@ enquiries on WhatsApp or the phone:
 - Travel agents, caterers and event planners, restaurants doing delivery
 - Wholesalers and distributors taking dealer orders (Market Yard, Raviwar/Budhwar Peth),
   manufacturers in Bhosari / Chakan / Pimpri-Chinchwad MIDC (also fit Automate and Build)
-- **CA firms** (kind `ca_firm`) are partners, not buyers: their clients are our market.
-  Prefer firms with 3+ partners and SME clients.
+- **Schools and CA firms** go through the signal engine instead: use the `signal-hunt`
+  skill (`upsert_targets` with facts, decision makers and dated signals), not this one.
 
 ## Signals (the "why now")
 

@@ -18,10 +18,13 @@ export function TouchForm({
   action,
   defaultChannel = "call",
   channels = TOUCH_CHANNELS,
+  hidden,
 }: {
   action: (prev: ActionState, formData: FormData) => Promise<ActionState>;
   defaultChannel?: TouchChannel;
   channels?: readonly TouchChannel[];
+  /** Extra fields sent with the touch, e.g. the play step and message variant. */
+  hidden?: Record<string, string>;
 }) {
   const [state, formAction] = useActionState<ActionState, FormData>(action, undefined);
   const [channel, setChannel] = useState<TouchChannel>(defaultChannel);
@@ -30,6 +33,9 @@ export function TouchForm({
   return (
     <form action={formAction} className="space-y-4" key={state?.ok}>
       <input type="hidden" name="channel" value={channel} />
+      {Object.entries(hidden ?? {}).map(([name, value]) => (
+        <input key={name} type="hidden" name={name} value={value} />
+      ))}
       <div role="radiogroup" aria-label="Channel" className="flex flex-wrap gap-2">
         {channels.map((c) => (
           <button

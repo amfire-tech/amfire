@@ -7,6 +7,7 @@ import { getDb } from "@/db";
 import { runTeam } from "@/server/agents/team";
 import { draftInvestorUpdate } from "@/server/brain";
 import { sendClientDigests } from "@/server/client-digest";
+import { runLearning } from "@/server/engine";
 import { deliverBrief } from "@/server/notify";
 
 export const maxDuration = 300;
@@ -21,9 +22,14 @@ export async function GET(request: NextRequest) {
   const istDay = Number(new Intl.DateTimeFormat("en-IN", { day: "numeric", timeZone: "Asia/Kolkata" }).format(now));
   const istWeekday = new Intl.DateTimeFormat("en-IN", { weekday: "long", timeZone: "Asia/Kolkata" }).format(now);
   if (istDay === 1) await draftInvestorUpdate(db, null, { system: true, now });
+  // The signal engine re-learns from yesterday's touches and rescores every prospect before the day starts.
+  const learning = await runLearning(db, null, { system: true, trigger: "nightly", now }).catch((err) => {
+    console.error("Signal engine learning failed", err);
+    return null;
+  });
   const result = await runTeam(db, { now });
   const delivered = await deliverBrief(db, result.brief.headline, result.brief.body);
   // Fridays: each client gets their weekly email.
   const digests = istWeekday === "Friday" ? await sendClientDigests(db, now) : null;
-  return Response.json({ ok: true, pending: result.pending, signals: result.signals, delivered, digests });
+  return Response.json({ ok: true, pending: result.pending, signals: result.signals, delivered, digests, engine: learning && { scored: learning.prospectsScored, changes: learning.changes.length } });
 }

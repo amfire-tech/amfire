@@ -138,7 +138,7 @@ export async function loadWorld(db: DB, now = new Date()) {
     feedback: fb,
     updates: ups,
     facts,
-    ownerFirstName: (owner[0]?.name ?? "AMFIRE").split(" ")[0],
+    ownerFirstName: (owner[0]?.name ?? "amfire").split(" ")[0],
   };
 }
 
@@ -216,7 +216,7 @@ const hub = (path = "") => `${site.url}/hub${path}`;
 
 /** "— Navanish, amfire", or just "— amfire" while the owner's name is the default. */
 function signatureFor(ownerFirstName: string) {
-  return ownerFirstName.toUpperCase() === "AMFIRE" ? "\n\n— amfire" : `\n\n— ${ownerFirstName}, amfire`;
+  return ownerFirstName.toLowerCase() === "amfire" ? "\n\n— amfire" : `\n\n— ${ownerFirstName}, amfire`;
 }
 
 // --- The agents -------------------------------------------------------------------------
@@ -250,7 +250,7 @@ export function sales(w: World): AgentOutput {
           channel: to.channel,
           recipientName: lead.name,
           recipient: to.recipient,
-          draft: `Hi ${first(lead.name)}, thanks for getting in touch with AMFIRE about ${shorten(lead.problem, 70).toLowerCase()}. Could we do a free 30-minute call this week to understand it better? Which day and time suits you?${sign}`,
+          draft: `Hi ${first(lead.name)}, thanks for getting in touch with amfire about ${shorten(lead.problem, 70).toLowerCase()}. Could we do a free 30-minute call this week to understand it better? Which day and time suits you?${sign}`,
           fingerprint: `book_demo:${lead.id}`,
           data: { point: "book a short call about what you need" },
         });
@@ -817,7 +817,7 @@ async function writeNarrative(db: DB, brief: ReturnType<typeof composeBrief>): P
   const { output, usage } = await generateJson(
     Narrative,
     { type: "object", properties: { narrative: { type: "string" } }, required: ["narrative"] },
-    `You are the Chief of Staff of AMFIRE, a one-person technology company in India. Write a 2–3 sentence summary of today's brief for the owner: what matters most and what to do first. Plain, warm, direct. Use only facts in the data; no new numbers. ${DATA_RULE}`,
+    `You are the Chief of Staff of amfire, a one-person technology company in India. Write a 2–3 sentence summary of today's brief for the owner: what matters most and what to do first. Plain, warm, direct. Use only facts in the data; no new numbers. ${DATA_RULE}`,
     brief,
   );
   return { text: output.narrative, usage };
@@ -840,7 +840,7 @@ async function rewriteInOwnersVoice(db: DB, role: string, drafts: ApprovalDraft[
       properties: { drafts: { type: "array", items: { type: "object", properties: { i: { type: "integer" }, text: { type: "string" } }, required: ["i", "text"] } } },
       required: ["drafts"],
     },
-    `You rewrite short business messages for ${w.ownerFirstName}, who runs AMFIRE, a technology partner for Indian businesses. Keep each message's purpose, links, amounts and dates exactly. Use the facts about the recipient (language, tone, who decides) when they help. Match the owner's style shown in "owner_edits" (original → how the owner changed it). WhatsApp messages: short, friendly, no subject line. Never add promises, prices, discounts or dates that aren't in the draft. ${DATA_RULE}`,
+    `You rewrite short business messages for ${w.ownerFirstName}, who runs amfire, a technology partner for Indian businesses. Keep each message's purpose, links, amounts and dates exactly. Use the facts about the recipient (language, tone, who decides) when they help. Match the owner's style shown in "owner_edits" (original → how the owner changed it). WhatsApp messages: short, friendly, no subject line. Never add promises, prices, discounts or dates that aren't in the draft. ${DATA_RULE}`,
     {
       owner_edits: edits.map((e) => ({ original: e.original, edited: e.edited })),
       drafts: messages.map(({ d, i }) => ({ i, channel: d.channel, recipient: d.recipientName, purpose: d.title, facts: factsFor(d), draft: d.draft })),

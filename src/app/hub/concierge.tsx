@@ -8,7 +8,7 @@ import { askConciergeAction, type ConciergeState } from "./actions";
 
 const SUGGESTIONS = ["When will it be ready?", "Is anything waiting on me?", "What do I owe?"];
 
-/** "Ask about your project" — AMFIRE AI answers from the client's own records; anything else goes to a person. */
+/** "Ask about your project" — amfire AI answers from the client's own records; anything else goes to a person. */
 export function Concierge({ orgId }: { orgId: string }) {
   const [state, action] = useActionState<ConciergeState, FormData>(askConciergeAction.bind(null, orgId), { turns: [] });
   const input = useRef<HTMLInputElement>(null);

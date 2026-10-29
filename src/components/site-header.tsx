@@ -59,7 +59,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line/70 bg-page/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-        <Link href="/" aria-label="AMFIRE home" className="shrink-0 py-2">
+        <Link href="/" aria-label="amfire home" className="shrink-0 py-2">
           <Logo className="h-6 sm:h-7" priority />
         </Link>
 

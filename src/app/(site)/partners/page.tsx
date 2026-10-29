@@ -20,7 +20,7 @@ const BENEFITS = [
   },
   {
     title: "10% of year-one payments",
-    body: "Every business you refer through your own link is credited to your firm. You receive 10% of what they pay AMFIRE in their first year, paid monthly as they pay.",
+    body: "Every business you refer through your own link is credited to your firm. You receive 10% of what they pay amfire in their first year, paid monthly as they pay.",
   },
 ];
 
@@ -31,7 +31,7 @@ const STEPS = [
 ];
 
 export default function PartnersPage() {
-  const wa = contact.whatsapp("Hi AMFIRE, I'm a CA and I'd like to know more about the partner programme.");
+  const wa = contact.whatsapp("Hi amfire, I'm a CA and I'd like to know more about the partner programme.");
   return (
     <>
       <section className="relative isolate overflow-hidden">
@@ -39,7 +39,7 @@ export default function PartnersPage() {
           <p className="text-sm font-medium tracking-wide text-signal uppercase">For chartered accountants</p>
           <h1 className="mt-2 text-4xl font-semibold tracking-tight sm:text-5xl">Your clients get modern. You get cleaner books.</h1>
           <p className="mt-4 max-w-2xl text-lg text-fg/70">
-            AMFIRE sets up software, WhatsApp AI and automation for small businesses. CA firms partner with us to give their clients a head start, and earn from every
+            amfire sets up software, WhatsApp AI and automation for small businesses. CA firms partner with us to give their clients a head start, and earn from every
             referral.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -79,7 +79,7 @@ export default function PartnersPage() {
           <p className="mt-2 max-w-2xl text-page/75">No contract to sign first. If it isn’t useful for your clients, we’ll say so.</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a href={wa} target="_blank" rel="noopener noreferrer" className={buttonClass("primary")}>
-              WhatsApp AMFIRE
+              WhatsApp amfire
             </a>
             <ButtonLink href="/how-we-work" variant="secondary">
               How we work with clients

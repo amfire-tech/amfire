@@ -1,8 +1,8 @@
 export const site = {
-  name: "AMFIRE",
+  name: "amfire",
   tagline: "Build · Operate · Automate",
   description:
-    "AMFIRE builds software for your business problems, runs everything online as your technology partner, and automates the manual work — for Indian businesses.",
+    "amfire builds software for your business problems, runs everything online as your technology partner, and automates the manual work — for Indian businesses.",
   // Shown wherever a visitor or client wants to reach a real person (enquiries
   // and support), and the reply-to address on emails sent to clients.
   // Sign-in for the owner is a separate account (OWNER_EMAIL).
@@ -28,9 +28,9 @@ export const site = {
 
 const phoneDigits = site.contactPhone.replace(/\D/g, "");
 
-/** Links for calling or messaging AMFIRE. */
+/** Links for calling or messaging amfire. */
 export const contact = {
   email: `mailto:${site.contactEmail}`,
   call: `tel:+${phoneDigits}`,
-  whatsapp: (text = "Hi AMFIRE, I'd like to talk about my business.") => `https://wa.me/${phoneDigits}?text=${encodeURIComponent(text)}`,
+  whatsapp: (text = "Hi amfire, I'd like to talk about my business.") => `https://wa.me/${phoneDigits}?text=${encodeURIComponent(text)}`,
 };

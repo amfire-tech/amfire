@@ -6,7 +6,7 @@ import { cx } from "@/components/ui";
 import { HIRING } from "@/knowledge/catalog";
 import { formatMoney, type Priced } from "@/knowledge/pricing";
 
-/** Compares the salary cost of an in-house tech team with AMFIRE's starting Operate plan, in the visitor's currency. */
+/** Compares the salary cost of an in-house tech team with amfire's starting Operate plan, in the visitor's currency. */
 export function HireVsAmfire({ startingPrice }: { startingPrice: Priced }) {
   const [roles, setRoles] = useState<string[]>(["developer", "marketer", "social"]);
   const [level, setLevel] = useState<"fresher" | "experienced">("fresher");
@@ -62,7 +62,7 @@ export function HireVsAmfire({ startingPrice }: { startingPrice: Priced }) {
 
       <div className="flex flex-col justify-center gap-6" aria-live="polite">
         <Bar label={`In-house team (${roles.length} ${roles.length === 1 ? "person" : "people"})`} value={money(inHouse)} share={inHouse / max} tone="muted" />
-        <Bar label="AMFIRE Operate" value={money(startingMonthly)} share={startingMonthly / max} tone="brand" prefix="from " />
+        <Bar label="amfire Operate" value={money(startingMonthly)} share={startingMonthly / max} tone="brand" prefix="from " />
         <div className="rounded-2xl bg-ink p-5 text-white">
           {inHouse > startingMonthly ? (
             <>

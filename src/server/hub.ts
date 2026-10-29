@@ -289,15 +289,15 @@ async function orgSnapshot(db: DB, orgId: string) {
 
 const date = (d: Date | null) => (d ? d.toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "not set");
 
-const CONCIERGE_SYSTEM = `You are AMFIRE's project assistant inside a client's Client Hub. Answer the client's question using only their records in <data>: their projects, milestones, invoices, updates, change requests and the things AMFIRE needs from them.
+const CONCIERGE_SYSTEM = `You are amfire's project assistant inside a client's Client Hub. Answer the client's question using only their records in <data>: their projects, milestones, invoices, updates, change requests and the things amfire needs from them.
 - Be brief, warm and clear, in the language the client writes in (English, Hindi or Hinglish).
 - Use dates and amounts exactly as given. Never invent dates, prices, promises or features.
-- If the records don't answer it (or it's a request for work, a complaint, or anything needing a person), set canAnswer to false and say someone from AMFIRE will reply within one working day.
+- If the records don't answer it (or it's a request for work, a complaint, or anything needing a person), set canAnswer to false and say someone from amfire will reply within one working day.
 - In "refs", list the refs (P1, I2…) of records you used. Never write those refs in the answer itself; name things the way the client knows them (project name, invoice number).
 ${DATA_RULE}`;
 
 /**
- * Answers a client's question from their own records. AMFIRE AI answers first,
+ * Answers a client's question from their own records. amfire AI answers first,
  * remembering the last few questions; without it, rules answer the common
  * questions. Anything the records can't answer goes to a person.
  */
@@ -317,7 +317,7 @@ export async function askConcierge(
   const progress = projectProgress(ms);
   const projectLink = project ? [{ label: project.name, href: `/hub/projects/${project.id}` }] : [];
   const handOff: ConciergeAnswer = {
-    answer: "I can't answer that from your project records. Send it to a person on your project page and AMFIRE will reply within one working day.",
+    answer: "I can't answer that from your project records. Send it to a person on your project page and amfire will reply within one working day.",
     links: projectLink,
     handedOff: true,
   };

@@ -20,7 +20,7 @@ export default async function VerifyPage({ searchParams }: PageProps<"/auth/veri
           <input type="hidden" name="type" value={str(params.type) || "email"} />
           <input type="hidden" name="next" value={str(params.next)} />
           <h1 className="text-2xl font-semibold tracking-tight">Confirm sign in</h1>
-          <p className="mt-2 text-sm text-muted">Continue to your AMFIRE workspace.</p>
+          <p className="mt-2 text-sm text-muted">Continue to your amfire workspace.</p>
           <SubmitButton className="mt-6 w-full" pendingLabel="Signing in…">
             Continue
           </SubmitButton>

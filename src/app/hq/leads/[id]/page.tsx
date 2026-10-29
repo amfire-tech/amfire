@@ -252,7 +252,7 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
             )}
             <form action={rerunRecommendationAction.bind(null, lead.id)}>
               <SubmitButton variant="secondary" pendingLabel="Running…">
-                {usesAi ? "Re-run with AMFIRE AI" : "Re-run (rules)"}
+                {usesAi ? "Re-run with amfire AI" : "Re-run (rules)"}
               </SubmitButton>
             </form>
             {latest?.status === "proposed" && (

@@ -5,7 +5,7 @@ import { supabaseConfig } from "./config";
 
 /**
  * Supabase admin client (service role). Used only on the server to create
- * sign-in links without Supabase sending the email, so AMFIRE sends it
+ * sign-in links without Supabase sending the email, so amfire sends it
  * through Resend instead and Supabase's hourly email limit doesn't apply.
  */
 export function supabaseAdmin() {
@@ -25,7 +25,7 @@ export function generateOneTimePassword(): string {
 }
 
 /**
- * Gives an AMFIRE user a one-time password to sign in with (creating their
+ * Gives an amfire user a one-time password to sign in with (creating their
  * Supabase login if needed). They must change it on first sign-in.
  * Returns null when Supabase isn't set up (local development).
  */
@@ -44,7 +44,7 @@ export async function issueOneTimePassword(email: string): Promise<string | null
 }
 
 /**
- * A one-time sign-in token for an existing AMFIRE user, as a hash our confirm
+ * A one-time sign-in token for an existing amfire user, as a hash our confirm
  * page verifies. Creates the Supabase login the first time someone signs in.
  */
 export async function createSignInToken(email: string): Promise<string | null> {

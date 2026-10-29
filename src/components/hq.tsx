@@ -28,12 +28,12 @@ export function ScorePill({ score }: { score: number }) {
 
 /** How an agent run's engine is shown: the AI provider is never named in the product. */
 export function engineLabel(engine: string) {
-  return engine === "gemini" ? "AMFIRE AI" : engine === "rules" ? "Rules" : engine;
+  return engine === "gemini" ? "amfire AI" : engine === "rules" ? "Rules" : engine;
 }
 
 /** Error text from the AI provider, with the provider's and model's names replaced. */
 export function cleanAiText(text: string | null | undefined) {
-  return text?.replace(/(models\/)?gemini[\w.-]*/gi, "AMFIRE AI").replace(/google|generativelanguage[\w.]*/gi, "AI service") ?? null;
+  return text?.replace(/(models\/)?gemini[\w.-]*/gi, "amfire AI").replace(/google|generativelanguage[\w.]*/gi, "AI service") ?? null;
 }
 
 /** Amounts in more than one currency, e.g. "₹1,20,000 + $500". */

@@ -24,7 +24,7 @@ import { site } from "@/config/site";
 const PATHS = Object.keys(SERVICES) as ServicePathId[];
 
 // Search engines and link previews read these; lead with what people search for, not the tagline.
-const TITLE = "AMFIRE — Custom Software, Business Automation & IT Partner in India";
+const TITLE = "amfire — Custom Software, Business Automation & IT Partner in India";
 const DESCRIPTION =
   "Custom software, WhatsApp-to-Tally and GST automation, and a managed website, SEO and IT team for one monthly fee — for Indian businesses. Book a free 30-minute demo.";
 
@@ -107,7 +107,7 @@ export default function HomePage() {
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <SectionHeading
               eyebrow="Our work"
-              title="Live projects, built by AMFIRE"
+              title="Live projects, built by amfire"
               description="From an AI platform used by schools to a premium website for a smart-garden brand — open them and see for yourself."
             />
             <Link href="/work" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold">
@@ -146,7 +146,7 @@ export default function HomePage() {
                 Why hire an IT team when you can have a technology partner?
               </h2>
               <p className="mt-4 text-muted">
-                A developer, a digital marketer and someone for social media can cost <Money amounts={THREE_HIRES} /> or more a month. AMFIRE manages your
+                A developer, a digital marketer and someone for social media can cost <Money amounts={THREE_HIRES} /> or more a month. amfire manages your
                 website, email, software, social media, SEO, online marketing and lead follow-up — for one monthly fee.
               </p>
               <div className="mt-6 text-sm">
@@ -221,7 +221,7 @@ export default function HomePage() {
           <SectionHeading
             eyebrow="How it works"
             title="See exactly what happens after you book a demo"
-            description="The real client journey on AMFIRE, from booking a free demo to approving milestones and receiving your finished project in the Client Hub."
+            description="The real client journey on amfire, from booking a free demo to approving milestones and receiving your finished project in the Client Hub."
           />
           <div className="mt-10">
             <JourneyVideo />

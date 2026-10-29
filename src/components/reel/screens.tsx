@@ -289,7 +289,7 @@ export function StartScreen({ s }: { s: BookState }) {
                   <div className="flex gap-3 text-sm">
                     <Checkbox on={s.consent} anchor="start:consent" />
                     <span>
-                      Store my answers and contact details so AMFIRE can review them and contact me about the demo. Answers may be analysed with AI-assisted tools to prepare a
+                      Store my answers and contact details so amfire can review them and contact me about the demo. Answers may be analysed with AI-assisted tools to prepare a
                       recommendation; a person reviews it before anything is proposed.
                     </span>
                   </div>
@@ -344,7 +344,7 @@ export function ThanksScreen() {
           <p className="text-sm font-medium text-muted">Received</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">Thank you, {CLIENT.first}.</h1>
           <p className="mt-3 text-fg/75">
-            Your free demo request is in. A person at AMFIRE will call or email you to fix a time. Nothing is agreed until you approve a written proposal.
+            Your free demo request is in. A person at amfire will call or email you to fix a time. Nothing is agreed until you approve a written proposal.
           </p>
           <section data-anchor="thanks:offer" className="relative mt-8 overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
             <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-30 blur-3xl" />
@@ -603,7 +603,7 @@ export function ProjectScreen({ s }: { s: ProjectState }) {
 
         <div className="grid items-start gap-6 lg:grid-cols-2">
           <Card data-anchor="project:updates">
-            <CardTitle>Updates from AMFIRE</CardTitle>
+            <CardTitle>Updates from amfire</CardTitle>
             <ul>
               {s.updates.map((u) => (
                 <li key={u.body}>

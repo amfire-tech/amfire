@@ -36,7 +36,7 @@ export function DecisionPanel({ proposalId, company }: { proposalId: string; com
             <textarea id="note" name="note" rows={4} className={inputClass} />
           </Field>
           <SubmitButton className="w-full" pendingLabel="Sending…">
-            Send to AMFIRE
+            Send to amfire
           </SubmitButton>
           <Button type="button" variant="ghost" className="w-full" onClick={() => setMode("accept")}>
             Back

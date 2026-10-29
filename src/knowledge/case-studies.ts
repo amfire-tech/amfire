@@ -1,5 +1,5 @@
-// Real client projects AMFIRE has delivered. Unlike EXAMPLES (illustrative
-// scenarios), everything here is live and was built by AMFIRE — keep every
+// Real client projects amfire has delivered. Unlike EXAMPLES (illustrative
+// scenarios), everything here is live and was built by amfire — keep every
 // claim checkable against the delivered system. Never publish a client's
 // pricing, contract terms or private data here.
 

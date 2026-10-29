@@ -30,7 +30,7 @@ export function AskBox({ examples }: { examples: string[] }) {
                 ))}
               </div>
             )}
-            <p className="mt-3 text-xs text-muted">{t.answer.note ?? (t.answer.engine === "gemini" ? "Answered by AMFIRE AI from all your records." : "Answered from your records.")}</p>
+            <p className="mt-3 text-xs text-muted">{t.answer.note ?? (t.answer.engine === "gemini" ? "Answered by amfire AI from all your records." : "Answered from your records.")}</p>
           </Card>
         </div>
       ))}

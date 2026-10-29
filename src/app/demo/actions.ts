@@ -16,7 +16,7 @@ export async function askDemoAction(slug: string, prev: DemoChatState, formData:
   const turns = prev?.turns ?? [];
   const question = String(formData.get("question") ?? "");
   if (!(await rateLimit(`demo-chat:${slug}`, 30, 60 * 60 * 1000))) {
-    return { turns, error: "That's a lot of messages for one demo. Try again in a while, or talk to AMFIRE directly." };
+    return { turns, error: "That's a lot of messages for one demo. Try again in a while, or talk to amfire directly." };
   }
   try {
     const { answer } = await askDemo(await getDb(), slug, question, turns.slice(-4));

@@ -23,8 +23,8 @@ export default async function HubHome() {
       <div className="space-y-6">
         <PageHeader title={`Hello, ${actor.name.split(" ")[0]}`} />
         {actor.internalRole ? (
-          <Notice title="You're signed in as AMFIRE staff">
-            The Client Hub is for clients. <Link href="/hq" className="font-medium underline">Go to AMFIRE HQ</Link>.
+          <Notice title="You're signed in as amfire staff">
+            The Client Hub is for clients. <Link href="/hq" className="font-medium underline">Go to amfire HQ</Link>.
           </Notice>
         ) : (
           <EmptyState title="Nothing here yet.">

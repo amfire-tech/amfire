@@ -160,7 +160,7 @@ export async function listRequestsForStaff(db: DB, actor: Actor | null) {
 export const MessageInput = z.object({ body: z.string().trim().min(2, "Write a message.").max(4000) });
 
 /**
- * A reply on a support request, from the client or from AMFIRE. A staff reply
+ * A reply on a support request, from the client or from amfire. A staff reply
  * emails the client; a client reply reopens a resolved request.
  */
 export async function replyToRequest(db: DB, actor: Actor | null, requestId: string, input: z.input<typeof MessageInput>, opts: { resolve?: boolean } = {}) {

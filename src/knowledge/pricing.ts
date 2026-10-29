@@ -3,7 +3,7 @@
 //
 // Indian clients are priced in rupees and foreign clients in US dollars; the
 // two rate cards below are set separately, not converted at an exchange rate.
-// Public starting prices are AMFIRE's published rates. The size bands are
+// Public starting prices are amfire's published rates. The size bands are
 // guidelines for drafting proposals — adjust them to your real rate card.
 
 import type { ServicePathId } from "./catalog";

@@ -60,7 +60,7 @@ async function sendWhatsApp(to: string, text: string) {
 
 export function briefAsText(headline: string, body: BriefBody) {
   return [
-    `AMFIRE brief: ${headline}`,
+    `amfire brief: ${headline}`,
     body.narrative ?? "",
     ...body.sections.flatMap((s) => [`\n${s.title}`, ...s.lines.map((l) => `• ${l.text}`)]),
     body.teamActivity.length ? `\nWhat the team did\n${body.teamActivity.map((t) => `• ${t}`).join("\n")}` : "",
@@ -102,7 +102,7 @@ export async function deliverBrief(db: DB, headline: string, body: BriefBody) {
       channel: "email",
       recipient: to,
       configured: emailConfigured() && !!to,
-      send: () => sendEmail({ to: to!, subject: `AMFIRE brief: ${headline}`, text }),
+      send: () => sendEmail({ to: to!, subject: `amfire brief: ${headline}`, text }),
     })),
     {
       channel: "whatsapp",

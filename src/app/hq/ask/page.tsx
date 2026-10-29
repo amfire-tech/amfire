@@ -11,7 +11,7 @@ export default async function AskPage() {
     <div className="max-w-3xl space-y-6">
       <PageHeader
         title="Ask HQ"
-        description="Ask anything about your business in plain words — money, clients, projects, leads, conversations. AMFIRE AI reads all your records to answer, links to the ones it used, and remembers the last few questions so you can follow up."
+        description="Ask anything about your business in plain words — money, clients, projects, leads, conversations. amfire AI reads all your records to answer, links to the ones it used, and remembers the last few questions so you can follow up."
       />
       <AskBox examples={ASK_EXAMPLES} />
     </div>

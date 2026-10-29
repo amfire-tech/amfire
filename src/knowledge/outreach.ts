@@ -65,7 +65,7 @@ export const OBJECTIONS = [
   {
     id: "not_decision_maker",
     label: "Not the decision maker",
-    reply: "Who looks after customer enquiries and WhatsApp? Could you share their number, or tell them AMFIRE made a demo for your business?",
+    reply: "Who looks after customer enquiries and WhatsApp? Could you share their number, or tell them amfire made a demo for your business?",
   },
   {
     id: "busy",
@@ -140,51 +140,51 @@ export const HOOK = {
   name: "WhatsApp AI salesperson",
   offer: "Your AI salesperson on WhatsApp in 48 hours: setup free for founding clients on the Operate plan.",
   callScript: [
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Two minutes?",
+    "Namaste {contact}, I'm {owner} from amfire, Pune. Two minutes?",
     "In July Meta launched a free AI salesperson inside WhatsApp Business. Have you switched it on yet?",
     "(If no / what is it:) It replies to customers 24×7 from your own catalogue, books appointments and collects enquiries, even at night.",
     "I've already made a demo for {business}. Can I send it to you on WhatsApp? Try it for 30 seconds.",
     "(Close:) When can I call you back to hear what you think, tomorrow 11 or 5?",
   ],
   whatsapp:
-    "Namaste {contact}, {owner} from AMFIRE here, as we just discussed. Meta has launched a free AI salesperson inside WhatsApp Business. It answers your customers 24×7 from your own products and prices. I've made a demo for {business}: {demo}\n\nTry it, and tell me what you think. I'll call you tomorrow.",
+    "Namaste {contact}, {owner} from amfire here, as we just discussed. Meta has launched a free AI salesperson inside WhatsApp Business. It answers your customers 24×7 from your own products and prices. I've made a demo for {business}: {demo}\n\nTry it, and tell me what you think. I'll call you tomorrow.",
   coldWhatsapp:
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Meta has launched a free AI salesperson inside WhatsApp Business that replies to customers 24×7 from your own catalogue. Most businesses haven't switched it on yet. I made a quick demo for {business}, may I send it?",
+    "Namaste {contact}, I'm {owner} from amfire, Pune. Meta has launched a free AI salesperson inside WhatsApp Business that replies to customers 24×7 from your own catalogue. Most businesses haven't switched it on yet. I made a quick demo for {business}, may I send it?",
 } as const;
 
 /** The referral partner programme: a CA firm introduces its clients (see FIRM_HOOK for selling to the firm itself). */
 export const PARTNER_HOOK = {
   name: "CA partner programme",
   callScript: [
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. We set up software and AI for small businesses. Two minutes?",
+    "Namaste {contact}, I'm {owner} from amfire, Pune. We set up software and AI for small businesses. Two minutes?",
     "Many of your clients still re-type WhatsApp orders and send bills by hand, which also makes their books messy for you.",
     "Meta has just launched a free WhatsApp AI for businesses. I'd like to run a free 45-minute session for your clients on using it properly. Your firm hosts, we teach.",
     "For anyone who becomes a client, we share 10% of the first year with your firm, and their data comes to you cleaner.",
     "(Close:) Can I come by for 15 minutes this week, Wednesday or Thursday?",
   ],
   whatsapp:
-    "Namaste {contact}, {owner} from AMFIRE here, as discussed. We help your clients set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups. Happy to run a free session for your clients, hosted by your firm, with a referral share for anyone who signs up. Details: www.amfire.in/partners. When can I come by for 15 minutes?",
+    "Namaste {contact}, {owner} from amfire here, as discussed. We help your clients set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups. Happy to run a free session for your clients, hosted by your firm, with a referral share for anyone who signs up. Details: www.amfire.in/partners. When can I come by for 15 minutes?",
   coldWhatsapp:
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. We help small businesses set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups, which also means cleaner books for their CA. Could I run a free session for your clients? Happy to share referral fees. Details: www.amfire.in/partners",
+    "Namaste {contact}, I'm {owner} from amfire, Pune. We help small businesses set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups, which also means cleaner books for their CA. Could I run a free session for your clients? Happy to share referral fees. Details: www.amfire.in/partners",
 } as const;
 
 /** Someone the owner already knows: no pitch, just news and a request for help. */
 export const NETWORK_HOOK = {
   name: "Someone you know",
   callScript: [
-    "Hi {contact}! Quick news: I've started my own company, AMFIRE.",
+    "Hi {contact}! Quick news: I've started my own company, amfire.",
     "We set up the new free WhatsApp AI from Meta for businesses, and automate the boring work: orders, bills, follow-ups.",
     "I'm taking on five founding clients at a special price. How do you handle customer enquiries on WhatsApp today?",
     "(Either way:) Who's one business owner you know who'd want this? An introduction would mean a lot.",
   ],
   whatsapp:
-    "Hi {contact}, great talking! As promised: AMFIRE sets up Meta's new free WhatsApp AI salesperson and automates orders, bills and follow-ups. I'm taking 5 founding clients at a special price. If you know a business owner who'd like a free demo, I'd be grateful for an intro.",
+    "Hi {contact}, great talking! As promised: amfire sets up Meta's new free WhatsApp AI salesperson and automates orders, bills and follow-ups. I'm taking 5 founding clients at a special price. If you know a business owner who'd like a free demo, I'd be grateful for an intro.",
   coldWhatsapp:
-    "Hi {contact}! Some news: I've started my own company, AMFIRE. We set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups for businesses. I'm taking 5 founding clients at a special price. Could I take 15 minutes to show you? And who's one business owner you'd suggest I talk to?",
+    "Hi {contact}! Some news: I've started my own company, amfire. We set up Meta's new free WhatsApp AI and automate orders, bills and follow-ups for businesses. I'm taking 5 founding clients at a special price. Could I take 15 minutes to show you? And who's one business owner you'd suggest I talk to?",
 } as const;
 
 /**
- * Schools buy the Skillship programme, sold by AMFIRE as Skillship's channel
+ * Schools buy the Skillship programme, sold by amfire as Skillship's channel
  * partner under the Skillship name. Lead with the CBSE CT & AI curriculum, not
  * with "AI"; never say "Premium".
  */
@@ -203,20 +203,20 @@ export const SCHOOL_HOOK = {
     "Namaste {contact}, I'm {owner} from Skillship, Pune. CBSE's new CT & AI curriculum starts in Classes 3–8 this session, and we made a one-page readiness note for {business} with what schools nearby are doing. May I send it?",
 } as const;
 
-/** CA firms buy the AMFIRE FIRM Method. The price is never in a script: it comes at the end of the pitch. */
+/** CA firms buy the amfire FIRM Method. The price is never in a script: it comes at the end of the pitch. */
 export const FIRM_HOOK = {
   name: "Peer review readiness (FIRM Method)",
   callScript: [
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Two minutes?",
+    "Namaste {contact}, I'm {owner} from amfire, Pune. Two minutes?",
     "Peer review Phase IV applies from 31 December: firms with three or more partners doing audits need the certificate before taking a statutory audit. Is {business} ready?",
     "(Listen.) The reviewers look for documented systems: engagement records, quality checks, data security. That's what we set up and run for firms.",
     "We made a one-page readiness check for {business}. Can I send it?",
     "(Close:) Could I come by for 15 minutes this week, Wednesday or Thursday?",
   ],
   whatsapp:
-    "Namaste {contact}, {owner} from AMFIRE here, as we just discussed. Here is the peer review readiness check for {business}: {demo}\n\nWhen could I come by for 15 minutes?",
+    "Namaste {contact}, {owner} from amfire here, as we just discussed. Here is the peer review readiness check for {business}: {demo}\n\nWhen could I come by for 15 minutes?",
   coldWhatsapp:
-    "Namaste {contact}, I'm {owner} from AMFIRE, Pune. Peer review Phase IV applies from 31 December for firms with 3+ partners doing audits. We made a one-page readiness check for {business}. May I send it?",
+    "Namaste {contact}, I'm {owner} from amfire, Pune. Peer review Phase IV applies from 31 December for firms with 3+ partners doing audits. We made a one-page readiness check for {business}. May I send it?",
 } as const;
 
 /** The script for a prospect's kind. */

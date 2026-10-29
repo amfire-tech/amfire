@@ -201,7 +201,7 @@ const AiAnswer = z.object({
   refs: z.array(z.string()).max(12).catch([]),
 });
 
-const SYSTEM = `You are the analyst inside AMFIRE HQ. AMFIRE is a one-person technology company in India (Build, Operate, Automate services). The owner asks you questions about the business; answer from the records in <data>.
+const SYSTEM = `You are the analyst inside amfire HQ. amfire is a one-person technology company in India (Build, Operate, Automate services). The owner asks you questions about the business; answer from the records in <data>.
 
 How to answer:
 - Lead with the direct answer, then the few facts that support it. Use short lines or bullets, no headings. Under 180 words unless the question needs a list.
@@ -246,12 +246,12 @@ export async function askHq(db: DB, actor: Actor | null, question: string, histo
         .set({ status: "failed", error: err instanceof Error ? err.message : String(err), finishedAt: new Date() })
         .where(eq(agentRuns.id, run.id));
       const fallback = await answerWithRules(db, actor, q, now);
-      return { ...fallback, note: "AMFIRE AI didn't answer this time, so this comes from the built-in rules." };
+      return { ...fallback, note: "amfire AI didn't answer this time, so this comes from the built-in rules." };
     }
   }
 
   const fallback = await answerWithRules(db, actor, q, now);
-  return { ...fallback, note: "AMFIRE AI isn't available right now (or today's budget is used), so this comes from the built-in rules." };
+  return { ...fallback, note: "amfire AI isn't available right now (or today's budget is used), so this comes from the built-in rules." };
 }
 
 /** The fallback: answers the most common questions without AI. */
@@ -321,7 +321,7 @@ async function answerWithRules(db: DB, actor: Actor, q: string, now: Date): Prom
   ];
   for (const [re, fn] of rules) if (re.test(q)) return { ...fn(), engine: "rules" };
   return {
-    answer: "Without AMFIRE AI I can answer questions about money, who owes you, monthly plans, lead sources, client health and the pipeline.",
+    answer: "Without amfire AI I can answer questions about money, who owes you, monthly plans, lead sources, client health and the pipeline.",
     links: [],
     engine: "rules",
   };

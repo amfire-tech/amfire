@@ -1,4 +1,4 @@
-// Shared UI primitives used by the website, AMFIRE HQ and the Client Hub.
+// Shared UI primitives used by the website, amfire HQ and the Client Hub.
 // Colours use semantic tokens (page, surface, subtle, fg, muted, line) so
 // the whole platform shares one light palette.
 
@@ -13,13 +13,13 @@ export function cx(...classes: (string | false | null | undefined)[]) {
 // --- Brand -----------------------------------------------------------------
 
 /**
- * The AMFIRE logo (from the supplied artwork). `inverse` uses the white-ink
+ * The amfire logo (from the supplied artwork). `inverse` uses the white-ink
  * version for always-dark sections.
  */
 export function Logo({ className = "h-7", inverse, priority }: { className?: string; inverse?: boolean; priority?: boolean }) {
   const common = { width: 1200, height: 325, priority, sizes: "200px" } as const;
-  if (inverse) return <Image src="/brand/amfire-logo-inverse.png" alt="AMFIRE" {...common} className={cx("w-auto", className)} />;
-  return <Image src="/brand/amfire-logo.png" alt="AMFIRE" {...common} className={cx("w-auto", className)} />;
+  if (inverse) return <Image src="/brand/amfire-logo-inverse.png" alt="amfire" {...common} className={cx("w-auto", className)} />;
+  return <Image src="/brand/amfire-logo.png" alt="amfire" {...common} className={cx("w-auto", className)} />;
 }
 
 // --- Buttons ---------------------------------------------------------------

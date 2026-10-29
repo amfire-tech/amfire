@@ -276,7 +276,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
                 className="mt-0.5 size-4 shrink-0 accent-signal"
               />
               <span>
-                Store my answers and contact details so AMFIRE can review them and contact me about the demo. Answers may be analysed with AI-assisted tools to prepare a
+                Store my answers and contact details so amfire can review them and contact me about the demo. Answers may be analysed with AI-assisted tools to prepare a
                 recommendation; a person reviews it before anything is proposed.
               </span>
             </label>

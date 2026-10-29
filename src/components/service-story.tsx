@@ -4,13 +4,13 @@ import { Arrow, cx } from "./ui";
 
 /**
  * A business owner's story in four beats: the problem, what they tried,
- * what AMFIRE did, and what changed. Illustrative, and labelled as such.
+ * what amfire did, and what changed. Illustrative, and labelled as such.
  */
 export function ServiceStory({ story, compact }: { story: Story; compact?: boolean }) {
   const beats = [
     { label: "The problem", body: story.problem, tone: "problem" as const },
     { label: "What they tried", body: story.tried, tone: "neutral" as const },
-    { label: "How AMFIRE helps", body: story.amfire, tone: "amfire" as const },
+    { label: "How amfire helps", body: story.amfire, tone: "amfire" as const },
     { label: "What changed", body: story.result, tone: "result" as const },
   ];
 

@@ -22,7 +22,7 @@ export function InvoiceDocument({
   overdue: boolean;
 }) {
   const gstin = process.env.AMFIRE_GSTIN?.trim();
-  const legalName = process.env.AMFIRE_LEGAL_NAME ?? "AMFIRE";
+  const legalName = process.env.AMFIRE_LEGAL_NAME ?? "amfire";
   const address = process.env.AMFIRE_ADDRESS?.replace(/\\n/g, "\n");
   const taxes = gstSplit(i);
   const kind = i.isRecord ? "Payment record" : i.taxRate ? "Tax invoice" : "Invoice";

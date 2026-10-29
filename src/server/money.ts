@@ -44,7 +44,7 @@ export function gstRegistered() {
 }
 
 /**
- * GST for rupee invoices when AMFIRE is registered (18% unless GST_RATE_BP says
+ * GST for rupee invoices when amfire is registered (18% unless GST_RATE_BP says
  * otherwise); none for dollar invoices (export of services) or when unregistered.
  * Applies to invoices drafted after it's set.
  */
@@ -54,7 +54,7 @@ export function taxRateFor(currency: string) {
   return Number.isFinite(bp) && bp >= 0 ? bp : 1800;
 }
 
-/** CGST + SGST when AMFIRE and the client are in the same state, otherwise IGST. Null when the state isn't known. */
+/** CGST + SGST when amfire and the client are in the same state, otherwise IGST. Null when the state isn't known. */
 export function gstSplit(inv: Pick<Invoice, "tax" | "taxRate" | "placeOfSupply">) {
   if (!inv.taxRate) return [];
   const home = process.env.AMFIRE_STATE?.trim().toLowerCase();
@@ -500,7 +500,7 @@ export function upiLink(inv: Pick<Invoice, "number" | "total" | "currency">, bal
   if (!vpa || inv.currency !== "INR" || balance <= 0) return null;
   const params = new URLSearchParams({
     pa: vpa,
-    pn: process.env.PAYMENT_PAYEE_NAME ?? "AMFIRE",
+    pn: process.env.PAYMENT_PAYEE_NAME ?? "amfire",
     am: (balance / 100).toFixed(2),
     cu: "INR",
     tn: `Invoice ${inv.number}`,

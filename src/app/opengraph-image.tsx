@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
 
 // The preview card shown when a page is shared on WhatsApp, LinkedIn or X.
 
-export const alt = "AMFIRE — software, automation and a tech team for Indian businesses";
+export const alt = "amfire — software, automation and a tech team for Indian businesses";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

@@ -12,6 +12,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { EmailContent } from "@/knowledge/email-theme";
 
 // ---------------------------------------------------------------------------
 // Shared business records. The website, amfire HQ and the Client Hub are three
@@ -982,6 +983,40 @@ export const demos = appSchema.table("demos", {
   updatedAt: updatedAt(),
 });
 
+/**
+ * An outreach email to a prospect in the "Toran" theme: drafted by the owner or
+ * Claude, tested on the owner's own inbox, then sent from HQ. The client button
+ * stays locked until a test was sent of the current version.
+ */
+export const outreachEmails = appSchema.table(
+  "outreach_emails",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id")
+      .notNull()
+      .references(() => prospects.id, { onDelete: "cascade" }),
+    toEmail: text("to_email"),
+    cc: text("cc"),
+    subject: text("subject").notNull(),
+    /** EmailContent in knowledge/email-theme.ts. */
+    content: jsonb("content").$type<EmailContent>().notNull(),
+    /** "draft" until sent to the prospect, then "sent". */
+    status: text("status").notNull().default("draft"),
+    /** Goes up on every save; a test counts only for the version it was sent of. */
+    version: integer("version").notNull().default(1),
+    testedVersion: integer("tested_version"),
+    testSentTo: text("test_sent_to"),
+    testSentAt: timestamp("test_sent_at", { withTimezone: true }),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    touchId: uuid("touch_id").references(() => touches.id, { onDelete: "set null" }),
+    /** "owner" or "claude". */
+    draftedBy: text("drafted_by").notNull().default("owner"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("outreach_emails_prospect_idx").on(t.prospectId, t.createdAt)],
+);
+
 /** A test enquiry the owner sent a business, timed until they replied: evidence for the pitch and the Pune report. */
 export const responseTests = appSchema.table(
   "response_tests",
@@ -1093,6 +1128,7 @@ export type Prospect = typeof prospects.$inferSelect;
 export type Touch = typeof touches.$inferSelect;
 export type OutreachNote = typeof outreachNotes.$inferSelect;
 export type Demo = typeof demos.$inferSelect;
+export type OutreachEmail = typeof outreachEmails.$inferSelect;
 export type ResponseTest = typeof responseTests.$inferSelect;
 export type ProspectContact = typeof prospectContacts.$inferSelect;
 export type BuyingSignal = typeof buyingSignals.$inferSelect;

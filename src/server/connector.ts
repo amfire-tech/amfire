@@ -9,6 +9,7 @@ import { and, eq } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
 import { memberships, organizations, users } from "@/db/schema";
+import { site } from "@/config/site";
 import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { CONTACT_ROLE_IDS, PLAYS, SIGNAL_TYPE_IDS } from "@/knowledge/engine";
 import {
@@ -29,6 +30,7 @@ import {
 } from "@/knowledge/outreach";
 import { AccessDenied, loadActor, type Actor } from "./access";
 import { AuditItem, upsertDemo } from "./demos";
+import { EmailContentSchema, EmailDraftInput, saveEmailDraft } from "./outreach-emails";
 import {
   FeedbackInput,
   PlaceFilter,
@@ -276,6 +278,19 @@ export const TOOLS: Tool[] = [
     async (db, actor, args) => {
       const { demo, url } = await upsertDemo(db, actor, args);
       return { demoId: demo.id, url, views: demo.views };
+    },
+  ),
+  tool(
+    "draft_email",
+    "Write (or rewrite) the prospect's outreach email in the amfire Toran theme as a draft. It is never sent from here: the owner edits it on the prospect's Email page in HQ, sends a test to their own inbox, then sends it. Use only facts from public sources. Never put a price in it. Write the brand as \"amfire\".",
+    EmailDraftInput.extend({
+      content: EmailContentSchema.describe(
+        "headline: new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the reply button, e.g. 'Pick a 15-minute slot'.",
+      ),
+    }),
+    async (db, actor, args) => {
+      const email = await saveEmailDraft(db, actor, args, { draftedBy: "claude" });
+      return { emailId: email.id, version: email.version, composer: `${site.url}/hq/outreach/${email.prospectId}/email` };
     },
   ),
   tool(

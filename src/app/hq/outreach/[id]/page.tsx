@@ -70,6 +70,11 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
                 WhatsApp ↗
               </a>
             )}
+            {!p.doNotContact && (
+              <ButtonLink href={`/hq/outreach/${p.id}/email`} variant="secondary">
+                Email
+              </ButtonLink>
+            )}
             {lead ? (
               <ButtonLink href={`/hq/leads/${lead.id}`} variant="secondary">
                 Open lead

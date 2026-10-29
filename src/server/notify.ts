@@ -16,19 +16,32 @@ export function whatsappConfigured() {
   return Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID && process.env.OWNER_WHATSAPP);
 }
 
-/** The brand is written "amfire": whatever name NOTIFY_FROM_EMAIL carries, emails come from "amfire <address>". */
-export function fromHeader(from: string) {
+/**
+ * The brand is written "amfire": whatever name NOTIFY_FROM_EMAIL carries, emails come from "amfire <address>",
+ * or "Navanish from amfire <address>" when a person writes.
+ */
+export function fromHeader(from: string, personName?: string) {
   const address = from.match(/<([^>]+)>/)?.[1] ?? from.trim();
-  return `amfire <${address}>`;
+  const name = personName?.replace(/[^\p{L}\p{N} .'-]/gu, "").trim();
+  // An account still named after the brand ("AMFIRE Owner") just sends as amfire.
+  return name && !/amfire/i.test(name) ? `${name} from amfire <${address}>` : `amfire <${address}>`;
 }
 
-export async function sendEmail({ to, subject, text }: { to: string; subject: string; text: string }) {
+export async function sendEmail({ to, subject, text, html, cc, fromName }: { to: string; subject: string; text: string; html?: string; cc?: string[]; fromName?: string }) {
   if (!emailConfigured()) throw new Error("Email isn't set up (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
     // Replies go to the support inbox (hello@amfire.in), whatever address sends.
-    body: JSON.stringify({ from: fromHeader(process.env.NOTIFY_FROM_EMAIL!), to: [to], reply_to: site.contactEmail, subject, text }),
+    body: JSON.stringify({
+      from: fromHeader(process.env.NOTIFY_FROM_EMAIL!, fromName),
+      to: [to],
+      ...(cc?.length ? { cc } : {}),
+      reply_to: site.contactEmail,
+      subject,
+      text,
+      ...(html ? { html } : {}),
+    }),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Resend returned ${res.status}`);

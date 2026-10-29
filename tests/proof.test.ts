@@ -15,6 +15,9 @@ import { askDemo, fallbackAnswer, getPublicDemo, recordDemoView, upsertDemo } fr
 import { followTrackedLink } from "@/server/growth";
 import { addProspects, findCallTouch, getProspect, listResponseTests, logTouch, markResponseTestReplied, startResponseTest } from "@/server/outreach";
 import { createPartnerLink, getPartners } from "@/server/partners";
+import { fromHeader } from "@/server/notify";
+import { saveEmailDraft, sendEmailTest, sendEmailToProspect } from "@/server/outreach-emails";
+import { defaultEmailContent } from "@/knowledge/email-theme";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -145,5 +148,55 @@ describe("recorded calls", () => {
   test("the connector offers the new tools", () => {
     const names = TOOLS.map((t) => t.name);
     for (const n of ["create_demo", "find_call_touch", "list_response_tests", "list_partners"]) assert.ok(names.includes(n), n);
+  });
+});
+
+describe("outreach emails", () => {
+  test("a draft goes to the client only after a test of that exact version, and sending logs a touch", async () => {
+    const [p] = (await addProspects(db, owner, [{ name: "Email Test & Co (Noida)", phone: "9811100009", kind: "ca_firm" }])).created;
+    const content = { ...defaultEmailContent({ business: "Email Test & Co", contactName: "Asha Rao", ownerName: owner.name }), findings: [{ title: "No phone layout.", body: "Text <runs> off." }] };
+    const draft = await saveEmailDraft(db, owner, { prospectId: p.id, toEmail: "partner@example.com", subject: "Hello", content });
+    assert.equal(draft.version, 1);
+    assert.equal((await saveEmailDraft(db, owner, { prospectId: p.id, toEmail: "partner@example.com", subject: "Hello", content })).version, 1, "an unchanged save keeps the version");
+
+    const sent: { to: string[]; subject: string; html: string; from: string }[] = [];
+    const realFetch = globalThis.fetch;
+    process.env.RESEND_API_KEY = "test";
+    process.env.NOTIFY_FROM_EMAIL = "hello@amfire.in";
+    globalThis.fetch = (async (_url: string, init: RequestInit) => {
+      sent.push(JSON.parse(String(init.body)));
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+    try {
+      await assert.rejects(sendEmailToProspect(db, owner, draft.id), /test of this version first/);
+      await sendEmailTest(db, owner, draft.id, "me@example.com");
+      assert.equal(sent[0].subject, "[TEST] Hello");
+      assert.deepEqual(sent[0].to, ["me@example.com"]);
+      // The test owner is named "amfire Owner", so it sends as the brand.
+      assert.equal(sent[0].from, "amfire <hello@amfire.in>");
+      assert.equal(fromHeader("hello@amfire.in", "Navanish"), "Navanish from amfire <hello@amfire.in>");
+      assert.ok(sent[0].html.includes("Text &lt;runs&gt; off."), "content is escaped");
+
+      // Editing after the test needs a new test.
+      const edited = await saveEmailDraft(db, owner, { prospectId: p.id, emailId: draft.id, toEmail: "partner@example.com", subject: "Hello again", content });
+      assert.equal(edited.version, 2);
+      await assert.rejects(sendEmailToProspect(db, owner, draft.id), /test of this version first/);
+      await sendEmailTest(db, owner, draft.id, "me@example.com");
+      const done = await sendEmailToProspect(db, owner, draft.id);
+      assert.equal(done.status, "sent");
+      assert.deepEqual(sent.at(-1)?.to, ["partner@example.com"]);
+      const [touch] = await db.select().from(touches).where(eq(touches.prospectId, p.id));
+      assert.equal(touch.channel, "email");
+      assert.equal(touch.outcome, "sent");
+      await assert.rejects(sendEmailTest(db, owner, draft.id, "me@example.com"), /already sent/);
+    } finally {
+      globalThis.fetch = realFetch;
+      delete process.env.RESEND_API_KEY;
+      delete process.env.NOTIFY_FROM_EMAIL;
+    }
+  });
+
+  test("the connector can draft emails", () => {
+    assert.ok(TOOLS.some((t) => t.name === "draft_email"));
   });
 });

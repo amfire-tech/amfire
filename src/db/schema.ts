@@ -1008,6 +1008,8 @@ export const outreachEmails = appSchema.table(
     testSentTo: text("test_sent_to"),
     testSentAt: timestamp("test_sent_at", { withTimezone: true }),
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    /** Resend's id for the last test or send, to look up whether it was delivered. */
+    resendId: text("resend_id"),
     touchId: uuid("touch_id").references(() => touches.id, { onDelete: "set null" }),
     /** "owner" or "claude". */
     draftedBy: text("drafted_by").notNull().default("owner"),

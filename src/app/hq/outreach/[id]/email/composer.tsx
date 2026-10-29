@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { Button, Card, CardTitle, Field, Notice, cx, inputClass } from "@/components/ui";
 import { renderEmailHtml, type EmailContent, type EmailFrame } from "@/knowledge/email-theme";
-import { saveEmailDraftAction, sendEmailTestAction, sendEmailToProspectAction, type DraftFields, type DraftState } from "./actions";
+import { checkEmailDeliveryAction, saveEmailDraftAction, sendEmailTestAction, sendEmailToProspectAction, type DraftFields, type DraftState } from "./actions";
 
 export function EmailComposer({
   prospectId,
@@ -13,7 +13,10 @@ export function EmailComposer({
   initial,
   initialState,
   lastTestTo,
+  fromAddress,
 }: {
+  /** The address the email comes from (hello@amfire.in). */
+  fromAddress: string;
   prospectId: string;
   recipients: { email: string; name: string }[];
   frame: EmailFrame;
@@ -196,6 +199,16 @@ export function EmailComposer({
                 ? `Test of this version went to ${draft.testSentTo}. If it looks right on your phone, send it to ${fields.toEmail || "the client"}.`
                 : sendBlocker ?? ""}
           </p>
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
+            <span>
+              From <b className="font-medium text-fg">{c.signName && !/amfire/i.test(c.signName) ? `${c.signName.split(" ")[0]} from amfire` : "amfire"}</b> &lt;{fromAddress}&gt; · replies come to {frame.replyTo}
+            </span>
+            {draft?.testSentAt && (
+              <button type="button" className="underline" disabled={pending} onClick={() => run(() => checkEmailDeliveryAction(draft.id))}>
+                Check delivery
+              </button>
+            )}
+          </div>
           {message && <Notice tone={message.tone}>{message.text}</Notice>}
         </Card>
 

@@ -7,13 +7,13 @@ import { isDeepStrictEqual } from "node:util";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
-import { outreachEmails, prospectContacts, prospects, type OutreachEmail } from "@/db/schema";
+import { notifications, outreachEmails, prospectContacts, prospects, type OutreachEmail } from "@/db/schema";
 import { contact, site } from "@/config/site";
 import { defaultEmailContent, renderEmailHtml, renderEmailText, type EmailContent, type EmailFrame } from "@/knowledge/email-theme";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
 import { getDemoForProspect, demoUrl } from "./demos";
-import { emailConfigured, sendEmail } from "./notify";
+import { emailConfigured, emailDeliveryStatus, sendEmail } from "./notify";
 import { OutreachError, logTouch } from "./outreach";
 
 const line = (max: number) => z.string().trim().max(max);
@@ -59,14 +59,35 @@ export function renderOutreachEmail(email: Pick<OutreachEmail, "subject" | "cont
   return { html: renderEmailHtml(email.content, f), text: renderEmailText(email.content, f) };
 }
 
-/** Sending failures become messages the owner can read in the composer. */
-async function deliver(args: Parameters<typeof sendEmail>[0]) {
+/** Outreach comes from the inbox replies go to: hello@amfire.in (OUTREACH_FROM_EMAIL overrides). */
+export const outreachFromAddress = () => process.env.OUTREACH_FROM_EMAIL?.trim() || site.contactEmail;
+
+/**
+ * Sends from hello@amfire.in and logs every attempt in notifications. Failures
+ * become messages the owner can read in the composer. Returns Resend's id.
+ */
+async function deliver(db: DB, args: Omit<Parameters<typeof sendEmail>[0], "fromAddress">) {
   if (!emailConfigured()) throw new OutreachError("Email sending isn't set up on this server (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
+  const log = (status: "sent" | "failed", error: string | null) =>
+    db.insert(notifications).values({ channel: "email", recipient: args.to, subject: args.subject, body: args.text, status, error });
   try {
-    await sendEmail(args);
+    const id = await sendEmail({ ...args, fromAddress: outreachFromAddress() });
+    await log("sent", null);
+    return id;
   } catch (err) {
-    throw new OutreachError(`The email didn't go out: ${err instanceof Error ? err.message : "unknown error"}. Nothing was logged.`);
+    const reason = err instanceof Error ? err.message : "unknown error";
+    await log("failed", reason);
+    throw new OutreachError(`The email didn't go out: ${reason}.`);
   }
+}
+
+/** Asks Resend what happened to the last test or send of this email. */
+export async function checkEmailDelivery(db: DB, actor: Actor | null, emailId: string) {
+  assertStaff(actor);
+  const [email] = await db.select().from(outreachEmails).where(eq(outreachEmails.id, emailId));
+  if (!email) throw new OutreachError("Email not found.");
+  if (!email.resendId) throw new OutreachError("Nothing has been sent from this email yet.");
+  return emailDeliveryStatus(email.resendId);
 }
 
 const ccList = (cc: string | null | undefined) =>
@@ -111,7 +132,7 @@ export async function getEmailComposer(db: DB, actor: Actor | null, prospectId: 
           testSentTo: null,
           testSentAt: null,
         };
-  return { prospect: p, recipients, draft, lastSent: latest?.status === "sent" ? latest : null, lastTestTo: lastTest?.to ?? null, emailReady: emailConfigured(), frame: frame("") };
+  return { prospect: p, recipients, draft, lastSent: latest?.status === "sent" ? latest : null, lastTestTo: lastTest?.to ?? null, emailReady: emailConfigured(), frame: frame(""), fromAddress: outreachFromAddress() };
 }
 
 /** Saves a draft (creating one if needed). A changed draft needs a new test before it can go out. */
@@ -161,10 +182,10 @@ export async function sendEmailTest(db: DB, actor: Actor | null, emailId: string
   const address = z.email("Type the address to send the test to.").parse(to.trim());
   const email = await loadDraft(db, emailId);
   const { html, text } = renderOutreachEmail(email);
-  await deliver({ to: address, subject: `[TEST] ${email.subject}`, html, text, fromName: actor.name.split(" ")[0] });
+  const resendId = await deliver(db, { to: address, subject: `[TEST] ${email.subject}`, html, text, fromName: email.content.signName.split(" ")[0] });
   const [row] = await db
     .update(outreachEmails)
-    .set({ testedVersion: email.version, testSentTo: address, testSentAt: new Date() })
+    .set({ testedVersion: email.version, testSentTo: address, testSentAt: new Date(), resendId })
     .where(eq(outreachEmails.id, email.id))
     .returning();
   return row;
@@ -180,11 +201,11 @@ export async function sendEmailToProspect(db: DB, actor: Actor | null, emailId: 
   if (!email.toEmail) throw new OutreachError("Add the address to send to.");
   if (email.testedVersion !== email.version) throw new OutreachError("Send yourself a test of this version first.");
   const { html, text } = renderOutreachEmail(email);
-  await deliver({ to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: actor.name.split(" ")[0] });
+  const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: email.content.signName.split(" ")[0] });
   const touch = await logTouch(db, actor, { prospectId: p.id, channel: "email", outcome: "sent", note: `Email sent to ${email.toEmail}: "${email.subject}"` });
   const [row] = await db
     .update(outreachEmails)
-    .set({ status: "sent", sentAt: new Date(), touchId: touch.touch.id })
+    .set({ status: "sent", sentAt: new Date(), touchId: touch.touch.id, resendId })
     .where(eq(outreachEmails.id, email.id))
     .returning();
   await audit(db, { actorId: actor.userId, action: "outreach_email.sent", subjectType: "prospect", subjectId: p.id, data: { emailId: email.id, to: email.toEmail } });

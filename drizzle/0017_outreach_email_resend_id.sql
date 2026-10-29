@@ -1,0 +1,1 @@
+ALTER TABLE "app"."outreach_emails" ADD COLUMN "resend_id" text;

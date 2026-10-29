@@ -15,7 +15,7 @@ export default async function EmailPage({ params }: PageProps<"/hq/outreach/[id]
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const composer = await getEmailComposer(await getDb(), actor, id);
   if (!composer) notFound();
-  const { prospect: p, draft, recipients, lastSent, lastTestTo, emailReady, frame } = composer;
+  const { prospect: p, draft, recipients, lastSent, lastTestTo, emailReady, frame, fromAddress } = composer;
 
   return (
     <div className="space-y-6">
@@ -52,6 +52,7 @@ export default async function EmailPage({ params }: PageProps<"/hq/outreach/[id]
             : null
         }
         lastTestTo={lastTestTo}
+        fromAddress={fromAddress}
       />
     </div>
   );

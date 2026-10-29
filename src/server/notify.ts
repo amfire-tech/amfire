@@ -27,14 +27,34 @@ export function fromHeader(from: string, personName?: string) {
   return name && !/amfire/i.test(name) ? `${name} from amfire <${address}>` : `amfire <${address}>`;
 }
 
-export async function sendEmail({ to, subject, text, html, cc, fromName }: { to: string; subject: string; text: string; html?: string; cc?: string[]; fromName?: string }) {
+/**
+ * Sends through Resend and returns Resend's message id. `fromAddress` overrides
+ * NOTIFY_FROM_EMAIL, e.g. outreach comes from hello@amfire.in.
+ */
+export async function sendEmail({
+  to,
+  subject,
+  text,
+  html,
+  cc,
+  fromName,
+  fromAddress,
+}: {
+  to: string;
+  subject: string;
+  text: string;
+  html?: string;
+  cc?: string[];
+  fromName?: string;
+  fromAddress?: string;
+}): Promise<string | null> {
   if (!emailConfigured()) throw new Error("Email isn't set up (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
     // Replies go to the support inbox (hello@amfire.in), whatever address sends.
     body: JSON.stringify({
-      from: fromHeader(process.env.NOTIFY_FROM_EMAIL!, fromName),
+      from: fromHeader(fromAddress ?? process.env.NOTIFY_FROM_EMAIL!, fromName),
       to: [to],
       ...(cc?.length ? { cc } : {}),
       reply_to: site.contactEmail,
@@ -44,7 +64,21 @@ export async function sendEmail({ to, subject, text, html, cc, fromName }: { to:
     }),
     signal: AbortSignal.timeout(15_000),
   });
-  if (!res.ok) throw new Error(`Resend returned ${res.status}`);
+  const body = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+  // Resend explains refusals, e.g. "The amfire.in domain is not verified".
+  if (!res.ok) throw new Error(`Resend returned ${res.status}${body?.message ? `: ${body.message}` : ""}`);
+  return body?.id ?? null;
+}
+
+/** What Resend last saw happen to a message: "sent", "delivered", "bounced", "complained", "delivery_delayed"… */
+export async function emailDeliveryStatus(id: string): Promise<{ status: string | null; error?: string }> {
+  const res = await fetch(`https://api.resend.com/emails/${encodeURIComponent(id)}`, {
+    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+    signal: AbortSignal.timeout(15_000),
+  });
+  const body = (await res.json().catch(() => null)) as { last_event?: string; message?: string; name?: string } | null;
+  if (!res.ok) return { status: null, error: body?.name === "restricted_api_key" ? "The Resend key on the server can only send, not read. See the status at resend.com/emails." : (body?.message ?? `Resend returned ${res.status}`) };
+  return { status: body?.last_event ?? null };
 }
 
 /**
@@ -110,7 +144,7 @@ export async function deliverBrief(db: DB, headline: string, body: BriefBody) {
   const text = briefAsText(headline, body);
   const emails = await briefEmails(db);
   const results: { channel: string; recipient: string | undefined; status: string }[] = [];
-  const attempts: { channel: string; recipient: string | undefined; configured: boolean; send: () => Promise<void> }[] = [
+  const attempts: { channel: string; recipient: string | undefined; configured: boolean; send: () => Promise<unknown> }[] = [
     ...(emails.length ? emails : [undefined]).map((to) => ({
       channel: "email",
       recipient: to,

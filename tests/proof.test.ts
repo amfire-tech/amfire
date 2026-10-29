@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { before, describe, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { openPglite, type DB } from "@/db";
-import { contentPosts, leads, prospects, touches, users } from "@/db/schema";
+import { contentPosts, leads, notifications, prospects, touches, users } from "@/db/schema";
 import { loadActor, type Actor } from "@/server/access";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
 import { TOOLS } from "@/server/connector";
@@ -162,17 +162,27 @@ describe("outreach emails", () => {
     const sent: { to: string[]; subject: string; html: string; from: string }[] = [];
     const realFetch = globalThis.fetch;
     process.env.RESEND_API_KEY = "test";
-    process.env.NOTIFY_FROM_EMAIL = "hello@amfire.in";
+    // Brief emails use this address; outreach always comes from hello@amfire.in.
+    process.env.NOTIFY_FROM_EMAIL = "notify@amfire.in";
+    let refuse = false;
     globalThis.fetch = (async (_url: string, init: RequestInit) => {
+      if (refuse) return Response.json({ name: "validation_error", message: "The amfire.in domain is not verified." }, { status: 403 });
       sent.push(JSON.parse(String(init.body)));
-      return new Response("{}", { status: 200 });
+      return Response.json({ id: `re_${sent.length}` });
     }) as typeof fetch;
     try {
       await assert.rejects(sendEmailToProspect(db, owner, draft.id), /test of this version first/);
-      await sendEmailTest(db, owner, draft.id, "me@example.com");
+      // A refusal shows Resend's reason and is logged.
+      refuse = true;
+      await assert.rejects(sendEmailTest(db, owner, draft.id, "me@example.com"), /403: The amfire\.in domain is not verified/);
+      refuse = false;
+      const tested = await sendEmailTest(db, owner, draft.id, "me@example.com");
+      assert.equal(tested.resendId, "re_1");
+      const logged = await db.select().from(notifications).where(eq(notifications.recipient, "me@example.com"));
+      assert.deepEqual(logged.map((n) => n.status).sort(), ["failed", "sent"]);
       assert.equal(sent[0].subject, "[TEST] Hello");
       assert.deepEqual(sent[0].to, ["me@example.com"]);
-      // The test owner is named "amfire Owner", so it sends as the brand.
+      // The test owner signs as "amfire Owner", so it sends as the brand.
       assert.equal(sent[0].from, "amfire <hello@amfire.in>");
       assert.equal(fromHeader("hello@amfire.in", "Navanish"), "Navanish from amfire <hello@amfire.in>");
       assert.ok(sent[0].html.includes("Text &lt;runs&gt; off."), "content is escaped");

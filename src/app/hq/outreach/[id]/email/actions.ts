@@ -9,7 +9,7 @@ import type { EmailContent } from "@/knowledge/email-theme";
 import { toActionError } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
 import { OutreachError } from "@/server/outreach";
-import { saveEmailDraft, sendEmailTest, sendEmailToProspect } from "@/server/outreach-emails";
+import { checkEmailDelivery, saveEmailDraft, sendEmailTest, sendEmailToProspect } from "@/server/outreach-emails";
 
 export type DraftFields = { emailId: string | null; toEmail: string; cc: string; subject: string; content: EmailContent };
 export type DraftState = { id: string; version: number; testedVersion: number | null; testSentTo: string | null; testSentAt: string | null };
@@ -54,6 +54,26 @@ export async function sendEmailTestAction(prospectId: string, fields: DraftField
     const { db, actor, email } = await save(prospectId, fields);
     const tested = await sendEmailTest(db, actor, email.id, testTo);
     return { ok: `Test sent to ${tested.testSentTo}. Check it on your phone.`, draft: state(tested) };
+  } catch (err) {
+    return toActionError(err) ?? {};
+  }
+}
+
+const DELIVERY: Record<string, string> = {
+  sent: "Resend accepted it and is handing it to their mail server. Check again in a minute.",
+  delivered: "Delivered to the inbox's mail server. If you can't see it, look in Spam and Promotions.",
+  delivery_delayed: "Delivery is delayed; their mail server hasn't accepted it yet. Resend keeps trying.",
+  bounced: "Bounced: the address doesn't exist or refused it. Check the spelling.",
+  complained: "Delivered, but marked as spam.",
+  opened: "Delivered and opened.",
+  clicked: "Delivered, opened and a link was clicked.",
+};
+
+export async function checkEmailDeliveryAction(emailId: string): Promise<ComposerResult> {
+  try {
+    const res = await checkEmailDelivery(await getDb(), await getActor(), emailId);
+    if (res.error) return { error: res.error };
+    return { ok: res.status ? (DELIVERY[res.status] ?? `Resend status: ${res.status}.`) : "Resend has no status for it yet." };
   } catch (err) {
     return toActionError(err) ?? {};
   }

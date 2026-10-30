@@ -18,7 +18,8 @@ export function EmailComposer({
   /** The address the email comes from (hello@amfire.in). */
   fromAddress: string;
   prospectId: string;
-  recipients: { email: string; name: string }[];
+  /** `person` is the bare name, written into the WhatsApp message they send from the email. */
+  recipients: { email: string; name: string; person: string | null }[];
   frame: EmailFrame;
   initial: DraftFields;
   initialState: DraftState | null;
@@ -41,7 +42,11 @@ export function EmailComposer({
   };
   const setContent = (patch: Partial<EmailContent>) => set({ content: { ...fields.content, ...patch } });
 
-  const html = useMemo(() => renderEmailHtml(c, { ...frame, subject: fields.subject || "(no subject)" }), [c, frame, fields.subject]);
+  const html = useMemo(() => {
+    const to = fields.toEmail.trim();
+    const person = recipients.find((r) => r.email.toLowerCase() === to.toLowerCase())?.person ?? null;
+    return renderEmailHtml(c, { ...frame, subject: fields.subject || "(no subject)", recipient: { ...frame.recipient, name: person, email: to || null } });
+  }, [c, frame, fields.subject, fields.toEmail, recipients]);
 
   const tested = !!draft && !dirty && draft.testedVersion === draft.version;
   const sendBlocker = !fields.toEmail ? "Add the address to send to." : dirty || !draft ? "Send a test of this version first." : !tested ? "Send a test of this version first." : null;
@@ -159,7 +164,7 @@ export function EmailComposer({
             <Field label="WhatsApp button" htmlFor="replyLabel">
               <input id="replyLabel" value={c.replyLabel} onChange={(e) => setContent({ replyLabel: e.target.value })} className={inputClass} />
             </Field>
-            <Field label="Their WhatsApp message, already typed" htmlFor="replyBody" optional hint={`Tapping the button opens WhatsApp to ${frame.phone} with this written in, so they only add a time.`}>
+            <Field label="Their WhatsApp message, already typed" htmlFor="replyBody" optional hint={`Tapping the button opens WhatsApp to ${frame.phone} with this written in, so they only add a time. Above it, the message says who they are and which email they're answering.`}>
               <input id="replyBody" value={c.replyBody ?? ""} onChange={(e) => setContent({ replyBody: e.target.value })} className={inputClass} />
             </Field>
             <Field label="P.S." htmlFor="ps" optional hint="Under your signature. The line most people read.">

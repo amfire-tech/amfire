@@ -31,12 +31,14 @@ export type EmailContent = {
   footer: string;
 };
 
+/** Who the email goes to, written into their WhatsApp message so the owner knows who's writing. */
+export type EmailRecipient = { business: string; name: string | null; email: string | null };
+
 export type EmailFrame = {
   subject: string;
   replyTo: string;
   phone: string;
-  /** wa.me link with a first message typed in. */
-  whatsappUrl: string;
+  recipient: EmailRecipient;
 };
 
 export const EMAIL_ASSETS = {
@@ -128,11 +130,19 @@ function pill(href: string, label: string, dark: boolean) {
   return `<td align="center" bgcolor="${bg}" style="border-radius:999px; background-color:${bg};${border}"><a href="${esc(href)}" target="_blank" style="display:inline-block; padding:${pad}; font-family:${SANS}; font-size:15px; font-weight:bold; color:${fg}; border-radius:999px; text-decoration:none;">${esc(label)}</a></td>`;
 }
 
-/** One tap opens WhatsApp to amfire with the yes already written; they only add a time. */
-function whatsappReplyUrl(c: EmailContent, f: EmailFrame) {
-  if (!c.replyBody?.trim()) return f.whatsappUrl;
-  return `https://wa.me/${f.phone.replace(/\D/g, "")}?text=${encodeURIComponent(c.replyBody.trim())}`;
+/**
+ * A wa.me link to amfire. The message opens with who is writing and which email
+ * they're answering, so a reply never arrives from an unknown number with no context.
+ */
+function whatsappUrl(f: EmailFrame, body: string) {
+  const r = f.recipient;
+  const who = [r.name, r.business].filter(Boolean).join(", ") + (r.email ? ` (${r.email})` : "");
+  const header = [who && `From: ${who}`, f.subject && `Re: your email “${f.subject}”`].filter(Boolean).join("\n");
+  return `https://wa.me/${f.phone.replace(/\D/g, "")}?text=${encodeURIComponent([header, body].filter(Boolean).join("\n\n"))}`;
 }
+
+/** One tap opens WhatsApp to amfire with the yes already written; they only add a time. */
+const whatsappReplyUrl = (c: EmailContent, f: EmailFrame) => whatsappUrl(f, c.replyBody?.trim() || "Hi, I got your email.");
 
 /** The full HTML document that goes out. */
 export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
@@ -231,7 +241,7 @@ export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
         <p style="margin:0; font-size:14px;">
           <a href="tel:+${phoneDigits}" style="color:#1c1917; text-decoration:none;">${esc(f.phone)}</a>
           &nbsp;<span style="color:#c9bfd9;">|</span>&nbsp;
-          <a href="${esc(f.whatsappUrl)}" target="_blank" style="color:#1c1917; text-decoration:none;">WhatsApp</a>
+          <a href="${esc(whatsappUrl(f, "Hi, I got your email."))}" target="_blank" style="color:#1c1917; text-decoration:none;">WhatsApp</a>
           &nbsp;<span style="color:#c9bfd9;">|</span>&nbsp;
           <a href="https://www.amfire.in" target="_blank" style="color:#e8590c; text-decoration:none;">amfire.in</a>
         </p>

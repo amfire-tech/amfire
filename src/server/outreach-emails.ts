@@ -7,9 +7,9 @@ import { isDeepStrictEqual } from "node:util";
 import { and, desc, eq, isNotNull } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
-import { notifications, outreachEmails, prospectContacts, prospects, type OutreachEmail } from "@/db/schema";
-import { contact, site } from "@/config/site";
-import { defaultEmailContent, renderEmailHtml, renderEmailText, type EmailContent, type EmailFrame } from "@/knowledge/email-theme";
+import { notifications, outreachEmails, prospectContacts, prospects, type OutreachEmail, type Prospect, type ProspectContact } from "@/db/schema";
+import { site } from "@/config/site";
+import { defaultEmailContent, renderEmailHtml, renderEmailText, type EmailContent, type EmailFrame, type EmailRecipient } from "@/knowledge/email-theme";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
 import { getDemoForProspect, demoUrl } from "./demos";
@@ -47,17 +47,30 @@ export const EmailDraftInput = z.object({
   content: EmailContentSchema,
 });
 
-function frame(subject: string): EmailFrame {
-  return {
-    subject,
-    replyTo: site.contactEmail,
-    phone: site.contactPhone,
-    whatsappUrl: contact.whatsapp(`Hi, I got your email: "${subject}"`),
-  };
+/** "B.M. Chatrath & Co. (Pune)" → "B.M. Chatrath & Co." */
+const businessName = (p: Prospect) => p.name.replace(/\s*\(.*?\)\s*/g, " ").trim();
+
+/** The person behind an address: a contact with that email, else the prospect's own contact. */
+function personFor(p: Prospect, contacts: ProspectContact[], email: string | null | undefined) {
+  const e = email?.trim().toLowerCase();
+  if (!e) return null;
+  const c = contacts.find((x) => x.email?.toLowerCase() === e);
+  if (c) return c.name;
+  return p.email?.toLowerCase() === e ? p.contactName : null;
 }
 
-export function renderOutreachEmail(email: Pick<OutreachEmail, "subject" | "content">) {
-  const f = frame(email.subject);
+function frame(subject: string, recipient: EmailRecipient): EmailFrame {
+  return { subject, replyTo: site.contactEmail, phone: site.contactPhone, recipient };
+}
+
+/** Renders an email as it goes to its recipient, tests included, so the WhatsApp button names them. */
+export async function renderOutreachEmail(db: DB, email: Pick<OutreachEmail, "prospectId" | "toEmail" | "subject" | "content">) {
+  const [[p], contacts] = await Promise.all([
+    db.select().from(prospects).where(eq(prospects.id, email.prospectId)),
+    db.select().from(prospectContacts).where(eq(prospectContacts.prospectId, email.prospectId)),
+  ]);
+  if (!p) throw new OutreachError("Prospect not found.");
+  const f = frame(email.subject, { business: businessName(p), name: personFor(p, contacts, email.toEmail), email: email.toEmail?.trim() || null });
   return { html: renderEmailHtml(email.content, f), text: renderEmailText(email.content, f) };
 }
 
@@ -122,7 +135,10 @@ export async function getEmailComposer(db: DB, actor: Actor | null, prospectId: 
   const recipients = [
     ...(p.email ? [{ email: p.email, name: p.contactName ?? p.name }] : []),
     ...contacts.filter((c) => c.email && !c.doNotContact).map((c) => ({ email: c.email!, name: `${c.name}${c.title ? `, ${c.title}` : ""}` })),
-  ].filter((r, i, all) => all.findIndex((x) => x.email.toLowerCase() === r.email.toLowerCase()) === i);
+  ]
+    .filter((r, i, all) => all.findIndex((x) => x.email.toLowerCase() === r.email.toLowerCase()) === i)
+    // `person` is the bare name the WhatsApp message carries.
+    .map((r) => ({ ...r, person: personFor(p, contacts, r.email) }));
   // An account still named after the brand leaves the signature for the owner to fill in.
   const ownerName = /amfire/i.test(actor.name) ? "" : actor.name;
   const draft =
@@ -133,13 +149,13 @@ export async function getEmailComposer(db: DB, actor: Actor | null, prospectId: 
           toEmail: recipients[0]?.email ?? "",
           cc: "",
           subject: "",
-          content: defaultEmailContent({ business: p.name.replace(/\s*\(.*?\)\s*/g, " ").trim(), contactName: contacts.find((c) => c.email)?.name ?? p.contactName, demoUrl: demo ? demoUrl(demo) : null, ownerName }),
+          content: defaultEmailContent({ business: businessName(p), contactName: contacts.find((c) => c.email)?.name ?? p.contactName, demoUrl: demo ? demoUrl(demo) : null, ownerName }),
           version: 0,
           testedVersion: null,
           testSentTo: null,
           testSentAt: null,
         };
-  return { prospect: p, recipients, draft, lastSent: latest?.status === "sent" ? latest : null, lastTestTo: lastTest?.to ?? null, emailReady: emailConfigured(), frame: frame(""), fromAddress: outreachFromAddress() };
+  return { prospect: p, recipients, draft, lastSent: latest?.status === "sent" ? latest : null, lastTestTo: lastTest?.to ?? null, emailReady: emailConfigured(), frame: frame("", { business: businessName(p), name: null, email: null }), fromAddress: outreachFromAddress() };
 }
 
 /** Saves a draft (creating one if needed). A changed draft needs a new test before it can go out. */
@@ -188,7 +204,7 @@ export async function sendEmailTest(db: DB, actor: Actor | null, emailId: string
   assertStaff(actor);
   const address = z.email("Type the address to send the test to.").parse(to.trim());
   const email = await loadDraft(db, emailId);
-  const { html, text } = renderOutreachEmail(email);
+  const { html, text } = await renderOutreachEmail(db, email);
   const resendId = await deliver(db, { to: address, subject: `[TEST] ${email.subject}`, html, text, fromName: email.content.signName.split(" ")[0] });
   const [row] = await db
     .update(outreachEmails)
@@ -207,7 +223,7 @@ export async function sendEmailToProspect(db: DB, actor: Actor | null, emailId: 
   if (p.doNotContact) throw new OutreachError("This prospect asked not to be contacted.");
   if (!email.toEmail) throw new OutreachError("Add the address to send to.");
   if (email.testedVersion !== email.version) throw new OutreachError("Send yourself a test of this version first.");
-  const { html, text } = renderOutreachEmail(email);
+  const { html, text } = await renderOutreachEmail(db, email);
   // Keyed to this version: a second click, or a retry after a step below failed, can't send it twice.
   const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: email.content.signName.split(" ")[0], idempotencyKey: `outreach-${email.id}-v${email.version}` });
   const touch = await logTouch(db, actor, { prospectId: p.id, channel: "email", outcome: "sent", note: `Email sent to ${email.toEmail}: "${email.subject}"` });

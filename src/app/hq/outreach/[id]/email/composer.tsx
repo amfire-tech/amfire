@@ -265,7 +265,8 @@ function Preview({ html, width }: { html: string; width: number }) {
       title="Email preview"
       srcDoc={html}
       onLoad={fit}
-      sandbox="allow-same-origin allow-popups"
+      // Links open as ordinary tabs: WhatsApp refuses to load in a tab that inherits the sandbox.
+      sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       className="mx-auto block max-w-full rounded-lg bg-white"
       style={{ width, height, border: 0 }}
     />

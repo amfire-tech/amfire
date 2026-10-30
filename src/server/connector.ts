@@ -285,7 +285,7 @@ export const TOOLS: Tool[] = [
     "Write (or rewrite) the prospect's outreach email in the amfire Toran theme as a draft. It is never sent from here: the owner edits it on the prospect's Email page in HQ, sends a test to their own inbox, then sends it. Use only facts from public sources. Never put a price in it. Write the brand as \"amfire\".",
     EmailDraftInput.extend({
       content: EmailContentSchema.describe(
-        "headline: new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the one reply button, e.g. 'Yes, book 15 minutes'. replyBody: the reply typed in for them when they tap it. ps: one line under the signature. Keep cold emails under ~120 words: one idea, one click, one ask.",
+        "headline: new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the one reply button, which opens WhatsApp to amfire, e.g. 'Yes, book 15 minutes'. replyBody: the WhatsApp message typed in for them when they tap it. ps: one line under the signature. Keep cold emails under ~120 words: one idea, one click, one ask.",
       ),
     }),
     async (db, actor, args) => {

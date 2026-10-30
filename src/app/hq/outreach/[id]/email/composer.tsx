@@ -49,7 +49,8 @@ export function EmailComposer({
   function run(fn: () => Promise<{ error?: string; ok?: string; draft?: DraftState; sent?: boolean }>) {
     setMessage(null);
     start(async () => {
-      const res = await fn();
+      // A dropped connection or a server that never answered rejects instead of returning an error.
+      const res = await fn().catch(() => ({ error: "HQ didn't answer. Check your connection; if a test was on its way, look in your inbox before sending again." }) as Awaited<ReturnType<typeof fn>>);
       if (res.error) return setMessage({ tone: "error", text: res.error });
       if (res.draft) {
         setDraft(res.draft);
@@ -155,10 +156,10 @@ export function EmailComposer({
             <Field label="Closing" htmlFor="closing">
               <textarea id="closing" rows={6} value={c.closing} onChange={(e) => setContent({ closing: e.target.value })} className={inputClass} />
             </Field>
-            <Field label="Reply button" htmlFor="replyLabel">
+            <Field label="WhatsApp button" htmlFor="replyLabel">
               <input id="replyLabel" value={c.replyLabel} onChange={(e) => setContent({ replyLabel: e.target.value })} className={inputClass} />
             </Field>
-            <Field label="Their reply, already typed" htmlFor="replyBody" optional hint="Tapping the button opens a reply with this written in, so they only add a time.">
+            <Field label="Their WhatsApp message, already typed" htmlFor="replyBody" optional hint={`Tapping the button opens WhatsApp to ${frame.phone} with this written in, so they only add a time.`}>
               <input id="replyBody" value={c.replyBody ?? ""} onChange={(e) => setContent({ replyBody: e.target.value })} className={inputClass} />
             </Field>
             <Field label="P.S." htmlFor="ps" optional hint="Under your signature. The line most people read.">

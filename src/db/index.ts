@@ -35,7 +35,11 @@ async function connect(): Promise<DB> {
   if (url) {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
-    const pool = new Pool({ ...pgConnectionOptions(url), max: process.env.VERCEL ? 3 : 10 });
+    // Serverless instances freeze between requests and Supabase's pooler drops
+    // the idle connections meanwhile: close them early, and never let a dropped
+    // one crash the instance (and the request it happens to be serving).
+    const pool = new Pool({ ...pgConnectionOptions(url), max: process.env.VERCEL ? 3 : 10, idleTimeoutMillis: 5_000, connectionTimeoutMillis: 10_000, keepAlive: true });
+    pool.on("error", (err) => console.error("Idle database connection dropped:", err.message));
     const db = drizzle(pool, { schema }) as unknown as DB;
     await bootstrap(db);
     return db;

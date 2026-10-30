@@ -30,6 +30,10 @@ export function fromHeader(from: string, personName?: string) {
 /**
  * Sends through Resend and returns Resend's message id. `fromAddress` overrides
  * NOTIFY_FROM_EMAIL, e.g. outreach comes from hello@amfire.in.
+ *
+ * A timeout, a network error, 429 or 5xx is tried again (three attempts in all).
+ * Pass `idempotencyKey` when a duplicate would matter: Resend then sends that
+ * message at most once in 24 hours, however many times it's asked.
  */
 export async function sendEmail({
   to,
@@ -39,6 +43,7 @@ export async function sendEmail({
   cc,
   fromName,
   fromAddress,
+  idempotencyKey,
 }: {
   to: string;
   subject: string;
@@ -47,27 +52,45 @@ export async function sendEmail({
   cc?: string[];
   fromName?: string;
   fromAddress?: string;
+  idempotencyKey?: string;
 }): Promise<string | null> {
   if (!emailConfigured()) throw new Error("Email isn't set up (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-    // Replies go to the support inbox (hello@amfire.in), whatever address sends.
-    body: JSON.stringify({
-      from: fromHeader(fromAddress ?? process.env.NOTIFY_FROM_EMAIL!, fromName),
-      to: [to],
-      ...(cc?.length ? { cc } : {}),
-      reply_to: site.contactEmail,
-      subject,
-      text,
-      ...(html ? { html } : {}),
-    }),
-    signal: AbortSignal.timeout(15_000),
+  // Replies go to the support inbox (hello@amfire.in), whatever address sends.
+  const payload = JSON.stringify({
+    from: fromHeader(fromAddress ?? process.env.NOTIFY_FROM_EMAIL!, fromName),
+    to: [to],
+    ...(cc?.length ? { cc } : {}),
+    reply_to: site.contactEmail,
+    subject,
+    text,
+    ...(html ? { html } : {}),
   });
-  const body = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
-  // Resend explains refusals, e.g. "The amfire.in domain is not verified".
-  if (!res.ok) throw new Error(`Resend returned ${res.status}${body?.message ? `: ${body.message}` : ""}`);
-  return body?.id ?? null;
+  let lastError: Error = new Error("Resend didn't answer");
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, attempt * 1_000));
+    let res: Response;
+    try {
+      res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+          ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+        },
+        body: payload,
+        signal: AbortSignal.timeout(12_000),
+      });
+    } catch (err) {
+      lastError = new Error(err instanceof Error && err.name === "TimeoutError" ? "Resend didn't answer in time" : `couldn't reach Resend (${err instanceof Error ? err.message : err})`);
+      continue;
+    }
+    const body = (await res.json().catch(() => null)) as { id?: string; message?: string } | null;
+    if (res.ok) return body?.id ?? null;
+    // Resend explains refusals, e.g. "The amfire.in domain is not verified".
+    lastError = new Error(`Resend returned ${res.status}${body?.message ? `: ${body.message}` : ""}`);
+    if (res.status !== 429 && res.status < 500) break;
+  }
+  throw lastError;
 }
 
 /** What Resend last saw happen to a message: "sent", "delivered", "bounced", "complained", "delivery_delayed"… */

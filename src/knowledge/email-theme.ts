@@ -22,7 +22,7 @@ export type EmailContent = {
   showMethod: boolean;
   closing: string;
   replyLabel: string;
-  /** Typed into their reply when they tap the reply button, e.g. "Yes, 15 minutes works. How about…" */
+  /** Typed into their WhatsApp message when they tap the reply button, e.g. "Yes, 15 minutes works. How about…" */
   replyBody?: string;
   /** Shown under the signature: the most-read line of a cold email. */
   ps?: string;
@@ -128,14 +128,19 @@ function pill(href: string, label: string, dark: boolean) {
   return `<td align="center" bgcolor="${bg}" style="border-radius:999px; background-color:${bg};${border}"><a href="${esc(href)}" target="_blank" style="display:inline-block; padding:${pad}; font-family:${SANS}; font-size:15px; font-weight:bold; color:${fg}; border-radius:999px; text-decoration:none;">${esc(label)}</a></td>`;
 }
 
+/** One tap opens WhatsApp to amfire with the yes already written; they only add a time. */
+function whatsappReplyUrl(c: EmailContent, f: EmailFrame) {
+  if (!c.replyBody?.trim()) return f.whatsappUrl;
+  return `https://wa.me/${f.phone.replace(/\D/g, "")}?text=${encodeURIComponent(c.replyBody.trim())}`;
+}
+
 /** The full HTML document that goes out. */
 export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
   const p = (s: string, last: boolean) => `<p style="margin:0${last ? "" : " 0 16px"};">${inline(s)}</p>`;
   const opening = paragraphs(c.opening);
   const closing = paragraphs(c.closing);
-  // One tap opens a reply with the yes already written; they only add a time.
-  const replyHref = `mailto:${f.replyTo}?subject=${encodeURIComponent(`Re: ${f.subject}`)}${c.replyBody ? `&body=${encodeURIComponent(c.replyBody)}` : ""}`;
   const phoneDigits = f.phone.replace(/\D/g, "");
+  const replyHref = whatsappReplyUrl(c, f);
   const headline = c.headline
     .split("\n")
     .map((l) => inline(l.trim(), true))
@@ -257,6 +262,7 @@ export function renderEmailText(c: EmailContent, f: EmailFrame) {
     out.push("");
   }
   out.push(...paragraphs(c.closing).flatMap((s) => [plain(s), ""]));
+  out.push(`${c.replyLabel || "Message us"} on WhatsApp: ${whatsappReplyUrl(c, f)}`, "");
   out.push("Warm regards,", c.signName, c.signRole, `${f.phone} · ${f.replyTo} · amfire.in`);
   if (c.ps) out.push("", `P.S. ${plain(c.ps)}`);
   if (c.footer) out.push("", plain(c.footer));

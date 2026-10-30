@@ -70,17 +70,22 @@ export const outreachFromAddress = () => process.env.OUTREACH_FROM_EMAIL?.trim()
  */
 async function deliver(db: DB, args: Omit<Parameters<typeof sendEmail>[0], "fromAddress">) {
   if (!emailConfigured()) throw new OutreachError("Email sending isn't set up on this server (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
+  // The log is a record, not the send: failing to write it mustn't report a sent email as failed.
   const log = (status: "sent" | "failed", error: string | null) =>
-    db.insert(notifications).values({ channel: "email", recipient: args.to, subject: args.subject, body: args.text, status, error });
+    db
+      .insert(notifications)
+      .values({ channel: "email", recipient: args.to, subject: args.subject, body: args.text, status, error })
+      .catch((err) => console.error("Couldn't log the outreach email:", err));
+  let id: string | null;
   try {
-    const id = await sendEmail({ ...args, fromAddress: outreachFromAddress() });
-    await log("sent", null);
-    return id;
+    id = await sendEmail({ ...args, fromAddress: outreachFromAddress() });
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
     await log("failed", reason);
     throw new OutreachError(`The email didn't go out: ${reason}.`);
   }
+  await log("sent", null);
+  return id;
 }
 
 /** Asks Resend what happened to the last test or send of this email. */
@@ -203,7 +208,8 @@ export async function sendEmailToProspect(db: DB, actor: Actor | null, emailId: 
   if (!email.toEmail) throw new OutreachError("Add the address to send to.");
   if (email.testedVersion !== email.version) throw new OutreachError("Send yourself a test of this version first.");
   const { html, text } = renderOutreachEmail(email);
-  const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: email.content.signName.split(" ")[0] });
+  // Keyed to this version: a second click, or a retry after a step below failed, can't send it twice.
+  const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: email.content.signName.split(" ")[0], idempotencyKey: `outreach-${email.id}-v${email.version}` });
   const touch = await logTouch(db, actor, { prospectId: p.id, channel: "email", outcome: "sent", note: `Email sent to ${email.toEmail}: "${email.subject}"` });
   const [row] = await db
     .update(outreachEmails)

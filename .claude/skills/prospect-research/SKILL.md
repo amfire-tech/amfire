@@ -88,6 +88,8 @@ For tier `A` prospects (and `B` when there's time), build their proof with `crea
   and the fix. E.g. "No WhatsApp button on your Google listing" → "Mobile
   searchers who want to message can't" → "Add the button; the AI replies instantly."
 - Then `update_prospect` so the `opener` mentions the demo, and add the link to `notes`.
+  `notes` (like every field) is replaced, not appended: `get_prospect` first and keep
+  what's already there (IndiaMART extensions, branch numbers) above the demo link.
 
 ## Rules
 

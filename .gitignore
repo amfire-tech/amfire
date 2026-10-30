@@ -46,3 +46,7 @@ next-env.d.ts
 
 # Original, uncropped founder photos (only the square crops are published)
 public/team/navanish.jpeg
+
+# Business documents and client proposals stay local, never committed
+/docs/
+/proposals/

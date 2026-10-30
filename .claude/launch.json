@@ -4,8 +4,50 @@
     {
       "name": "amfire-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev", "--", "-p", "3001"],
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--",
+        "-p",
+        "3001"
+      ],
       "port": 3001
+    },
+    {
+      "name": "practice-os",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "../practice-os",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "3100"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "skillship-pitch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "proposals/skillship-launch/server.js"
+      ],
+      "port": 3210
+    },
+    {
+      "name": "outreach-email",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "3230", "--bind", "127.0.0.1"],
+      "port": 3230
+    },
+    {
+      "name": "ca-pitch",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "proposals/ca-firm-offer/server.js"
+      ],
+      "port": 3220
     }
   ]
 }

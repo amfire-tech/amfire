@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FREE_DEMO, SERVICES, SERVICE_DETAILS, type ServicePathId } from "@/knowledge/catalog";
-import { brochureFor } from "@/knowledge/brochures";
+import { isBrochurePlan } from "@/knowledge/brochures";
 import { CURRENCIES, DEMO_OFFER, STARTING_PRICE, type Priced } from "@/knowledge/pricing";
 import { CurrencyToggle, ForCurrency, Money } from "./currency";
 import { GiftIcon } from "./demo-offer";
@@ -17,7 +17,7 @@ const withOffer = (p: ServicePathId) =>
 
 const INCLUDED: Record<ServicePathId, string[]> = {
   build: ["Free problem-finding session", "Designs you approve before we build", "Your own Client Hub to follow progress", "Code, data and documentation are yours"],
-  operate: ["Website, hosting and business email", "Social media, SEO, marketing and lead follow-up", "Software upkeep, backups and security", "Sales tracking, monthly report and tech updates"],
+  operate: ["30 social media posts + 10 posters & banners a month", "New features and AI tools added to your website & app", "Always updated, secure and backed up", "Email & WhatsApp enquiries handled"],
   automate: ["Free process walkthrough", "Automation built for your process", "Runs alongside your old way first", "Your people approve what matters"],
 };
 
@@ -80,7 +80,7 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
                   <div className="mt-6 text-sm">
                     <CheckList items={INCLUDED[p]} />
                   </div>
-                  {brochureFor(p) && (
+                  {isBrochurePlan(p) && (
                     <Link
                       href={`/brochure/${p}`}
                       className={cx(

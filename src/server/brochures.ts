@@ -137,7 +137,7 @@ export async function confirmBrochureLead(db: DB, req: BrochureRequest, attribut
 }
 
 /** How far a reader got, so HQ can tell a skim from a read to the end. */
-export const BROCHURE_STEPS = ["cover", "compare", "cart", "full", "price", "shelves", "work", "method", "mall"] as const;
+export const BROCHURE_STEPS = ["cover", "compare", "cart", "full", "price", "shelves", "work", "method", "mall", "services", "month", "team", "builds"] as const;
 
 export async function recordBrochureStep(db: DB, leadId: string, plan: string, step: (typeof BROCHURE_STEPS)[number]) {
   await audit(db, { action: "brochure.step", subjectType: "lead", subjectId: leadId, data: { plan, step } });

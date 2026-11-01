@@ -43,6 +43,7 @@ const PATHS: Record<BrochureIcon, string> = {
   globe: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3Z",
   video: "M3 6h13v12H3zM16 10l5-3v10l-5-3",
   flow: "M4 5h6v4H4zM14 15h6v4h-6zM7 9v3a2 2 0 0 0 2 2h8v1M17 15v-1",
+  lock: "M6 11h12v10H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3M12 15v2",
 };
 
 export function Icon({ name, className }: { name: BrochureIcon; className?: string }) {

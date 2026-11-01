@@ -2,39 +2,44 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Flame, Shopper } from "@/components/brochure/art";
-import { PlanBrochure } from "@/components/brochure/plan-brochure";
 import { BrochureGate } from "@/components/brochure/gate";
+import { OperateBrochure } from "@/components/brochure/operate-brochure";
+import { PlanBrochure } from "@/components/brochure/plan-brochure";
 import { Money } from "@/components/currency";
 import { CheckList, Container } from "@/components/ui";
 import { getDb } from "@/db";
-import { brochureFor } from "@/knowledge/brochures";
+import { OPERATE, brochureFor, isBrochurePlan } from "@/knowledge/brochures";
 import { SERVICES } from "@/knowledge/catalog";
 import { STARTING_PRICE } from "@/knowledge/pricing";
 import { BROCHURE_COOKIE, monthlyOffer, readAccessCookie } from "@/server/brochures";
 
 export async function generateMetadata({ params }: PageProps<"/brochure/[plan]">): Promise<Metadata> {
   const { plan } = await params;
-  const brochure = brochureFor(plan);
-  if (!brochure) return {};
+  if (!isBrochurePlan(plan)) return {};
   return {
-    title: `${SERVICES[brochure.path].name} brochure — everything you get`,
-    description: `See everything amfire ${SERVICES[brochure.path].name} puts in your cart, from the free problem-finding session to the 90-day warranty.`,
+    title: `${SERVICES[plan].name} brochure — everything you get`,
+    description:
+      plan === "operate"
+        ? "See exactly what amfire Operate delivers every month: 30 posts, 10 posters and banners, new features, AI tools, upkeep and every enquiry answered."
+        : `See everything amfire ${SERVICES[plan].name} puts in your cart, from the free problem-finding session to the 90-day warranty.`,
     robots: { index: false },
   };
 }
 
 export default async function BrochurePage({ params }: PageProps<"/brochure/[plan]">) {
   const { plan } = await params;
+  if (!isBrochurePlan(plan)) notFound();
   const brochure = brochureFor(plan);
-  if (!brochure) notFound();
 
   const access = readAccessCookie((await cookies()).get(BROCHURE_COOKIE)?.value);
   // A confirmed email unlocks every plan's brochure on this device.
   if (access) {
-    return <PlanBrochure brochure={brochure} name={access.name.split(" ")[0]} offer={await monthlyOffer(await getDb())} />;
+    const first = access.name.split(" ")[0];
+    const offer = await monthlyOffer(await getDb());
+    return brochure ? <PlanBrochure brochure={brochure} name={first} offer={offer} /> : <OperateBrochure name={first} offer={offer} />;
   }
 
-  const name = SERVICES[brochure.path].name;
+  const name = SERVICES[plan].name;
   return (
     <div className="relative overflow-hidden bg-ink text-white">
       <div aria-hidden className="bg-brand absolute -top-40 -left-20 size-[28rem] rounded-full opacity-20 blur-3xl" />
@@ -44,24 +49,48 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
             <Flame className="h-10 w-auto" />
             <p className="text-xs font-semibold tracking-[0.2em] text-white/60 uppercase"><span className="normal-case">amfire</span> {name} · brochure</p>
           </div>
-          <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
-            <span className="text-brand">
-              <Money amounts={STARTING_PRICE[brochure.path]} />
-              {brochure.perMonth ? " a month" : ""}.
-            </span>{" "}
-            {brochure.hook}
-          </h1>
-          <p className="mt-4 max-w-lg text-white/70">
-            Two shoppers, same budget. Watch what lands in each cart — then decide who you&apos;d rather build with.
-          </p>
-          <div className="mt-6 max-w-sm rounded-card bg-white/5 p-4 ring-1 ring-white/10">
-            <Shopper boxes={10} tone="amfire" />
-          </div>
-          <div className="mt-6 text-sm text-white/80">
-            <CheckList items={["What's in the cart, item by item", "What it would cost elsewhere", "Real projects we've shipped", `Our ${brochure.promises.length} promises`]} />
-          </div>
+          {brochure ? (
+            <>
+              <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
+                <span className="text-brand">
+                  <Money amounts={STARTING_PRICE[plan]} />.
+                </span>{" "}
+                {brochure.hook}
+              </h1>
+              <p className="mt-4 max-w-lg text-white/70">
+                Two shoppers, same budget. Watch what lands in each cart — then decide who you&apos;d rather build with.
+              </p>
+              <div className="mt-6 max-w-sm rounded-card bg-white/5 p-4 ring-1 ring-white/10">
+                <Shopper boxes={10} tone="amfire" />
+              </div>
+              <div className="mt-6 text-sm text-white/80">
+                <CheckList items={["What's in the cart, item by item", "What it would cost elsewhere", "Real projects we've shipped", `Our ${brochure.promises.length} promises`]} />
+              </div>
+            </>
+          ) : (
+            <>
+              <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
+                {OPERATE.hook}{" "}
+                <span className="text-brand">
+                  <Money amounts={STARTING_PRICE.operate} /> a month.
+                </span>
+              </h1>
+              <p className="mt-4 max-w-lg text-white/70">{OPERATE.promise}</p>
+              <ul className="mt-6 grid max-w-lg grid-cols-3 gap-2">
+                {OPERATE.services.map((s) => (
+                  <li key={s.id} className="rounded-2xl bg-white/5 px-3 py-2.5 ring-1 ring-white/10">
+                    <p className="text-xl font-semibold text-flame">{s.stat}</p>
+                    <p className="text-[11px] leading-tight text-white/70">{s.statLabel}</p>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 text-sm text-white/80">
+                <CheckList items={["All six services, item by item", "One month, played day by day", "What hiring this team would cost", "Free builds on a 3-month plan"]} />
+              </div>
+            </>
+          )}
         </div>
-        <BrochureGate plan={brochure.path} />
+        <BrochureGate plan={plan} />
       </Container>
     </div>
   );

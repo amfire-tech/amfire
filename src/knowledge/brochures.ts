@@ -54,7 +54,8 @@ export type BrochureIcon =
   | "wrench"
   | "globe"
   | "video"
-  | "flow";
+  | "flow"
+  | "lock";
 
 export type CartItem = {
   id: string;
@@ -75,8 +76,6 @@ export type Brochure = {
   path: ServicePathId;
   /** Shown on the cover and the gate. */
   hook: string;
-  /** Operate is a monthly plan: prices and values read "a month". */
-  perMonth?: boolean;
   /** Who fills the other cart. */
   rivalLabel: string;
   /** What they put in the cart for the same money. */
@@ -116,7 +115,7 @@ export const REVISIONS = { early: 5, later: 3 } as const;
 export const FEEDBACK_DAYS = 30;
 export const WARRANTY_DAYS = 90;
 
-export const BROCHURES: Partial<Record<ServicePathId, Brochure>> = {
+export const BROCHURES: Record<Exclude<BrochurePlan, "operate">, Brochure> = {
   build: {
     path: "build",
     hook: "Let's see what it really buys.",
@@ -209,96 +208,6 @@ export const BROCHURES: Partial<Record<ServicePathId, Brochure>> = {
       { icon: "spark", title: "AI assistant" },
     ],
   },
-  operate: {
-    path: "operate",
-    perMonth: true,
-    hook: "Let's see what it really buys.",
-    rivalLabel: "A typical agency",
-    rival: {
-      got: ["12 social media posts", "A monthly report"],
-      missing: ["Website and hosting care", "Software fixes and new features", "Brochures and designs", "Lead follow-up", "New builds included"],
-    },
-    cart: [
-      { id: "website", icon: "globe", title: "Website care and hosting", body: "Updates, speed, uptime checks and fixes — every month.", value: priced(5, 100) },
-      { id: "email", icon: "mail", title: "Domain and business email", body: "Professional email, renewals and access, looked after.", value: priced(2, 40) },
-      { id: "backups", icon: "shield", title: "Daily backups and security", body: "Tested backups, updates and protection for your data.", value: priced(3, 50) },
-      { id: "upkeep", icon: "wrench", title: "Software and app upkeep", body: "Bugs fixed in the software you already run.", value: priced(6, 120) },
-      { id: "features", icon: "code", title: "New features and improvements", body: "Small upgrades to your website and software every month.", value: priced(8, 150) },
-      { id: "posts", icon: "image", title: "12 social media posts a month", body: "Designed and written for Instagram, Facebook and LinkedIn.", value: priced(12, 250) },
-      { id: "replies", icon: "chat", title: "Comments and messages answered", body: "Nobody who writes to you is left waiting.", value: priced(3, 60) },
-      { id: "designs", icon: "design", title: "Brochures, flyers and templates", body: "Two fresh designs every month, for print or WhatsApp.", value: priced(4, 80) },
-      { id: "google", icon: "pin", title: "Google listing managed", body: "Photos, posts, timings and review replies kept fresh.", value: priced(3, 60) },
-      { id: "seo", icon: "search", title: "Local SEO", body: "Be found when customers search nearby — checked monthly.", value: priced(8, 150) },
-      { id: "leads", icon: "users", title: "Lead follow-up", body: "Every enquiry in one place, followed up on time.", value: priced(5, 100) },
-      { id: "sales", icon: "chart", title: "Sales and revenue view", body: "Enquiries, sales and revenue on one simple screen.", value: priced(3, 60) },
-      { id: "shop", icon: "store", title: "Online sales kept running", body: "WhatsApp catalogue, payment links and listings up to date.", value: priced(3, 60) },
-      { id: "advisor", icon: "spark", title: "Your technology advisor", body: "What's new in AI and tools — and whether it's worth it for you.", value: priced(3, 60) },
-      { id: "report", icon: "doc", title: "Monthly report and call", body: "What we did, what changed and what's next, in plain words.", value: priced(2, 40) },
-      { id: "support", icon: "phone", title: "One number to call", body: "A reply within one working day, Monday to Saturday.", value: priced(2, 40) },
-    ],
-    bonus: [
-      { id: "festival", icon: "calendar", title: "Festival and offer creatives", body: "Diwali, sales and launches — designed before the day.", value: priced(3, 50) },
-      { id: "refresh", icon: "redo", title: "Website refresh every quarter", body: "Key pages redesigned so the site never looks dated.", value: priced(5, 100) },
-      {
-        id: "builds",
-        icon: "rocket",
-        title: "New builds and automations included",
-        body: `On a ${OPERATE_BUILD_MIN_MONTHS}-month plan — new software, apps or automations at no extra cost.`,
-        value: priced(15, 149),
-      },
-    ],
-    scopeNote: `New builds and automations come with a ${OPERATE_BUILD_MIN_MONTHS}-month plan: one at a time, sized to your plan. Bigger projects get their own fixed price.`,
-    shelves: [
-      {
-        price: priced(30, 300),
-        title: "Growth plan",
-        items: [
-          { icon: "video", title: "20 posts + 4 reels a month" },
-          { icon: "globe", title: "A new landing page every month" },
-          { icon: "pin", title: "A second branch or brand" },
-          { icon: "clock", title: "Same-day replies" },
-        ],
-      },
-      {
-        price: priced(60, 600),
-        title: "Full tech team",
-        items: [
-          { icon: "image", title: "Daily posts and reels" },
-          { icon: "rocket", title: "Bigger builds every quarter" },
-          { icon: "users", title: "Weekly call with your team" },
-          { icon: "store", title: "Several brands or branches" },
-        ],
-      },
-    ],
-    shelvesNote: "Everything above stays in the cart. Your exact monthly plan is agreed after the free review.",
-    methodName: "RUN",
-    method: [
-      { letter: "R", title: "Review what you have", body: "Website, software, accounts and online presence, checked.", pay: "Free" },
-      { letter: "U", title: "Unite it under one partner", body: "We take over safely — every account stays in your name.", pay: "First month at the free-demo price" },
-      { letter: "N", title: "Next steps, every month", body: "The work done, a report, a call and next month's plan.", pay: "Monthly · cancel with 30 days' notice" },
-    ],
-    promises: [
-      { icon: "receipt", title: "One fixed monthly fee" },
-      { icon: "calendar", title: "No lock-in: 30 days' notice" },
-      { icon: "key", title: "Accounts and data stay in your name" },
-      { icon: "image", title: "12 posts every month" },
-      { icon: "clock", title: "A reply within one working day" },
-      { icon: "rocket", title: `New builds included on a ${OPERATE_BUILD_MIN_MONTHS}-month plan` },
-      { icon: "doc", title: "A plain-language report every month" },
-    ],
-    mall: [
-      { icon: "store", title: "Online store" },
-      { icon: "calendar", title: "Booking system" },
-      { icon: "spark", title: "WhatsApp assistant" },
-      { icon: "phone", title: "Customer app" },
-      { icon: "box", title: "Inventory and stock" },
-      { icon: "receipt", title: "Billing and GST invoices" },
-      { icon: "school", title: "School or coaching portal" },
-      { icon: "design", title: "Website redesign" },
-      { icon: "mail", title: "Email newsletters" },
-      { icon: "image", title: "Logo and brand refresh" },
-    ],
-  },
   automate: {
     path: "automate",
     hook: "Let's see what it really buys.",
@@ -383,10 +292,196 @@ export const BROCHURES: Partial<Record<ServicePathId, Brochure>> = {
   },
 };
 
+/** The shopping-cart brochure for Build or Automate; Operate has its own (see OPERATE). */
 export function brochureFor(path: string): Brochure | null {
   return (BROCHURES as Record<string, Brochure | undefined>)[path] ?? null;
 }
 
 export function sumValues(items: CartItem[]): Priced {
   return items.reduce<Priced>((t, i) => ({ INR: t.INR + i.value.INR, USD: t.USD + i.value.USD }), { INR: 0, USD: 0 });
+}
+
+/** Plans that have a brochure. Build and Automate use the shopping-cart story; Operate has its own. */
+export const BROCHURE_PLANS = ["build", "operate", "automate"] as const;
+export type BrochurePlan = (typeof BROCHURE_PLANS)[number];
+
+export function isBrochurePlan(path: string): path is BrochurePlan {
+  return (BROCHURE_PLANS as readonly string[]).includes(path);
+}
+
+// ── Operate ─────────────────────────────────────────────────────────────────
+// A monthly plan, so its brochure shows a month of work instead of a cart:
+// the six things delivered every month, a calendar that plays one month, what
+// hiring that team would cost, and the free builds that come with 3 months.
+
+export type OperateService = {
+  id: string;
+  icon: BrochureIcon;
+  /** The big figure on the card ("30", "10", "New"). */
+  stat: string;
+  statLabel: string;
+  title: string;
+  line: string;
+  includes: string[];
+  note?: string;
+};
+
+export type OperateRole = { id: string; icon: BrochureIcon; title: string; does: string; cost: Priced };
+
+/** true / false draw a tick or a cross; a string is shown as written. */
+export type OperateCell = boolean | string;
+
+/** What lands on one day of the example month. */
+export type MonthEvent = { kind: "post" | "design" | "feature" | "tool" | "care" | "call" | "report"; label: string };
+
+export const OPERATE_POSTS = 30;
+export const OPERATE_DESIGNS = 10;
+
+const DESIGN_DAYS: Record<number, string> = {
+  2: "Offer poster",
+  5: "Shop banner",
+  8: "Flyer",
+  11: "Festival creative",
+  14: "Brochure page",
+  16: "WhatsApp creative",
+  19: "Price list",
+  22: "Event banner",
+  25: "Standee design",
+  28: "Menu card",
+};
+const CARE_DAYS = [6, 13, 20, 27];
+
+/** One example month, day 1 to 30. Posts go out daily; everything else on its own rhythm. */
+export const OPERATE_MONTH: MonthEvent[][] = Array.from({ length: 30 }, (_, i) => {
+  const day = i + 1;
+  const events: MonthEvent[] = [];
+  if (day === 1) events.push({ kind: "call", label: "Planning call: this month's posts, designs and features" });
+  events.push({ kind: "post", label: `Post ${day} of ${OPERATE_POSTS} goes live` });
+  if (DESIGN_DAYS[day]) events.push({ kind: "design", label: DESIGN_DAYS[day] });
+  if (day === 10) events.push({ kind: "feature", label: "New feature live: online booking on your website" });
+  if (day === 17) events.push({ kind: "tool", label: "AI assistant connected to your WhatsApp" });
+  if (day === 24) events.push({ kind: "feature", label: "New feature live: enquiry dashboard" });
+  if (CARE_DAYS.includes(day)) events.push({ kind: "care", label: "Updates, security and backup check" });
+  if (day === 30) events.push({ kind: "report", label: "Monthly report: what we did and what's next" });
+  return events;
+});
+
+export const OPERATE = {
+  hook: "Your whole digital team.",
+  promise: "Posts every day. Designs every week. Your website and app always improving. Every enquiry answered.",
+  services: [
+    {
+      id: "posts",
+      icon: "image",
+      stat: String(OPERATE_POSTS),
+      statLabel: "posts every month",
+      title: "Social media, posted daily",
+      line: "A fresh post every single day on Instagram, Facebook and LinkedIn.",
+      includes: ["Designed in your brand style", "Captions and hashtags written for you", "A content calendar you approve", "Festivals, offers and launches covered"],
+      note: "Reels and videos? Let's talk — we quote them separately.",
+    },
+    {
+      id: "designs",
+      icon: "design",
+      stat: String(OPERATE_DESIGNS),
+      statLabel: "posters & banners every month",
+      title: "Marketing designs, ready to use",
+      line: "Every graphic your business needs, print-ready and digital.",
+      includes: ["Posters, banners and flyers", "Offer and festival creatives", "Brochures, menus and price lists", "WhatsApp, standee and print files"],
+    },
+    {
+      id: "features",
+      icon: "code",
+      stat: "New",
+      statLabel: "features every month",
+      title: "New features in your website & app",
+      line: "Tell us what you need — we build it into the system you already have.",
+      includes: ["New pages, forms and sections", "Booking, payment and enquiry flows", "Dashboards and reports", "Improvements to what's already there"],
+      note: "Need something new? Ask any time — we discuss it with you and add it.",
+    },
+    {
+      id: "tools",
+      icon: "spark",
+      stat: "AI",
+      statLabel: "and the latest tools",
+      title: "AI and new tools, plugged in",
+      line: "When a new tool can help your business, we connect it to your system.",
+      includes: ["AI assistants on WhatsApp and your website", "AI that reads documents and drafts replies", "Payments, Tally, Zoho and Google connected", "We test new tools first, then advise you"],
+    },
+    {
+      id: "care",
+      icon: "shield",
+      stat: "24/7",
+      statLabel: "watched and kept current",
+      title: "Always up to date",
+      line: "Your website, web app and software stay fast, safe and current.",
+      includes: ["Software and security updates", "Speed and uptime checks", "Daily backups, tested", "Hosting, domain and email renewals"],
+    },
+    {
+      id: "enquiries",
+      icon: "whatsapp",
+      stat: "Every",
+      statLabel: "lead answered",
+      title: "Email and WhatsApp, handled",
+      line: "Every lead and enquiry answered and followed up — none left waiting.",
+      includes: ["Enquiries answered in business hours", "Every lead logged in one place", "Follow-ups until they decide", "Hot leads passed to you straight away"],
+    },
+  ] satisfies OperateService[],
+  /** Smaller things that are also in the plan. */
+  alsoIncluded: [
+    { icon: "pin", title: "Google listing kept fresh" },
+    { icon: "search", title: "Local SEO" },
+    { icon: "chart", title: "Leads and sales on one screen" },
+    { icon: "doc", title: "Monthly report and call" },
+    { icon: "phone", title: "One number to call" },
+  ] satisfies { icon: BrochureIcon; title: string }[],
+  // Typical Pune salaries in 2026 (INR) and typical freelance rates (USD), per month.
+  roles: [
+    { id: "social", icon: "image", title: "Social media manager", does: "30 posts a month", cost: priced(25, 1200) },
+    { id: "designer", icon: "design", title: "Graphic designer", does: "10 posters & banners", cost: priced(22, 1000) },
+    { id: "developer", icon: "code", title: "Web & app developer", does: "Features, updates, fixes", cost: priced(45, 2500) },
+    { id: "ai", icon: "spark", title: "AI & automation expert", does: "New tools plugged in", cost: priced(40, 2000) },
+    { id: "enquiries", icon: "whatsapp", title: "Enquiry executive", does: "Email & WhatsApp leads", cost: priced(18, 800) },
+  ] satisfies OperateRole[],
+  compareColumns: ["amfire", "A typical agency", "A freelancer"],
+  compare: [
+    { label: "Social media posts", cells: [`${OPERATE_POSTS} a month`, "12–15 a month", "Charged extra"] },
+    { label: "Posters & banners", cells: [`${OPERATE_DESIGNS} a month`, "2–4 a month", "Per design"] },
+    { label: "New features in your website & app", cells: [true, false, "Per job"] },
+    { label: "AI and new tools integrated", cells: [true, false, false] },
+    { label: "Updates, security and backups", cells: [true, false, false] },
+    { label: "Email & WhatsApp enquiries handled", cells: [true, false, false] },
+    { label: "New builds included on 3 months", cells: [true, false, false] },
+  ] satisfies { label: string; cells: [OperateCell, OperateCell, OperateCell] }[],
+  /** Things we build for free on a 3-month plan; also the "what first?" picker. */
+  builds: [
+    { icon: "store", title: "Online store" },
+    { icon: "calendar", title: "Booking system" },
+    { icon: "spark", title: "WhatsApp AI assistant" },
+    { icon: "phone", title: "Customer app" },
+    { icon: "box", title: "Inventory and stock" },
+    { icon: "receipt", title: "Billing and GST invoices" },
+    { icon: "flow", title: "Automate a daily task" },
+    { icon: "school", title: "School or coaching portal" },
+    { icon: "globe", title: "New website" },
+  ] satisfies { icon: BrochureIcon; title: string }[],
+  buildsNote: "One build at a time, sized to your plan. Very large projects get their own fixed price.",
+  month: [
+    { when: "Day 1", title: "Plan the month", body: "A call to agree the posts, designs and features." },
+    { when: "Every day", title: "Post and reply", body: "A post goes live, every enquiry gets answered." },
+    { when: "All month", title: "Design and build", body: "Posters delivered, features shipped, tools added." },
+    { when: "Day 30", title: "Report and next plan", body: "What we did, what changed, what's next." },
+  ],
+  promises: [
+    { icon: "receipt", title: "One fixed monthly fee" },
+    { icon: "calendar", title: "Cancel with 30 days' notice" },
+    { icon: "key", title: "Accounts stay in your name" },
+    { icon: "clock", title: "A reply within one working day" },
+    { icon: "doc", title: "A report every month" },
+    { icon: "rocket", title: `Builds free on a ${OPERATE_BUILD_MIN_MONTHS}-month plan` },
+  ] satisfies { icon: BrochureIcon; title: string }[],
+};
+
+export function sumCosts(items: { cost: Priced }[]): Priced {
+  return items.reduce<Priced>((t, i) => ({ INR: t.INR + i.cost.INR, USD: t.USD + i.cost.USD }), { INR: 0, USD: 0 });
 }

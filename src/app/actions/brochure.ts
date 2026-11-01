@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import * as z from "zod";
 import { site } from "@/config/site";
 import { getDb } from "@/db";
-import { brochureFor } from "@/knowledge/brochures";
+import { isBrochurePlan } from "@/knowledge/brochures";
 import { SERVICES } from "@/knowledge/catalog";
 import { CURRENCY_COOKIE, isCurrency } from "@/knowledge/pricing";
 import { ATTRIBUTION_COOKIE, readTouch } from "@/lib/attribution";
@@ -106,7 +106,7 @@ export async function openBrochure(formData: FormData) {
 
 async function reader(plan: string) {
   // A confirmed email unlocks every plan's brochure, so any valid cookie is a known reader.
-  return brochureFor(plan) ? readAccessCookie((await cookies()).get(BROCHURE_COOKIE)?.value) : null;
+  return isBrochurePlan(plan) ? readAccessCookie((await cookies()).get(BROCHURE_COOKIE)?.value) : null;
 }
 
 /** Called as the reader scrolls; never throws, the brochure must keep working. */

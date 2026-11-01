@@ -1,87 +1,29 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { animate, motion, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useRef, useState, useTransition, type ComponentProps, type ReactNode, type RefObject } from "react";
-import { submitBrochureWish, trackBrochureStep } from "@/app/actions/brochure";
+import { motion } from "motion/react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { submitBrochureWish } from "@/app/actions/brochure";
 import { contact } from "@/config/site";
-import { CASE_STUDIES } from "@/knowledge/case-studies";
-import { EARLY_CLIENTS, LAUNCH_SLOTS_PER_MONTH, REVISIONS, sumValues, type Brochure, type CartItem } from "@/knowledge/brochures";
+import { EARLY_CLIENTS, REVISIONS, sumValues, type Brochure, type CartItem } from "@/knowledge/brochures";
 import { SERVICE_DETAILS, SERVICES } from "@/knowledge/catalog";
-import { DEMO_OFFER, STARTING_PRICE, formatMoney, type Priced } from "@/knowledge/pricing";
+import { DEMO_OFFER, STARTING_PRICE, type Priced } from "@/knowledge/pricing";
 import { track } from "@/lib/analytics";
 import type { MonthlyOffer } from "@/server/brochures";
-import { ForCurrency, Money, useCurrency } from "../currency";
+import { ForCurrency, Money } from "../currency";
 import { GiftIcon } from "../demo-offer";
 import { Container, buttonClass, cx } from "../ui";
 import { CART_CAPACITY, Flame, Mall, Shopper } from "./art";
 import { Icon } from "./icons";
+import { CountUp, Eyebrow, LaunchSlots, RealWork, Reveal, Tracked } from "./parts";
 
-// A plan brochure (Build, Operate, Automate): one shopper with an amfire
+// A shopping-cart plan brochure (Build, Automate): one shopper with an amfire
 // cart, one with another company's, the same budget. Items drop into the amfire cart as the reader
 // scrolls, the "value in your cart" counter climbs while the price stays put,
 // and it ends in the super-mall with the month's real offer numbers.
 
 const METHOD_COLS: Record<number, string> = { 3: "sm:grid-cols-3", 4: "sm:grid-cols-4", 5: "sm:grid-cols-5" };
-
-type Step = "cover" | "compare" | "cart" | "full" | "price" | "shelves" | "work" | "method" | "mall";
-
-/** A section that reports itself once, the first time it is mostly on screen, so HQ sees how far the reader got. */
-function Tracked({ step, plan, as = "section", ...props }: Omit<ComponentProps<"section">, "ref"> & { step: Step; plan: string; as?: "section" | "div" }) {
-  const ref = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        io.disconnect();
-        track("brochure_step", { plan, step });
-        void trackBrochureStep(plan, step);
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [plan, step]);
-  return as === "div" ? <div ref={ref as RefObject<HTMLDivElement>} {...props} /> : <section ref={ref} {...props} />;
-}
-
-/** A money figure that counts up to its new value. */
-function CountUp({ amounts, className }: { amounts: Priced; className?: string }) {
-  const currency = useCurrency();
-  const target = amounts[currency];
-  const [shown, setShown] = useState(target);
-  const reduce = useReducedMotion();
-  const from = useRef(target);
-  useEffect(() => {
-    if (reduce) return;
-    const controls = animate(from.current, target, { duration: 0.8, ease: "easeOut", onUpdate: (v) => setShown(Math.round(v)) });
-    from.current = target;
-    return () => controls.stop();
-  }, [target, reduce]);
-  return <span className={cx("tabular-nums", className)}>{formatMoney(reduce ? target : shown, currency)}</span>;
-}
-
-function Reveal({ children, className, delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
-  return (
-    <motion.div
-      className={className}
-      initial={{ opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.3 }}
-      transition={{ duration: 0.5, delay, ease: [0.2, 0.7, 0.2, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-function Eyebrow({ children, light }: { children: ReactNode; light?: boolean }) {
-  return <p className={cx("text-xs font-semibold tracking-[0.2em] uppercase", light ? "text-white/60" : "text-muted")}>{children}</p>;
-}
 
 /** A cart item card. Joins the cart the first time it scrolls into view. */
 function ItemCard({ item, added, onSeen, title, note, bonus }: { item: CartItem; added: boolean; onSeen: () => void; title?: string; note?: string; bonus?: boolean }) {
@@ -128,8 +70,6 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
   const router = useRouter();
   const price = STARTING_PRICE[plan];
   const offerPrice: Priced = { INR: price.INR - DEMO_OFFER.amount.INR, USD: price.USD - DEMO_OFFER.amount.USD };
-  const monthly = brochure.perMonth;
-  const per = monthly ? <span className="font-normal opacity-70">/month</span> : null;
   const planName = SERVICES[plan].name;
 
   const [added, setAdded] = useState<Set<string>>(() => new Set());
@@ -168,8 +108,6 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
       router.push(`/start?goal=${SERVICE_DETAILS[plan].goal}`);
     });
 
-  const work = CASE_STUDIES;
-
   return (
     <div className="overflow-x-clip">
       {/* 1 · Cover */}
@@ -187,8 +125,7 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
           <Reveal delay={0.2}>
             <h1 className="mt-4 max-w-3xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
               <span className="text-brand">
-                <Money amounts={price} />
-                {monthly ? " a month" : ""}.
+                <Money amounts={price} />.
               </span>
               <br />
               {brochure.hook}
@@ -211,8 +148,7 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
           <Reveal className="text-center">
             <Eyebrow>Same money · two carts</Eyebrow>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              What does <Money amounts={price} />
-              {monthly ? " a month" : ""} get you?
+              What does <Money amounts={price} /> get you?
             </h2>
           </Reveal>
           <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6">
@@ -274,7 +210,6 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
               <p className="text-[11px] text-muted uppercase">Your price</p>
               <p className="text-lg font-semibold">
                 <Money amounts={price} />
-                {per}
               </p>
             </div>
           </Container>
@@ -296,7 +231,6 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
                   <p className="text-xs text-white/60 uppercase">Your price</p>
                   <p className="text-3xl font-semibold text-flame">
                     <Money amounts={price} />
-                    {monthly && <span className="text-base font-normal text-white/60">/month</span>}
                   </p>
                 </div>
               </div>
@@ -388,7 +322,7 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
         <Container className="relative py-16 text-center sm:py-24">
           <Reveal>
             <Eyebrow light>Everything in your cart</Eyebrow>
-            <p className="mt-4 text-sm text-white/60">Bought separately, it would cost{monthly ? " every month" : ""}</p>
+            <p className="mt-4 text-sm text-white/60">Bought separately, it would cost</p>
             <p className="mt-1 text-5xl font-semibold tracking-tight text-white/40 line-through decoration-signal decoration-4 sm:text-7xl">
               <Money amounts={fullValue} />
             </p>
@@ -399,15 +333,13 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
               <span className="text-brand">
                 <Money amounts={price} />
               </span>
-              {monthly && <span className="text-2xl font-normal text-white/60 sm:text-3xl">/month</span>}
             </p>
           </Reveal>
           <Reveal delay={0.35}>
             <p className="bg-brand shine mx-auto mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold text-ink">
               <GiftIcon />
               <span>
-                Only <Money amounts={offerPrice} />
-                {monthly ? " for your first month" : ""} with the free-demo offer
+                Only <Money amounts={offerPrice} /> with the free-demo offer
               </span>
             </p>
             <p className="mx-auto mt-6 max-w-md text-sm text-white/60">{brochure.scopeNote}</p>
@@ -436,7 +368,6 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
                     <p className="text-sm font-semibold tracking-widest text-muted uppercase">{shelf.title}</p>
                     <p className="text-3xl font-semibold">
                       from <Money amounts={shelf.price} />
-                      {monthly && <span className="text-lg font-normal text-muted">/month</span>}
                     </p>
                   </div>
                   <span className="bg-brand rounded-full px-3 py-1 text-xs font-semibold text-ink">+ everything above</span>
@@ -487,39 +418,7 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
       </Tracked>
 
       {/* 7 · Real work */}
-      <Tracked step="work" plan={plan}>
-        <Container className="py-14 sm:py-20">
-          <Reveal className="text-center">
-            <Eyebrow>Real clients · live today</Eyebrow>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Don&apos;t take our word for it. Open them.</h2>
-          </Reveal>
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
-            {work.map((c, i) => (
-              <Reveal key={c.slug} delay={i * 0.1}>
-                <Link href={`/work/${c.slug}`} className="group block overflow-hidden rounded-[1.5rem] bg-ink text-white ring-1 ring-line">
-                  <div className="relative aspect-[16/10] overflow-hidden">
-                    <Image src={c.cover} alt={c.coverAlt} fill sizes="(min-width: 768px) 50vw, 100vw" className="object-cover transition duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/20 to-transparent" />
-                    <p className="absolute bottom-4 left-5 text-2xl font-semibold">{c.client}</p>
-                  </div>
-                  <div className="p-5">
-                    <p className="text-white/80">{c.title}</p>
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      {c.facts.slice(0, 4).map((f) => (
-                        <div key={f.label} className="rounded-xl bg-white/5 p-3">
-                          <p className="text-xl font-semibold text-flame">{f.value}</p>
-                          <p className="text-xs text-white/60">{f.label}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <p className="mt-4 text-sm font-medium text-flame">See the case study →</p>
-                  </div>
-                </Link>
-              </Reveal>
-            ))}
-          </div>
-        </Container>
-      </Tracked>
+      <RealWork plan={plan} />
 
       {/* 8 · The named method + promises */}
       <Tracked step="method" plan={plan} className="bg-subtle">
@@ -617,23 +516,7 @@ export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; na
           </div>
 
           <div className="mx-auto mt-10 max-w-xl rounded-[1.5rem] bg-white/5 p-5 ring-1 ring-white/10 sm:p-6">
-            <p className="text-center font-semibold">
-              {offer.slotsLeft > 0 ? (
-                <>
-                  <span className="text-flame">
-                    {offer.slotsLeft} of {LAUNCH_SLOTS_PER_MONTH}
-                  </span>{" "}
-                  launch-price places left this month
-                </>
-              ) : (
-                <>This month&apos;s launch-price places are taken — book now for next month&apos;s list</>
-              )}
-            </p>
-            <div className="mt-3 flex justify-center gap-1.5" aria-hidden>
-              {Array.from({ length: LAUNCH_SLOTS_PER_MONTH }, (_, i) => (
-                <span key={i} className={cx("h-2 w-6 rounded-full", i < LAUNCH_SLOTS_PER_MONTH - offer.slotsLeft ? "bg-white/15" : "bg-brand")} />
-              ))}
-            </div>
+            <LaunchSlots offer={offer} />
             {offer.earlyLeft > 0 && (
               <p className="mt-3 text-center text-sm text-white/70">
                 Sign among the first {EARLY_CLIENTS} this month and get {REVISIONS.early} design revision rounds instead of {REVISIONS.later}.

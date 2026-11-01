@@ -228,10 +228,10 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     deliverables: [
       { title: "Website & hosting", body: "Updates, speed, security, uptime and fixes." },
       { title: "Domain & business email", body: "Professional email, renewals and access managed." },
-      { title: "Software & apps", body: "Maintenance, bug fixes and improvements to what you run." },
-      { title: "Social media", body: "Regular posts and replies on Instagram, Facebook and LinkedIn." },
-      { title: "Designs & content", body: "Brochures, flyers, templates and festival creatives, designed every month." },
-      { title: "Lead follow-up", body: "Every enquiry in one place and followed up on time, so no lead goes cold." },
+      { title: "Software & apps", body: "Maintenance, bug fixes, new features and AI tools added to what you run." },
+      { title: "Social media", body: "30 posts a month — one every day — on Instagram, Facebook and LinkedIn." },
+      { title: "Designs & content", body: "10 posters, banners, flyers and other marketing designs every month." },
+      { title: "Email & WhatsApp enquiries", body: "Every lead answered and followed up on time, so no enquiry goes cold." },
       { title: "Sales & revenue tracking", body: "Enquiries, sales and revenue in one simple view, so you always know where you stand." },
       { title: "SEO & Google Business Profile", body: "Be found when customers search nearby." },
       { title: "Online sales", body: "WhatsApp catalogue, marketplaces, payment links and enquiries." },
@@ -247,7 +247,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     model: "One fixed monthly fee for everything in your plan. No long lock-in — cancel with 30 days' notice.",
     faqs: [
       { q: "Do I still need an in-house IT person?", a: "For most small and mid-sized businesses, no. We handle the technology and online work; you keep one point of contact." },
-      { q: "What does the starting plan include?", a: "Everything: website and hosting care, email, backups, software upkeep and new features, 12 social media posts a month, designs, Google listing and local SEO, lead follow-up and sales tracking. We don't run paid ads." },
+      { q: "What does the starting plan include?", a: "Everything: 30 social media posts and 10 posters or banners a month, new features and AI tools added to your website and app, updates, security and backups, email and WhatsApp enquiries handled, Google listing and local SEO. We don't run paid ads." },
       { q: "Can you take over a website or software someone else built?", a: "Yes. We start with a free review so we understand it before we change anything." },
       { q: "Will you keep us updated on new technology like AI?", a: "Yes. Every month we tell you what's new and whether it's worth using for your business — in plain language." },
       { q: "Can our data stay in India?", a: "Yes. We can host and back up in Indian cloud regions such as Mumbai where required." },

@@ -9,21 +9,19 @@ import { ForCurrency, Money } from "@/components/currency";
 import { Logo, cx } from "@/components/ui";
 import { site } from "@/config/site";
 import { getDb } from "@/db";
-import { EARLY_CLIENTS, LAUNCH_SLOTS_PER_MONTH, REVISIONS, brochureFor, sumValues, type CartItem } from "@/knowledge/brochures";
+import { EARLY_CLIENTS, LAUNCH_SLOTS_PER_MONTH, REVISIONS, brochureFor, isBrochurePlan, sumValues, type Brochure, type CartItem } from "@/knowledge/brochures";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
 import { SERVICES } from "@/knowledge/catalog";
 import { DEMO_OFFER, STARTING_PRICE, type Priced } from "@/knowledge/pricing";
-import { BROCHURE_COOKIE, monthlyOffer, readAccessCookie } from "@/server/brochures";
+import { BROCHURE_COOKIE, monthlyOffer, readAccessCookie, type MonthlyOffer } from "@/server/brochures";
+import { OperatePdf } from "./operate-pdf";
+import { LIGHT, PAGE } from "./pages";
 import { PrintButton } from "./print-button";
 
 export const metadata: Metadata = { title: "Brochure (PDF)", robots: { index: false } };
 
 // The brochure as four A4 pages, for "Download as PDF". Same content and the
 // same visitor currency as the interactive page; unlocked by the same cookie.
-
-// Gradient-clipped text prints as an outlined box, so pages use solid brand colours.
-const PAGE = "relative mx-auto flex h-[297mm] w-[210mm] flex-col overflow-hidden p-[14mm] shadow-xl break-after-page print:shadow-none";
-const LIGHT = cx(PAGE, "bg-white text-ink");
 
 function Row({ item, title, bonus }: { item: CartItem; title?: string; bonus?: boolean }) {
   return (
@@ -45,30 +43,39 @@ function Row({ item, title, bonus }: { item: CartItem; title?: string; bonus?: b
 
 export default async function BrochurePdfPage({ params }: PageProps<"/brochure-pdf/[plan]">) {
   const { plan } = await params;
-  const brochure = brochureFor(plan);
-  if (!brochure) notFound();
+  if (!isBrochurePlan(plan)) notFound();
   const access = readAccessCookie((await cookies()).get(BROCHURE_COOKIE)?.value);
-  if (!access) redirect(`/brochure/${brochure.path}`);
-
+  if (!access) redirect(`/brochure/${plan}`);
   const offer = await monthlyOffer(await getDb());
-  const price = STARTING_PRICE[brochure.path];
-  const offerPrice: Priced = { INR: price.INR - DEMO_OFFER.amount.INR, USD: price.USD - DEMO_OFFER.amount.USD };
-  const total = sumValues([...brochure.cart, ...brochure.bonus]);
-  const name = SERVICES[brochure.path].name;
-  const work = CASE_STUDIES;
-  const month = brochure.perMonth ? " a month" : "";
+  const brochure = brochureFor(plan);
 
   return (
     <div className="min-h-screen bg-[#e9e9e9] py-8 print:bg-white print:py-0">
       <style>{`@page { size: A4; margin: 0 } html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }`}</style>
       <div className="sticky top-0 z-10 mx-auto mb-6 flex w-[210mm] max-w-full items-center justify-between gap-3 rounded-full bg-white px-4 py-2 shadow print:hidden">
-        <Link href={`/brochure/${brochure.path}`} className="text-sm text-[#5a5a5a] hover:text-ink">
+        <Link href={`/brochure/${plan}`} className="text-sm text-[#5a5a5a] hover:text-ink">
           ← Back to the interactive brochure
         </Link>
-        <PrintButton plan={brochure.path} />
+        <PrintButton plan={plan} />
       </div>
 
       <div className="space-y-8 print:space-y-0">
+        {brochure ? <CartPdf brochure={brochure} reader={access.name} offer={offer} /> : <OperatePdf name={access.name} offer={offer} />}
+      </div>
+    </div>
+  );
+}
+
+/** The shopping-cart brochure (Build, Automate). */
+function CartPdf({ brochure, reader, offer }: { brochure: Brochure; reader: string; offer: MonthlyOffer }) {
+  const price = STARTING_PRICE[brochure.path];
+  const offerPrice: Priced = { INR: price.INR - DEMO_OFFER.amount.INR, USD: price.USD - DEMO_OFFER.amount.USD };
+  const total = sumValues([...brochure.cart, ...brochure.bonus]);
+  const name = SERVICES[brochure.path].name;
+  const work = CASE_STUDIES;
+
+  return (
+    <>
         {/* Page 1 · cover */}
         <section className={cx(PAGE, "bg-ink text-white")}>
           <div aria-hidden className="bg-brand absolute top-[35%] left-1/2 size-[150mm] -translate-x-1/2 rounded-full opacity-25 blur-3xl" />
@@ -80,23 +87,21 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
             <Flame className="mx-auto h-40 w-auto" />
             <h1 className="mt-6 text-[44px] leading-[1.05] font-semibold tracking-tight">
               <span className="text-signal">
-                <Money amounts={price} />
-                {month}.
+                <Money amounts={price} />.
               </span>
               <br />
               {brochure.hook}
             </h1>
             <p className="mx-auto mt-4 max-w-[120mm] text-white/70">Same budget, two shopping carts. Here&apos;s everything that lands in yours.</p>
           </div>
-          <p className="relative text-center text-[11px] text-white/50">Prepared for {access.name} · {site.url.replace(/^https?:\/\//, "")}</p>
+          <p className="relative text-center text-[11px] text-white/50">Prepared for {reader} · {site.url.replace(/^https?:\/\//, "")}</p>
         </section>
 
         {/* Page 2 · the comparison and the cart */}
         <section className={LIGHT}>
           <p className="text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">Same money · two carts</p>
           <h2 className="mt-1 text-[24px] font-semibold">
-            What does <Money amounts={price} />
-            {month} get you?
+            What does <Money amounts={price} /> get you?
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="rounded-2xl p-3 ring-2 ring-signal">
@@ -138,7 +143,7 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
             ))}
           </ul>
           <div className="mt-6 text-center">
-            <p className="text-[11px] text-[#5a5a5a]">Bought separately, it would cost{brochure.perMonth ? " every month" : ""}</p>
+            <p className="text-[11px] text-[#5a5a5a]">Bought separately, it would cost</p>
             <p className="text-[34px] font-semibold text-[#9a9a9a] line-through decoration-signal decoration-[3px]">
               <Money amounts={total} />
             </p>
@@ -147,11 +152,9 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
               <span className="text-signal">
                 <Money amounts={price} />
               </span>
-              {brochure.perMonth && <span className="text-[20px] font-normal text-[#5a5a5a]">/month</span>}
             </p>
             <p className="bg-brand mx-auto mt-3 inline-block rounded-full px-4 py-1.5 text-[12px] font-semibold text-ink">
-              Only <Money amounts={offerPrice} />
-              {brochure.perMonth ? " for your first month" : ""} with the free-demo offer
+              Only <Money amounts={offerPrice} /> with the free-demo offer
             </p>
             <p className="mx-auto mt-2 max-w-[140mm] text-[10px] text-[#5a5a5a]">
               {brochure.scopeNote} <ForCurrency currency="INR">GST extra as applicable.</ForCurrency>
@@ -165,7 +168,6 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
                 <p className="text-[11px] font-semibold text-[#5a5a5a] uppercase">{shelf.title}</p>
                 <p className="text-[22px] font-semibold">
                   from <Money amounts={shelf.price} />
-                  {brochure.perMonth && <span className="text-[13px] font-normal text-[#5a5a5a]">/month</span>}
                 </p>
                 <ul className="mt-2 space-y-1.5">
                   {shelf.items.map((it) => (
@@ -253,7 +255,6 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
             </p>
           </div>
         </section>
-      </div>
-    </div>
+    </>
   );
 }

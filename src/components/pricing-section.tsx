@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FREE_DEMO, SERVICES, SERVICE_DETAILS, type ServicePathId } from "@/knowledge/catalog";
+import { brochureFor } from "@/knowledge/brochures";
 import { CURRENCIES, DEMO_OFFER, STARTING_PRICE, type Priced } from "@/knowledge/pricing";
 import { CurrencyToggle, ForCurrency, Money } from "./currency";
 import { GiftIcon } from "./demo-offer";
@@ -79,6 +80,26 @@ export function PricingSection({ only }: { only?: ServicePathId }) {
                   <div className="mt-6 text-sm">
                     <CheckList items={INCLUDED[p]} />
                   </div>
+                  {brochureFor(p) && (
+                    <Link
+                      href={`/brochure/${p}`}
+                      className={cx(
+                        "mt-5 flex items-center gap-3 rounded-2xl p-3 ring-1 transition",
+                        featured ? "bg-white/5 ring-white/15 hover:bg-white/10" : "bg-subtle ring-line hover:ring-fg/30",
+                      )}
+                    >
+                      <span className="bg-brand grid size-9 shrink-0 place-items-center rounded-xl text-ink">
+                        <GiftIcon />
+                      </span>
+                      <span className="min-w-0 flex-1 leading-tight">
+                        <span className="block text-sm font-semibold">See everything you get</span>
+                        <span className="block text-xs opacity-70">Free brochure</span>
+                      </span>
+                      <span aria-hidden className="text-lg">
+                        →
+                      </span>
+                    </Link>
+                  )}
                 </div>
                 <div className="relative mt-auto pt-8">
                   <ButtonLink href={`/start?goal=${SERVICE_DETAILS[p].goal}`} variant={featured || only ? "primary" : "secondary"} className="w-full whitespace-normal text-center">

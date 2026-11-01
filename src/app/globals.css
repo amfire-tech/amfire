@@ -21,6 +21,7 @@
   --animate-marquee: marquee 40s linear infinite;
   --animate-pulse-soft: pulse-soft 2.4s ease-in-out infinite;
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-flicker: flicker 2.6s ease-in-out infinite;
 
   @keyframes float {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
@@ -37,6 +38,11 @@
   @keyframes rise {
     from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes flicker {
+    0%, 100% { transform: scale(1, 1) skewX(0deg); }
+    30% { transform: scale(0.97, 1.04) skewX(-2deg); }
+    60% { transform: scale(1.02, 0.98) skewX(1.5deg); }
   }
   @keyframes shine {
     0% { transform: translateX(-160%) skewX(-20deg); }

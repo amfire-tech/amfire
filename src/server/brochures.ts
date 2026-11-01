@@ -55,11 +55,12 @@ export const BrochureRequestSchema = z.object({
   name: z.string().trim().min(1, "Please tell us your name.").max(120),
   email: z.email("Please enter a valid email address.").trim().toLowerCase().max(200),
   company: z.string().trim().max(160).optional(),
+  // Optional, and readers abroad write numbers many ways: accept 8–15 digits with or without +.
   phone: z
     .string()
     .trim()
-    .transform((v) => v.replace(/[\s-]/g, ""))
-    .pipe(z.string().regex(/^(\+?91)?[6-9]\d{9}$|^\+\d{8,15}$/, "Please enter a valid mobile number."))
+    .transform((v) => v.replace(/[\s\-().]/g, ""))
+    .pipe(z.string().regex(/^\+?\d{8,15}$/, "Check the number, e.g. +91 98765 43210 — or leave it empty."))
     .optional(),
   currency: z.enum(CURRENCIES).default(PRICING_CURRENCY),
 });

@@ -37,6 +37,7 @@ export function BrochureGate({ plan }: { plan: ServicePathId }) {
   }
 
   const errors = state?.errors ?? {};
+  const v = state?.values ?? {};
   return (
     <form action={action} className="rounded-card bg-surface p-5 text-fg ring-1 ring-line sm:p-7" noValidate>
       <input type="hidden" name="plan" value={plan} />
@@ -49,17 +50,17 @@ export function BrochureGate({ plan }: { plan: ServicePathId }) {
       <p className="mt-1 text-sm text-muted">We email you a link. Open it and the full brochure is yours.</p>
       <div className="mt-5 grid gap-4">
         <Field label="Your name" htmlFor="b-name" error={errors.name}>
-          <input id="b-name" name="name" autoComplete="name" required className={inputClass} aria-invalid={Boolean(errors.name)} />
+          <input id="b-name" name="name" defaultValue={v.name} autoComplete="name" required className={inputClass} aria-invalid={Boolean(errors.name)} />
         </Field>
         <Field label="Work email" htmlFor="b-email" error={errors.email}>
-          <input id="b-email" name="email" type="email" autoComplete="email" inputMode="email" required className={inputClass} aria-invalid={Boolean(errors.email)} />
+          <input id="b-email" name="email" defaultValue={v.email} type="email" autoComplete="email" inputMode="email" required className={inputClass} aria-invalid={Boolean(errors.email)} />
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Business" htmlFor="b-company" optional error={errors.company}>
-            <input id="b-company" name="company" autoComplete="organization" className={inputClass} />
+            <input id="b-company" name="company" defaultValue={v.company} autoComplete="organization" className={inputClass} />
           </Field>
           <Field label="WhatsApp" htmlFor="b-phone" optional error={errors.phone}>
-            <input id="b-phone" name="phone" type="tel" autoComplete="tel" inputMode="tel" className={inputClass} aria-invalid={Boolean(errors.phone)} />
+            <input id="b-phone" name="phone" defaultValue={v.phone} type="tel" autoComplete="tel" inputMode="tel" placeholder="+91 98765 43210" className={inputClass} aria-invalid={Boolean(errors.phone)} />
           </Field>
         </div>
       </div>

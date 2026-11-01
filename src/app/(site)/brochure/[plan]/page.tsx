@@ -3,12 +3,14 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Flame, Shopper } from "@/components/brochure/art";
 import { BrochureGate } from "@/components/brochure/gate";
+import { AutomateBrochure } from "@/components/brochure/automate-brochure";
+import { Icon } from "@/components/brochure/icons";
 import { OperateBrochure } from "@/components/brochure/operate-brochure";
 import { PlanBrochure } from "@/components/brochure/plan-brochure";
 import { Money } from "@/components/currency";
 import { CheckList, Container } from "@/components/ui";
 import { getDb } from "@/db";
-import { OPERATE, brochureFor, isBrochurePlan } from "@/knowledge/brochures";
+import { AUTOMATE, OPERATE, brochureFor, isBrochurePlan } from "@/knowledge/brochures";
 import { SERVICES } from "@/knowledge/catalog";
 import { STARTING_PRICE } from "@/knowledge/pricing";
 import { BROCHURE_COOKIE, monthlyOffer, readAccessCookie } from "@/server/brochures";
@@ -21,7 +23,9 @@ export async function generateMetadata({ params }: PageProps<"/brochure/[plan]">
     description:
       plan === "operate"
         ? "See exactly what amfire Operate delivers every month: 30 posts, 10 posters and banners, new features, AI tools, upkeep and every enquiry answered."
-        : `See everything amfire ${SERVICES[plan].name} puts in your cart, from the free problem-finding session to the 90-day warranty.`,
+        : plan === "automate"
+          ? "Watch amfire automations run live, see your day by hand against a day with amfire, and work out what one automated task is worth to you."
+          : `See everything amfire ${SERVICES[plan].name} puts in your cart, from the free problem-finding session to the 90-day warranty.`,
     robots: { index: false },
   };
 }
@@ -36,7 +40,8 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
   if (access) {
     const first = access.name.split(" ")[0];
     const offer = await monthlyOffer(await getDb());
-    return brochure ? <PlanBrochure brochure={brochure} name={first} offer={offer} /> : <OperateBrochure name={first} offer={offer} />;
+    if (brochure) return <PlanBrochure brochure={brochure} name={first} offer={offer} />;
+    return plan === "automate" ? <AutomateBrochure name={first} offer={offer} /> : <OperateBrochure name={first} offer={offer} />;
   }
 
   const name = SERVICES[plan].name;
@@ -65,6 +70,29 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
               </div>
               <div className="mt-6 text-sm text-white/80">
                 <CheckList items={["What's in the cart, item by item", "What it would cost elsewhere", "Real projects we've shipped", `Our ${brochure.promises.length} promises`]} />
+              </div>
+            </>
+          ) : plan === "automate" ? (
+            <>
+              <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
+                {AUTOMATE.hook}{" "}
+                <span className="text-brand">
+                  From <Money amounts={STARTING_PRICE.automate} />.
+                </span>
+              </h1>
+              <p className="mt-4 max-w-lg text-white/70">{AUTOMATE.promise}</p>
+              <ol className="mt-6 flex max-w-lg items-center gap-1.5">
+                {AUTOMATE.heroFlow.map((s, i) => (
+                  <li key={s.label} className="flex flex-1 items-center gap-1.5 last:flex-none">
+                    <span className="bg-brand grid size-10 shrink-0 place-items-center rounded-xl text-ink">
+                      <Icon name={s.icon} className="size-5" />
+                    </span>
+                    {i < AUTOMATE.heroFlow.length - 1 && <span className="bg-brand h-0.5 flex-1 rounded-full opacity-60" />}
+                  </li>
+                ))}
+              </ol>
+              <div className="mt-6 text-sm text-white/80">
+                <CheckList items={["Six automations, running live", "Your day by hand vs with amfire", "A calculator for your own numbers", "How your people stay in control"]} />
               </div>
             </>
           ) : (

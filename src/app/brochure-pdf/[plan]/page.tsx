@@ -14,6 +14,7 @@ import { CASE_STUDIES } from "@/knowledge/case-studies";
 import { SERVICES } from "@/knowledge/catalog";
 import { DEMO_OFFER, STARTING_PRICE, type Priced } from "@/knowledge/pricing";
 import { BROCHURE_COOKIE, monthlyOffer, readAccessCookie, type MonthlyOffer } from "@/server/brochures";
+import { AutomatePdf } from "./automate-pdf";
 import { OperatePdf } from "./operate-pdf";
 import { LIGHT, PAGE } from "./pages";
 import { PrintButton } from "./print-button";
@@ -60,13 +61,19 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
       </div>
 
       <div className="space-y-8 print:space-y-0">
-        {brochure ? <CartPdf brochure={brochure} reader={access.name} offer={offer} /> : <OperatePdf name={access.name} offer={offer} />}
+        {brochure ? (
+          <CartPdf brochure={brochure} reader={access.name} offer={offer} />
+        ) : plan === "automate" ? (
+          <AutomatePdf name={access.name} offer={offer} />
+        ) : (
+          <OperatePdf name={access.name} offer={offer} />
+        )}
       </div>
     </div>
   );
 }
 
-/** The shopping-cart brochure (Build, Automate). */
+/** The shopping-cart brochure (Build). */
 function CartPdf({ brochure, reader, offer }: { brochure: Brochure; reader: string; offer: MonthlyOffer }) {
   const price = STARTING_PRICE[brochure.path];
   const offerPrice: Priced = { INR: price.INR - DEMO_OFFER.amount.INR, USD: price.USD - DEMO_OFFER.amount.USD };

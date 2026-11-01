@@ -115,7 +115,7 @@ export const REVISIONS = { early: 5, later: 3 } as const;
 export const FEEDBACK_DAYS = 30;
 export const WARRANTY_DAYS = 90;
 
-export const BROCHURES: Record<Exclude<BrochurePlan, "operate">, Brochure> = {
+export const BROCHURES: Record<Exclude<BrochurePlan, "operate" | "automate">, Brochure> = {
   build: {
     path: "build",
     hook: "Let's see what it really buys.",
@@ -208,91 +208,9 @@ export const BROCHURES: Record<Exclude<BrochurePlan, "operate">, Brochure> = {
       { icon: "spark", title: "AI assistant" },
     ],
   },
-  automate: {
-    path: "automate",
-    hook: "Let's see what it really buys.",
-    rivalLabel: "A typical freelancer",
-    rival: {
-      got: ["A script for one step"],
-      missing: ["Understanding your process", "Your people approving", "Logs and error alerts", "A side-by-side trial", "Fixes when your tools change"],
-    },
-    cart: [
-      { id: "walkthrough", icon: "search", title: "Process walkthrough", body: "We sit with the people who do the work, step by step.", value: priced(5, 100) },
-      { id: "timemap", icon: "clock", title: "Where the hours go", body: "Your process mapped, with the time each step costs.", value: priced(4, 80) },
-      { id: "plan", icon: "doc", title: "Automation plan", body: "What we'll automate, in plain words, with one fixed price.", value: priced(4, 80) },
-      { id: "automation", icon: "flow", title: "Your automation, built", body: "Made for your process — not a generic tool.", value: priced(20, 350) },
-      { id: "tools", icon: "link", title: "Works with your tools", body: "Tally, WhatsApp, Excel, Zoho, email — nothing new to learn.", value: priced(6, 100) },
-      { id: "approval", icon: "check", title: "Your people approve what matters", body: "Prices, payments and filings stay in human hands.", value: priced(3, 60) },
-      { id: "logs", icon: "table", title: "Every step logged", body: "See exactly what ran, when and why.", value: priced(3, 50) },
-      { id: "exceptions", icon: "bell", title: "Odd cases sent to a person", body: "Anything unusual waits for a human instead of guessing.", value: priced(3, 50) },
-      { id: "sidebyside", icon: "redo", title: "Runs side by side first", body: "Your old way keeps going until you trust the new one.", value: priced(4, 80) },
-      { id: "testing", icon: "shield", title: "Tested with your real data", body: "Last month's orders and invoices, run through before go-live.", value: priced(3, 60) },
-      { id: "training", icon: "teach", title: "Training + video guide", body: "Your team learns it in one sitting.", value: priced(3, 60) },
-      { id: "report", icon: "chart", title: "Time-saved report", body: "Hours saved, in numbers, after the first month.", value: priced(2, 40) },
-      { id: "ownership", icon: "key", title: "In your name", body: "Code, accounts and access belong to you.", value: priced(3, 60) },
-    ],
-    bonus: [
-      { id: "alerts", icon: "whatsapp", title: "WhatsApp alert when it needs you", body: "A message the moment something needs a person.", value: priced(3, 50) },
-      { id: "tweaks", icon: "chat", title: "30 days of tweaks after go-live", body: "Use it for a month. Tell us what to adjust.", value: priced(5, 100) },
-      { id: "warranty", icon: "bug", title: "90-day fix warranty", body: "If it breaks after that, we fix it, free.", value: priced(6, 120) },
-    ],
-    scopeNote: "The starting price covers one automation of one process step — about two weeks of work. Bigger processes move to the next shelf.",
-    shelves: [
-      {
-        price: priced(25, 249),
-        title: "Bigger cart",
-        items: [
-          { icon: "flow", title: "Two connected steps" },
-          { icon: "spark", title: "AI reads messages and documents" },
-          { icon: "chart", title: "Reports that send themselves" },
-          { icon: "card", title: "Payment reminders with UPI links" },
-        ],
-      },
-      {
-        price: priced(35, 349),
-        title: "Full trolley",
-        items: [
-          { icon: "box", title: "A whole process, end to end" },
-          { icon: "link", title: "Three or more tools connected" },
-          { icon: "receipt", title: "GST and e-invoice steps" },
-          { icon: "hub", title: "A live dashboard" },
-        ],
-      },
-    ],
-    shelvesNote: "Everything above stays in the cart. These are typical starting points — your automation plan fixes the exact price.",
-    methodName: "FLOW",
-    method: [
-      { letter: "F", title: "Find where time goes", body: "A free walkthrough with the people who do the work.", pay: "Free" },
-      { letter: "L", title: "Lay out the plan", body: "The steps to automate and one fixed price.", pay: "20% after you approve" },
-      { letter: "O", title: "One step, built and tested", body: "With your real data and your approvals.", pay: "55% after you approve" },
-      { letter: "W", title: "Works beside your old way", body: "Then you switch over and we watch it run.", pay: "25% after you approve" },
-    ],
-    promises: [
-      { icon: "receipt", title: "One fixed price per automation" },
-      { icon: "check", title: "Pay only after you approve" },
-      { icon: "users", title: "Your people approve what matters" },
-      { icon: "redo", title: "Runs side by side before you switch" },
-      { icon: "table", title: "Every step logged" },
-      { icon: "bug", title: "90-day fix warranty" },
-      { icon: "rocket", title: "Included free with an Operate plan" },
-    ],
-    mall: [
-      { icon: "whatsapp", title: "WhatsApp orders into Tally" },
-      { icon: "card", title: "Payment reminders" },
-      { icon: "receipt", title: "GST reconciliation" },
-      { icon: "truck", title: "E-invoices and e-way bills" },
-      { icon: "chart", title: "Daily reports" },
-      { icon: "doc", title: "Document collection" },
-      { icon: "users", title: "Lead follow-up" },
-      { icon: "box", title: "Stock alerts" },
-      { icon: "calendar", title: "Attendance and payroll" },
-      { icon: "spark", title: "AI that reads invoices" },
-    ],
-    callout: OPERATE_CALLOUT,
-  },
 };
 
-/** The shopping-cart brochure for Build or Automate; Operate has its own (see OPERATE). */
+/** The shopping-cart brochure for Build; Operate and Automate have their own (see OPERATE, AUTOMATE). */
 export function brochureFor(path: string): Brochure | null {
   return (BROCHURES as Record<string, Brochure | undefined>)[path] ?? null;
 }
@@ -301,7 +219,7 @@ export function sumValues(items: CartItem[]): Priced {
   return items.reduce<Priced>((t, i) => ({ INR: t.INR + i.value.INR, USD: t.USD + i.value.USD }), { INR: 0, USD: 0 });
 }
 
-/** Plans that have a brochure. Build and Automate use the shopping-cart story; Operate has its own. */
+/** Plans that have a brochure. Build uses the shopping-cart story; Operate and Automate have their own. */
 export const BROCHURE_PLANS = ["build", "operate", "automate"] as const;
 export type BrochurePlan = (typeof BROCHURE_PLANS)[number];
 
@@ -485,3 +403,207 @@ export const OPERATE = {
 export function sumCosts(items: { cost: Priced }[]): Priced {
   return items.reduce<Priced>((t, i) => ({ INR: t.INR + i.cost.INR, USD: t.USD + i.cost.USD }), { INR: 0, USD: 0 });
 }
+
+// ── Automate ────────────────────────────────────────────────────────────────
+// Shown as automation at work: a live flow on the cover, a day by hand versus
+// with amfire, six automations running, a savings calculator, a live log of
+// the safety checks, then everything included and the price.
+
+/** A step in an automation flow: what happens, drawn with an icon. */
+export type FlowStep = { icon: BrochureIcon; label: string };
+
+export type Automation = {
+  id: string;
+  title: string;
+  trigger: FlowStep;
+  steps: FlowStep[];
+  result: string;
+};
+
+/** A line in the live log; "approve" lines wait for a person. */
+export type LogLine = { time: string; text: string; kind: "ok" | "approve" | "info" };
+
+export const AUTOMATE = {
+  hook: "Your busywork, on autopilot.",
+  promise: "Tell us the work your team repeats every day. amfire automates it — with your tools, your approvals and your rules.",
+  /** The cover's live flow. */
+  heroFlow: [
+    { icon: "whatsapp", label: "Order arrives on WhatsApp" },
+    { icon: "spark", label: "amfire reads it" },
+    { icon: "receipt", label: "Invoice made in Tally" },
+    { icon: "card", label: "UPI payment link sent" },
+    { icon: "bell", label: "You get a summary" },
+  ] satisfies FlowStep[],
+  /** An example day for a small trading business, in minutes. */
+  day: [
+    { icon: "whatsapp", task: "Typing WhatsApp orders into Tally", byHand: 120, withUs: 5 },
+    { icon: "card", task: "Sending payment reminders", byHand: 60, withUs: 2 },
+    { icon: "chart", task: "Making the daily sales report", byHand: 45, withUs: 0 },
+    { icon: "doc", task: "Chasing documents from customers", byHand: 60, withUs: 5 },
+    { icon: "users", task: "Following up enquiries", byHand: 45, withUs: 5 },
+  ] satisfies { icon: BrochureIcon; task: string; byHand: number; withUs: number }[],
+  automations: [
+    {
+      id: "orders",
+      title: "WhatsApp orders into Tally",
+      trigger: { icon: "whatsapp", label: "A customer sends an order" },
+      steps: [
+        { icon: "spark", label: "Order read and checked" },
+        { icon: "receipt", label: "Invoice created in Tally" },
+      ],
+      result: "Invoice sent back in seconds",
+    },
+    {
+      id: "reminders",
+      title: "Payment reminders",
+      trigger: { icon: "calendar", label: "An invoice falls due" },
+      steps: [
+        { icon: "search", label: "Finds who hasn't paid" },
+        { icon: "card", label: "Polite reminder with a UPI link" },
+      ],
+      result: "Marked paid when money lands",
+    },
+    {
+      id: "gst",
+      title: "GST reconciliation",
+      trigger: { icon: "clock", label: "Month end" },
+      steps: [
+        { icon: "table", label: "Purchases pulled together" },
+        { icon: "check", label: "Matched with GSTR-2B" },
+      ],
+      result: "Mismatches flagged for your accountant",
+    },
+    {
+      id: "reports",
+      title: "Reports that send themselves",
+      trigger: { icon: "clock", label: "Every evening at 8" },
+      steps: [
+        { icon: "box", label: "Sales, stock and cash collected" },
+        { icon: "chart", label: "Report built" },
+      ],
+      result: "On the owner's WhatsApp",
+    },
+    {
+      id: "leads",
+      title: "Lead follow-up",
+      trigger: { icon: "mail", label: "A new enquiry arrives" },
+      steps: [
+        { icon: "chat", label: "Instant first reply" },
+        { icon: "table", label: "Logged in your sheet or CRM" },
+      ],
+      result: "Your team reminded to follow up",
+    },
+    {
+      id: "documents",
+      title: "Document collection",
+      trigger: { icon: "users", label: "A client owes documents" },
+      steps: [
+        { icon: "doc", label: "Checklist sent" },
+        { icon: "bell", label: "Reminders until uploaded" },
+      ],
+      result: "Filed in the right folder",
+    },
+  ] satisfies Automation[],
+  /** The live log in the safety section. Loops. */
+  log: [
+    { time: "10:02:14", text: "Order #1042 read from WhatsApp", kind: "ok" },
+    { time: "10:02:15", text: "Stock checked: 12 cartons available", kind: "ok" },
+    { time: "10:02:16", text: "Invoice INV-1042 created in Tally", kind: "ok" },
+    { time: "10:02:17", text: "Order #1043: price is 18% below list", kind: "approve" },
+    { time: "10:02:17", text: "Sent to Priya for approval", kind: "info" },
+    { time: "10:04:02", text: "Priya approved the price", kind: "ok" },
+    { time: "10:04:03", text: "Invoice INV-1043 created in Tally", kind: "ok" },
+    { time: "10:04:05", text: "UPI payment links sent to 2 customers", kind: "ok" },
+  ] satisfies LogLine[],
+  safety: [
+    { icon: "users", title: "Your people approve what matters", body: "Prices, payments and filings never go out without a person." },
+    { icon: "table", title: "Every step logged", body: "See exactly what ran, when and why." },
+    { icon: "bell", title: "Odd cases go to a person", body: "Anything unusual waits for a human instead of guessing." },
+    { icon: "redo", title: "Runs side by side first", body: "Your old way keeps going until you trust the new one." },
+  ] satisfies { icon: BrochureIcon; title: string; body: string }[],
+  /** Everything every automation comes with; values are typical separate prices. */
+  included: [
+    { id: "walkthrough", icon: "search", title: "Process walkthrough", body: "We sit with the people who do the work, step by step.", value: priced(5, 100) },
+    { id: "timemap", icon: "clock", title: "Where the hours go", body: "Your process mapped, with the time each step costs.", value: priced(4, 80) },
+    { id: "plan", icon: "doc", title: "Automation plan", body: "What we'll automate, in plain words, with one fixed price.", value: priced(4, 80) },
+    { id: "automation", icon: "flow", title: "Your automation, built", body: "Made for your process — not a generic tool.", value: priced(20, 350) },
+    { id: "tools", icon: "link", title: "Works with your tools", body: "Tally, WhatsApp, Excel, Zoho, email — nothing new to learn.", value: priced(6, 100) },
+    { id: "approval", icon: "check", title: "Approvals built in", body: "Prices, payments and filings stay in human hands.", value: priced(3, 60) },
+    { id: "logs", icon: "table", title: "Every step logged", body: "See exactly what ran, when and why.", value: priced(3, 50) },
+    { id: "exceptions", icon: "bell", title: "Odd cases sent to a person", body: "Anything unusual waits for a human.", value: priced(3, 50) },
+    { id: "sidebyside", icon: "redo", title: "Runs side by side first", body: "Your old way keeps going until you trust the new one.", value: priced(4, 80) },
+    { id: "testing", icon: "shield", title: "Tested with your real data", body: "Last month's orders and invoices, run through first.", value: priced(3, 60) },
+    { id: "training", icon: "teach", title: "Training + video guide", body: "Your team learns it in one sitting.", value: priced(3, 60) },
+    { id: "report", icon: "chart", title: "Time-saved report", body: "Hours saved, in numbers, after the first month.", value: priced(2, 40) },
+    { id: "ownership", icon: "key", title: "In your name", body: "Code, accounts and access belong to you.", value: priced(3, 60) },
+  ] satisfies CartItem[],
+  bonus: [
+    { id: "alerts", icon: "whatsapp", title: "WhatsApp alert when it needs you", body: "A message the moment something needs a person.", value: priced(3, 50) },
+    { id: "tweaks", icon: "chat", title: "30 days of tweaks after go-live", body: "Use it for a month. Tell us what to adjust.", value: priced(5, 100) },
+    { id: "warranty", icon: "bug", title: "90-day fix warranty", body: "If it breaks after that, we fix it, free.", value: priced(6, 120) },
+  ] satisfies CartItem[],
+  tiers: [
+    {
+      price: priced(15, 149),
+      title: "One automation",
+      body: "One process step, about two weeks of work.",
+      items: [
+        { icon: "flow", title: "One step automated" },
+        { icon: "link", title: "One or two tools connected" },
+        { icon: "check", title: "Approvals and logs" },
+      ],
+    },
+    {
+      price: priced(25, 249),
+      title: "Connected steps",
+      body: "Two steps that hand work to each other.",
+      items: [
+        { icon: "flow", title: "Two connected steps" },
+        { icon: "spark", title: "AI reads messages and documents" },
+        { icon: "chart", title: "Reports that send themselves" },
+      ],
+    },
+    {
+      price: priced(35, 349),
+      title: "A whole process",
+      body: "End to end, from first message to final entry.",
+      items: [
+        { icon: "box", title: "A whole process, end to end" },
+        { icon: "receipt", title: "GST and e-invoice steps" },
+        { icon: "hub", title: "A live dashboard" },
+      ],
+    },
+  ] satisfies { price: Priced; title: string; body: string; items: { icon: BrochureIcon; title: string }[] }[],
+  tiersNote: "Typical starting points. Your automation plan fixes the exact price before any work starts.",
+  method: [
+    { letter: "F", title: "Find where time goes", body: "A free walkthrough with the people who do the work.", pay: "Free" },
+    { letter: "L", title: "Lay out the plan", body: "The steps to automate and one fixed price.", pay: "20% after you approve" },
+    { letter: "O", title: "One step, built and tested", body: "With your real data and your approvals.", pay: "55% after you approve" },
+    { letter: "W", title: "Works beside your old way", body: "Then you switch over and we watch it run.", pay: "25% after you approve" },
+  ],
+  promises: [
+    { icon: "receipt", title: "One fixed price per automation" },
+    { icon: "check", title: "Pay only after you approve" },
+    { icon: "users", title: "Your people approve what matters" },
+    { icon: "redo", title: "Runs side by side before you switch" },
+    { icon: "bug", title: "90-day fix warranty" },
+    { icon: "rocket", title: `Free with a ${OPERATE_BUILD_MIN_MONTHS}-month Operate plan` },
+  ] satisfies { icon: BrochureIcon; title: string }[],
+  /** The "what should we automate first?" picker. */
+  wishes: [
+    { icon: "whatsapp", title: "WhatsApp orders into Tally" },
+    { icon: "card", title: "Payment reminders" },
+    { icon: "receipt", title: "GST reconciliation" },
+    { icon: "truck", title: "E-invoices and e-way bills" },
+    { icon: "chart", title: "Daily reports" },
+    { icon: "doc", title: "Document collection" },
+    { icon: "users", title: "Lead follow-up" },
+    { icon: "box", title: "Stock alerts" },
+    { icon: "calendar", title: "Attendance and payroll" },
+    { icon: "spark", title: "AI that reads invoices" },
+  ] satisfies { icon: BrochureIcon; title: string }[],
+  callout: OPERATE_CALLOUT,
+};
+
+/** Calculator assumption: the share of the work an automation takes over; odd cases still go to a person. */
+export const AUTOMATED_SHARE = 0.9;

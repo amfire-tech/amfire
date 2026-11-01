@@ -48,14 +48,15 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
   const brochure = brochureFor(plan);
   if (!brochure) notFound();
   const access = readAccessCookie((await cookies()).get(BROCHURE_COOKIE)?.value);
-  if (!access?.plans.includes(brochure.path)) redirect(`/brochure/${brochure.path}`);
+  if (!access) redirect(`/brochure/${brochure.path}`);
 
   const offer = await monthlyOffer(await getDb());
   const price = STARTING_PRICE[brochure.path];
   const offerPrice: Priced = { INR: price.INR - DEMO_OFFER.amount.INR, USD: price.USD - DEMO_OFFER.amount.USD };
   const total = sumValues([...brochure.cart, ...brochure.bonus]);
   const name = SERVICES[brochure.path].name;
-  const work = CASE_STUDIES.filter((c) => c.path === brochure.path);
+  const work = CASE_STUDIES;
+  const month = brochure.perMonth ? " a month" : "";
 
   return (
     <div className="min-h-screen bg-[#e9e9e9] py-8 print:bg-white print:py-0">
@@ -79,7 +80,8 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
             <Flame className="mx-auto h-40 w-auto" />
             <h1 className="mt-6 text-[44px] leading-[1.05] font-semibold tracking-tight">
               <span className="text-signal">
-                <Money amounts={price} />.
+                <Money amounts={price} />
+                {month}.
               </span>
               <br />
               {brochure.hook}
@@ -93,7 +95,8 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
         <section className={LIGHT}>
           <p className="text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">Same money · two carts</p>
           <h2 className="mt-1 text-[24px] font-semibold">
-            What does <Money amounts={price} /> get you?
+            What does <Money amounts={price} />
+            {month} get you?
           </h2>
           <div className="mt-4 grid grid-cols-2 gap-4">
             <div className="rounded-2xl p-3 ring-2 ring-signal">
@@ -102,7 +105,7 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
               <p className="text-center text-[12px] font-semibold">{brochure.cart.length + brochure.bonus.length} things in the cart</p>
             </div>
             <div className="rounded-2xl p-3 ring-1 ring-[#e6e6e6]">
-              <p className="text-center text-[11px] font-semibold tracking-widest text-[#5a5a5a] uppercase">A typical agency</p>
+              <p className="text-center text-[11px] font-semibold tracking-widest text-[#5a5a5a] uppercase">{brochure.rivalLabel}</p>
               <Shopper boxes={2} tone="rival" className="mx-auto h-[38mm]" />
               <p className="text-center text-[11px]">
                 {brochure.rival.got.join(" · ")} — <span className="text-signal">everything else is extra</span>
@@ -116,8 +119,9 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
             ))}
           </ul>
           <p className="mt-auto pt-3 text-[9px] text-[#5a5a5a]">
-            Values are typical prices charged separately by agencies and freelancers in 2026. {REVISIONS.early} revision rounds for the first {EARLY_CLIENTS} clients each month,{" "}
-            {REVISIONS.later} after that.
+            Values are typical prices charged separately by agencies and freelancers in 2026.
+            {brochure.cart.some((i) => i.id === "revisions") &&
+              ` ${REVISIONS.early} revision rounds for the first ${EARLY_CLIENTS} clients each month, ${REVISIONS.later} after that.`}
           </p>
         </section>
 
@@ -134,16 +138,20 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
             ))}
           </ul>
           <div className="mt-6 text-center">
-            <p className="text-[11px] text-[#5a5a5a]">Bought separately, it would cost</p>
+            <p className="text-[11px] text-[#5a5a5a]">Bought separately, it would cost{brochure.perMonth ? " every month" : ""}</p>
             <p className="text-[34px] font-semibold text-[#9a9a9a] line-through decoration-signal decoration-[3px]">
               <Money amounts={total} />
             </p>
             <p className="mt-2 text-[11px] text-[#5a5a5a]">With amfire, you pay</p>
-            <p className="text-signal text-[56px] leading-none font-semibold">
-              <Money amounts={price} />
+            <p className="text-[56px] leading-none font-semibold">
+              <span className="text-signal">
+                <Money amounts={price} />
+              </span>
+              {brochure.perMonth && <span className="text-[20px] font-normal text-[#5a5a5a]">/month</span>}
             </p>
             <p className="bg-brand mx-auto mt-3 inline-block rounded-full px-4 py-1.5 text-[12px] font-semibold text-ink">
-              Only <Money amounts={offerPrice} /> with the free-demo offer
+              Only <Money amounts={offerPrice} />
+              {brochure.perMonth ? " for your first month" : ""} with the free-demo offer
             </p>
             <p className="mx-auto mt-2 max-w-[140mm] text-[10px] text-[#5a5a5a]">
               {brochure.scopeNote} <ForCurrency currency="INR">GST extra as applicable.</ForCurrency>
@@ -157,6 +165,7 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
                 <p className="text-[11px] font-semibold text-[#5a5a5a] uppercase">{shelf.title}</p>
                 <p className="text-[22px] font-semibold">
                   from <Money amounts={shelf.price} />
+                  {brochure.perMonth && <span className="text-[13px] font-normal text-[#5a5a5a]">/month</span>}
                 </p>
                 <ul className="mt-2 space-y-1.5">
                   {shelf.items.map((it) => (
@@ -190,8 +199,8 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
               </div>
             ))}
           </div>
-          <p className="mt-5 text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">The <span className="normal-case">amfire</span> BUILD Method</p>
-          <ol className="mt-2 grid grid-cols-5 gap-1.5">
+          <p className="mt-5 text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">The <span className="normal-case">amfire</span> {brochure.methodName} Method</p>
+          <ol className={cx("mt-2 grid gap-1.5", brochure.method.length === 3 ? "grid-cols-3" : brochure.method.length === 4 ? "grid-cols-4" : "grid-cols-5")}>
             {brochure.method.map((m) => (
               <li key={m.letter} className="rounded-xl bg-[#f4f4f4] p-2.5">
                 <span className="text-signal text-[28px] leading-none font-bold">{m.letter}</span>
@@ -200,7 +209,7 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
               </li>
             ))}
           </ol>
-          <p className="mt-5 text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">Our 7 promises</p>
+          <p className="mt-5 text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">Our {brochure.promises.length} promises</p>
           <ul className="mt-2 grid grid-cols-4 gap-1.5">
             {brochure.promises.map((p) => (
               <li key={p.title} className="flex items-center gap-2 rounded-xl bg-ink p-2 text-white">
@@ -211,6 +220,17 @@ export default async function BrochurePdfPage({ params }: PageProps<"/brochure-p
               </li>
             ))}
           </ul>
+          {brochure.callout && (
+            <div className="mt-4 flex items-center gap-3 rounded-2xl bg-[#fff1ea] p-3">
+              <span className="bg-brand grid size-8 shrink-0 place-items-center rounded-lg text-ink">
+                <Icon name="rocket" className="size-4" />
+              </span>
+              <div>
+                <p className="text-[12px] font-semibold">{brochure.callout.title}</p>
+                <p className="text-[10px] text-[#5a5a5a]">{brochure.callout.body}</p>
+              </div>
+            </div>
+          )}
           <p className="mt-5 text-[10px] font-semibold tracking-[0.2em] text-[#5a5a5a] uppercase">What else can we put in your cart?</p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
             {brochure.mall.map((m) => (

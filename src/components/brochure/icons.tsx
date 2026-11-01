@@ -36,6 +36,13 @@ const PATHS: Record<BrochureIcon, string> = {
   receipt: "M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21zM9 8h6M9 12h6M9 16h3",
   truck: "M3 6h11v10H3zM14 9h4l3 3.5V16h-7M7 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM17 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z",
   school: "M3 10l9-6 9 6M5 9v11h14V9M10 20v-5h4v5M12 10.5h.01",
+  image: "M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9.5h.01",
+  mail: "M3 6h18v12H3zM3 7l9 6 9-6",
+  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7v5l3 2",
+  wrench: "M14.5 6.5a4 4 0 0 0 5 5L20 12l-8.5 8.5a2.1 2.1 0 0 1-3-3L17 9l-.5-.5a4 4 0 0 0-2-2zM14.5 6.5 17 4",
+  globe: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3Z",
+  video: "M3 6h13v12H3zM16 10l5-3v10l-5-3",
+  flow: "M4 5h6v4H4zM14 15h6v4h-6zM7 9v3a2 2 0 0 0 2 2h8v1M17 15v-1",
 };
 
 export function Icon({ name, className }: { name: BrochureIcon; className?: string }) {

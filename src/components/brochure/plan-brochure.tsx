@@ -19,10 +19,12 @@ import { Container, buttonClass, cx } from "../ui";
 import { CART_CAPACITY, Flame, Mall, Shopper } from "./art";
 import { Icon } from "./icons";
 
-// The Build brochure: one shopper with an amfire cart, one with another
-// company's, the same budget. Items drop into the amfire cart as the reader
+// A plan brochure (Build, Operate, Automate): one shopper with an amfire
+// cart, one with another company's, the same budget. Items drop into the amfire cart as the reader
 // scrolls, the "value in your cart" counter climbs while the price stays put,
 // and it ends in the super-mall with the month's real offer numbers.
+
+const METHOD_COLS: Record<number, string> = { 3: "sm:grid-cols-3", 4: "sm:grid-cols-4", 5: "sm:grid-cols-5" };
 
 type Step = "cover" | "compare" | "cart" | "full" | "price" | "shelves" | "work" | "method" | "mall";
 
@@ -121,11 +123,14 @@ function ItemCard({ item, added, onSeen, title, note, bonus }: { item: CartItem;
   );
 }
 
-export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; name: string; offer: MonthlyOffer }) {
+export function PlanBrochure({ brochure, name, offer }: { brochure: Brochure; name: string; offer: MonthlyOffer }) {
   const plan = brochure.path;
   const router = useRouter();
   const price = STARTING_PRICE[plan];
   const offerPrice: Priced = { INR: price.INR - DEMO_OFFER.amount.INR, USD: price.USD - DEMO_OFFER.amount.USD };
+  const monthly = brochure.perMonth;
+  const per = monthly ? <span className="font-normal opacity-70">/month</span> : null;
+  const planName = SERVICES[plan].name;
 
   const [added, setAdded] = useState<Set<string>>(() => new Set());
   const [bonusOpen, setBonusOpen] = useState(false);
@@ -163,7 +168,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
       router.push(`/start?goal=${SERVICE_DETAILS[plan].goal}`);
     });
 
-  const work = CASE_STUDIES.filter((c) => c.path === plan);
+  const work = CASE_STUDIES;
 
   return (
     <div className="overflow-x-clip">
@@ -182,7 +187,8 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
           <Reveal delay={0.2}>
             <h1 className="mt-4 max-w-3xl text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
               <span className="text-brand">
-                <Money amounts={price} />.
+                <Money amounts={price} />
+                {monthly ? " a month" : ""}.
               </span>
               <br />
               {brochure.hook}
@@ -205,7 +211,8 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
           <Reveal className="text-center">
             <Eyebrow>Same money · two carts</Eyebrow>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              What does <Money amounts={price} /> get you?
+              What does <Money amounts={price} />
+              {monthly ? " a month" : ""} get you?
             </h2>
           </Reveal>
           <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6">
@@ -225,7 +232,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
               </p>
             </Reveal>
             <Reveal delay={0.15} className="flex flex-col rounded-card bg-surface p-3 ring-1 ring-line sm:p-6">
-              <p className="text-center text-xs font-semibold tracking-widest text-muted uppercase sm:text-sm">A typical agency</p>
+              <p className="text-center text-xs font-semibold tracking-widest text-muted uppercase sm:text-sm">{brochure.rivalLabel}</p>
               <Shopper boxes={2} tone="rival" className="mt-2" />
               <ul className="mt-3 space-y-1.5 text-xs sm:text-sm">
                 {brochure.rival.got.map((g) => (
@@ -267,6 +274,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
               <p className="text-[11px] text-muted uppercase">Your price</p>
               <p className="text-lg font-semibold">
                 <Money amounts={price} />
+                {per}
               </p>
             </div>
           </Container>
@@ -288,6 +296,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
                   <p className="text-xs text-white/60 uppercase">Your price</p>
                   <p className="text-3xl font-semibold text-flame">
                     <Money amounts={price} />
+                    {monthly && <span className="text-base font-normal text-white/60">/month</span>}
                   </p>
                 </div>
               </div>
@@ -379,22 +388,26 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
         <Container className="relative py-16 text-center sm:py-24">
           <Reveal>
             <Eyebrow light>Everything in your cart</Eyebrow>
-            <p className="mt-4 text-sm text-white/60">Bought separately, it would cost</p>
+            <p className="mt-4 text-sm text-white/60">Bought separately, it would cost{monthly ? " every month" : ""}</p>
             <p className="mt-1 text-5xl font-semibold tracking-tight text-white/40 line-through decoration-signal decoration-4 sm:text-7xl">
               <Money amounts={fullValue} />
             </p>
           </Reveal>
           <Reveal delay={0.2}>
             <p className="mt-8 text-sm text-white/60">With amfire, you pay</p>
-            <p className="mt-1 text-6xl font-semibold tracking-tight text-brand sm:text-8xl">
-              <Money amounts={price} />
+            <p className="mt-1 text-6xl font-semibold tracking-tight sm:text-8xl">
+              <span className="text-brand">
+                <Money amounts={price} />
+              </span>
+              {monthly && <span className="text-2xl font-normal text-white/60 sm:text-3xl">/month</span>}
             </p>
           </Reveal>
           <Reveal delay={0.35}>
             <p className="bg-brand shine mx-auto mt-6 inline-flex items-center gap-2 rounded-full px-4 py-2 font-semibold text-ink">
               <GiftIcon />
               <span>
-                Only <Money amounts={offerPrice} /> with the free-demo offer
+                Only <Money amounts={offerPrice} />
+                {monthly ? " for your first month" : ""} with the free-demo offer
               </span>
             </p>
             <p className="mx-auto mt-6 max-w-md text-sm text-white/60">{brochure.scopeNote}</p>
@@ -413,7 +426,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
           <Reveal className="text-center">
             <Eyebrow>Need a bigger cart?</Eyebrow>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">Pick from the next shelves.</h2>
-            <p className="mt-2 text-muted">Everything above stays in the cart. These are typical starting points — your Build Brief fixes the exact price.</p>
+            <p className="mt-2 text-muted">{brochure.shelvesNote}</p>
           </Reveal>
           <div className="mt-10 space-y-8">
             {brochure.shelves.map((shelf, s) => (
@@ -423,6 +436,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
                     <p className="text-sm font-semibold tracking-widest text-muted uppercase">{shelf.title}</p>
                     <p className="text-3xl font-semibold">
                       from <Money amounts={shelf.price} />
+                      {monthly && <span className="text-lg font-normal text-muted">/month</span>}
                     </p>
                   </div>
                   <span className="bg-brand rounded-full px-3 py-1 text-xs font-semibold text-ink">+ everything above</span>
@@ -451,6 +465,24 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
               </Reveal>
             ))}
           </div>
+          {brochure.callout && (
+            <Reveal className="mt-12">
+              <Link
+                href={brochure.callout.href}
+                className="group relative flex flex-col gap-4 overflow-hidden rounded-[1.5rem] bg-ink p-6 text-white sm:flex-row sm:items-center sm:p-8"
+              >
+                <div aria-hidden className="bg-brand absolute -right-16 -bottom-16 size-56 rounded-full opacity-25 blur-3xl" />
+                <span className="bg-brand relative grid size-12 shrink-0 place-items-center rounded-2xl text-ink">
+                  <Icon name="rocket" />
+                </span>
+                <div className="relative flex-1">
+                  <p className="text-xl font-semibold">{brochure.callout.title}</p>
+                  <p className="mt-1 text-sm text-white/70">{brochure.callout.body}</p>
+                </div>
+                <span className="relative shrink-0 text-sm font-semibold text-flame group-hover:underline">{brochure.callout.cta}</span>
+              </Link>
+            </Reveal>
+          )}
         </Container>
       </Tracked>
 
@@ -489,16 +521,16 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
         </Container>
       </Tracked>
 
-      {/* 8 · The BUILD Method + promises */}
+      {/* 8 · The named method + promises */}
       <Tracked step="method" plan={plan} className="bg-subtle">
         <Container className="py-14 sm:py-20">
           <Reveal className="text-center">
             <Eyebrow>How it happens</Eyebrow>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-              The amfire <span className="text-brand">BUILD</span> Method
+              The amfire <span className="text-brand">{brochure.methodName}</span> Method
             </h2>
           </Reveal>
-          <ol className="-mx-4 mt-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+          <ol className={cx("-mx-4 mt-10 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:overflow-visible sm:px-0", METHOD_COLS[brochure.method.length])}>
             {brochure.method.map((m, i) => (
               <motion.li
                 key={m.letter}
@@ -518,7 +550,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
 
           <Reveal className="mt-16 text-center">
             <Eyebrow>In writing, every time</Eyebrow>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Our 7 promises</h2>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">Our {brochure.promises.length} promises</h2>
           </Reveal>
           <ul className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
             {brochure.promises.map((p, i) => (
@@ -611,7 +643,7 @@ export function BuildBrochure({ brochure, name, offer }: { brochure: Brochure; n
               {pending ? "One moment…" : wishes.length || note.trim() ? "Book my free session with this list →" : "Book my free session →"}
             </button>
             <div className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-white/70">
-              <a href={contact.whatsapp("Hi amfire, I just read the Build brochure and want to talk.")} target="_blank" rel="noopener noreferrer" className="py-1 hover:text-white">
+              <a href={contact.whatsapp(`Hi amfire, I just read the ${planName} brochure and want to talk.`)} target="_blank" rel="noopener noreferrer" className="py-1 hover:text-white">
                 WhatsApp us
               </a>
               <a href={`/brochure-pdf/${plan}`} target="_blank" rel="noopener" className="py-1 hover:text-white">

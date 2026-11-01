@@ -28,7 +28,7 @@ export const SERVICES: Record<
     description:
       "Website, hosting, business email, software upkeep, social media, SEO, digital marketing, lead generation and follow-up, online sales and revenue tracking — managed by one partner for a fixed monthly fee, instead of hiring and managing an IT team.",
     examples: [
-      "Website, Google listing, Instagram and ads run for a family showroom",
+      "Website, Google listing, Instagram and enquiries run for a family showroom",
       "Software and servers maintained after the original developer left",
       "An online store kept fast and secure through the Diwali sale",
     ],
@@ -55,7 +55,7 @@ export const GOALS = [
   { id: "customer-portal", label: "Get a software, app or tool made", hint: "For customers, dealers or your own team", path: "build" },
   { id: "new-product", label: "Turn an idea into a working product", hint: "From idea to a first version people can use", path: "build" },
   { id: "modernise", label: "Replace or modernise an old system", hint: "It works, but it's holding you back", path: "build" },
-  { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, ads, Instagram, leads", path: "operate" },
+  { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, Instagram, leads", path: "operate" },
   { id: "keep-running", label: "Look after our software and IT", hint: "Hosting, email, fixes, security, backups", path: "operate" },
   { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll sit with you and work it out, free", path: null },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; hint: string; path: ServicePathId | null }>;
@@ -202,7 +202,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     headline: "Your complete tech team — without hiring one.",
     audience: "For owners who want everything online handled for them",
     persona:
-      "Website, hosting, email, software, social media, SEO, ads, leads, online sales — it all needs someone who knows technology. Hiring a team is expensive and hard to manage. amfire becomes your technology partner and handles all of it, A to Z, for one monthly fee — from bringing in leads and following them up to showing you where your sales and revenue stand — so you can focus on running your business.",
+      "Website, hosting, email, software, social media, SEO, designs, leads, online sales — it all needs someone who knows technology. Hiring a team is expensive and hard to manage. amfire becomes your technology partner and handles all of it, A to Z, for one monthly fee — from bringing in leads and following them up to showing you where your sales and revenue stand — so you can focus on running your business.",
     story: {
       owner: "A family-run furniture showroom",
       where: "Nagpur",
@@ -210,13 +210,13 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
       quote: "“My nephew made the website years ago. Now nobody looks after it, and customers can't find us online.”",
       tried: "Looked at hiring a web developer and a digital marketer — close to ₹70,000 a month in salaries alone.",
       amfire:
-        "amfire took over everything online: refreshed and maintained the website, fixed the Google Business Profile, posts on Instagram every week, runs local SEO and ads, and sends every enquiry to the showroom's WhatsApp.",
+        "amfire took over everything online: refreshed and maintained the website, fixed the Google Business Profile, posts on Instagram every week, runs local SEO, and sends every enquiry to the showroom's WhatsApp.",
       result: "The owner gets one monthly report and one number to call — and spends their time on the showroom floor.",
       exampleSlug: "online-presence-for-showroom",
     },
     signs: [
       "Your website is outdated or nobody looks after it",
-      "Social media, Google listing and ads happen only when someone finds time",
+      "Social media, your Google listing and designs happen only when someone finds time",
       "Enquiries come in, but nobody follows them up on time",
       "You depend on one developer or a relative for anything technical",
       "Hiring an IT or marketing team feels too expensive or hard to manage",
@@ -230,7 +230,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
       { title: "Domain & business email", body: "Professional email, renewals and access managed." },
       { title: "Software & apps", body: "Maintenance, bug fixes and improvements to what you run." },
       { title: "Social media", body: "Regular posts and replies on Instagram, Facebook and LinkedIn." },
-      { title: "Digital marketing & lead generation", body: "Google and Meta campaigns that bring in enquiries, tracked against real leads." },
+      { title: "Designs & content", body: "Brochures, flyers, templates and festival creatives, designed every month." },
       { title: "Lead follow-up", body: "Every enquiry in one place and followed up on time, so no lead goes cold." },
       { title: "Sales & revenue tracking", body: "Enquiries, sales and revenue in one simple view, so you always know where you stand." },
       { title: "SEO & Google Business Profile", body: "Be found when customers search nearby." },
@@ -247,7 +247,7 @@ export const SERVICE_DETAILS: Record<ServicePathId, ServiceDetail> = {
     model: "One fixed monthly fee for everything in your plan. No long lock-in — cancel with 30 days' notice.",
     faqs: [
       { q: "Do I still need an in-house IT person?", a: "For most small and mid-sized businesses, no. We handle the technology and online work; you keep one point of contact." },
-      { q: "What does the starting plan include?", a: "Our starting plan covers website and hosting care, email, backups and basic online presence. Social media, SEO, ads, lead follow-up and sales tracking are added as you need them." },
+      { q: "What does the starting plan include?", a: "Everything: website and hosting care, email, backups, software upkeep and new features, 12 social media posts a month, designs, Google listing and local SEO, lead follow-up and sales tracking. We don't run paid ads." },
       { q: "Can you take over a website or software someone else built?", a: "Yes. We start with a free review so we understand it before we change anything." },
       { q: "Will you keep us updated on new technology like AI?", a: "Yes. Every month we tell you what's new and whether it's worth using for your business — in plain language." },
       { q: "Can our data stay in India?", a: "Yes. We can host and back up in Indian cloud regions such as Mumbai where required." },
@@ -315,7 +315,7 @@ export const HIRING = {
   },
   roles: [
     { id: "developer", label: "Web / software developer" },
-    { id: "marketer", label: "Digital marketer (ads, SEO)" },
+    { id: "marketer", label: "Digital marketer (SEO, content)" },
     { id: "social", label: "Social media & content" },
     { id: "it", label: "IT support (email, hosting, security)" },
   ],
@@ -324,7 +324,7 @@ export const HIRING = {
 export const INDUSTRIES = [
   { name: "Manufacturing", examples: ["dealer-ordering-app", "taking-over-a-legacy-erp"], problems: ["Dealer and distributor ordering", "Production and dispatch tracking", "Legacy ERP upkeep"] },
   { name: "Wholesale & distribution", examples: ["collections-for-fmcg-distributor", "whatsapp-orders-into-tally"], problems: ["WhatsApp orders into Tally", "Collections and payment matching", "Salesman beat planning"] },
-  { name: "Retail & showrooms", examples: ["online-presence-for-showroom"], problems: ["Website, Google listing and social media", "Local SEO and ads", "Enquiries on WhatsApp"] },
+  { name: "Retail & showrooms", examples: ["online-presence-for-showroom"], problems: ["Website, Google listing and social media", "Local SEO and Google listing", "Enquiries on WhatsApp"] },
   { name: "Textile & apparel", examples: ["whatsapp-orders-into-tally", "taking-over-a-legacy-erp"], problems: ["Design-wise orders and stock", "E-invoice and e-way bills", "Job-work tracking"] },
   { name: "D2C & e-commerce", examples: ["d2c-brand-festive-sale"], problems: ["Sale-season uptime", "Order tracking and returns", "Marketplace and Shiprocket sync"] },
   { name: "Healthcare", examples: ["diagnostic-chain-booking-and-reports", "hospital-systems-support"], problems: ["Bookings and reports", "Hospital system support", "Patient consent and data protection"] },

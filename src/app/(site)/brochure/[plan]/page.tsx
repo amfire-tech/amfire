@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Flame, Shopper } from "@/components/brochure/art";
-import { BuildBrochure } from "@/components/brochure/build-brochure";
+import { PlanBrochure } from "@/components/brochure/plan-brochure";
 import { BrochureGate } from "@/components/brochure/gate";
 import { Money } from "@/components/currency";
 import { CheckList, Container } from "@/components/ui";
@@ -29,8 +29,9 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
   if (!brochure) notFound();
 
   const access = readAccessCookie((await cookies()).get(BROCHURE_COOKIE)?.value);
-  if (access?.plans.includes(brochure.path)) {
-    return <BuildBrochure brochure={brochure} name={access.name.split(" ")[0]} offer={await monthlyOffer(await getDb())} />;
+  // A confirmed email unlocks every plan's brochure on this device.
+  if (access) {
+    return <PlanBrochure brochure={brochure} name={access.name.split(" ")[0]} offer={await monthlyOffer(await getDb())} />;
   }
 
   const name = SERVICES[brochure.path].name;
@@ -45,7 +46,8 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
           </div>
           <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
             <span className="text-brand">
-              <Money amounts={STARTING_PRICE[brochure.path]} />.
+              <Money amounts={STARTING_PRICE[brochure.path]} />
+              {brochure.perMonth ? " a month" : ""}.
             </span>{" "}
             {brochure.hook}
           </h1>
@@ -56,7 +58,7 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
             <Shopper boxes={10} tone="amfire" />
           </div>
           <div className="mt-6 text-sm text-white/80">
-            <CheckList items={["What's in the cart, item by item", "What it would cost elsewhere", "Real projects we've shipped", "Our 7 promises"]} />
+            <CheckList items={["What's in the cart, item by item", "What it would cost elsewhere", "Real projects we've shipped", `Our ${brochure.promises.length} promises`]} />
           </div>
         </div>
         <BrochureGate plan={brochure.path} />

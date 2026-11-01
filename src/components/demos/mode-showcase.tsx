@@ -122,7 +122,7 @@ function BuildStory() {
 }
 
 function OperateStory() {
-  const items = ["Website & hosting", "Business email", "Google listing & SEO", "Instagram & ads", "Backups & security", "Monthly report"];
+  const items = ["Website & hosting", "Business email", "Google listing & SEO", "Instagram & designs", "Backups & security", "Monthly report"];
   return (
     <>
       <Problem who="showroom owner, Nagpur">“Website is old, Google shows wrong timings, nobody posts on Instagram.”</Problem>

@@ -242,23 +242,23 @@ export const EXAMPLES: Example[] = [
       "The owner has no idea which marketing spend brings customers",
     ],
     solution:
-      "amfire becomes the showroom's technology partner for one monthly fee: the website is refreshed and maintained, the Google Business Profile is corrected, Instagram gets regular posts, local SEO and small ad campaigns run every month, and every enquiry is routed to one WhatsApp number.",
+      "amfire becomes the showroom's technology partner for one monthly fee: the website is refreshed and maintained, the Google Business Profile is corrected, Instagram gets regular posts, local SEO runs every month, and every enquiry is routed to one WhatsApp number.",
     flow: [
       { step: "Free review", detail: "Website, Google listing, social media, domain and email checked" },
       { step: "Take over safely", detail: "Domain, hosting, email and social accounts moved into the owner's name" },
       { step: "Fix the basics", detail: "Correct timings, photos and reviews; fast mobile website" },
-      { step: "Monthly plan", detail: "Weekly posts, local SEO, small Google and Meta campaigns" },
-      { step: "Owner approves", detail: "Offers, prices and ad budgets are always approved by the owner", human: true },
+      { step: "Monthly plan", detail: "Weekly posts, local SEO and festival offer designs" },
+      { step: "Owner approves", detail: "Offers, prices and every post are approved by the owner", human: true },
       { step: "Monthly report", detail: "Enquiries, calls and visits — in plain language" },
     ],
-    stack: ["Website & hosting", "Google Business Profile", "Instagram & Facebook", "Google & Meta Ads", "WhatsApp Business"],
+    stack: ["Website & hosting", "Google Business Profile", "Instagram & Facebook", "WhatsApp Business"],
     changes: [
       "The showroom shows up correctly when people search nearby",
       "Accounts, domain and email are in the owner's name and looked after",
       "Every enquiry reaches one WhatsApp number, so none are missed",
       "The owner sees what marketing brings in every month",
     ],
-    measures: ["Enquiries per month", "Calls and direction requests from Google", "Cost per enquiry from ads"],
+    measures: ["Enquiries per month", "Calls and direction requests from Google", "Enquiries from Instagram and Google"],
     engagement: "Operate · one monthly plan",
   },
   {

@@ -57,6 +57,7 @@ export const GOALS = [
   { id: "modernise", label: "Replace or modernise an old system", hint: "It works, but it's holding you back", path: "build" },
   { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, Instagram, leads", path: "operate" },
   { id: "keep-running", label: "Look after our software and IT", hint: "Hosting, email, fixes, security, backups", path: "operate" },
+  { id: "ai-opportunity-map", label: "Find where AI can save us time and money", hint: "Your free AI Opportunity Map within 48 hours", path: null },
   { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll sit with you and work it out, free", path: null },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; hint: string; path: ServicePathId | null }>;
 
@@ -117,6 +118,21 @@ export const FREE_DEMO = {
     "You get an honest recommendation, even if it's “you don't need us yet”",
   ],
 };
+
+/** The free AI Opportunity Map: the free demo, framed for "where can AI help us?". */
+export const OPPORTUNITY_MAP = {
+  goal: "ai-opportunity-map",
+  cta: "Get your free AI Opportunity Map",
+  title: "Your free AI Opportunity Map",
+  summary:
+    "Tell us how your business runs. Within 48 hours we send the five places AI would save you the most time and money, what each would cost, and how long it takes. Free, with no obligation.",
+  points: [
+    "The five automations worth doing first, ranked by money saved",
+    "Hours saved and the value of each, in plain numbers",
+    "A fixed price and timeline for every item",
+    "A short video walking you through it — keep it even if you never hire us",
+  ],
+} as const;
 
 // --- Service pages: one owner's story per service ---------------------------------
 

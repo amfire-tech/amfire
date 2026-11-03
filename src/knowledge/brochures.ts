@@ -3,8 +3,8 @@
 // confirming their email, which records them as a lead.
 //
 // Market values are typical prices that agencies and freelancers in India
-// charge separately for each item (2026); the USD column is the same for
-// international agencies. They are claims to clients — keep them honest.
+// charge separately for each item (2026); the USD column is typical US
+// agency rates for the same item. They are claims to clients — keep them honest.
 // Our own prices come from STARTING_PRICE and DEMO_OFFER in pricing.ts.
 
 import type { ServicePathId } from "./catalog";
@@ -131,27 +131,27 @@ export const BROCHURES: Record<Exclude<BrochurePlan, "operate" | "automate">, Br
       ],
     },
     cart: [
-      { id: "session", icon: "search", title: "Problem-finding session", body: "We sit with you and find what's really slowing you down.", value: priced(5, 100) },
-      { id: "brief", icon: "doc", title: "Your Build Brief", body: "What we'll build, in plain words, with one fixed price.", value: priced(5, 100) },
-      { id: "designs", icon: "design", title: "Clickable designs", body: "Tap through every screen before a line of code.", value: priced(10, 200) },
-      { id: "revisions", icon: "redo", title: "Design revision rounds", body: "Change it until it feels right.", value: priced(4, 80) },
-      { id: "software", icon: "code", title: "Your software, built", body: "The first release your problem needs, made for you.", value: priced(25, 400) },
-      { id: "mobile", icon: "phone", title: "Works on every phone", body: "Fast on low-cost Android and patchy networks.", value: priced(3, 50) },
-      { id: "language", icon: "language", title: "Hindi and English", body: "Your team and customers use their own language.", value: priced(4, 60) },
-      { id: "hub", icon: "hub", title: "Your Client Hub", body: "See progress, approve work, ask questions — one place.", value: priced(3, 50) },
-      { id: "demos", icon: "play", title: "Weekly demo + test link", body: "Try the real thing every week, not slides.", value: priced(3, 50) },
-      { id: "ownership", icon: "key", title: "Code in your name", body: "Code, designs and data sit in your account from day 1.", value: priced(5, 100) },
-      { id: "security", icon: "shield", title: "Security and daily backups", body: "Logins, roles, HTTPS and automatic backups.", value: priced(4, 60) },
-      { id: "testing", icon: "check", title: "Tested on real phones", body: "We test on the devices your people actually use.", value: priced(3, 50) },
-      { id: "launch", icon: "rocket", title: "Hosting and go-live", body: "We set it up, put it live and watch launch day.", value: priced(3, 50) },
-      { id: "data", icon: "table", title: "Your Excel data moved in", body: "Start with your records, not an empty screen.", value: priced(4, 60) },
-      { id: "training", icon: "teach", title: "Training + user guide", body: "We train your team and leave a simple guide.", value: priced(4, 60) },
-      { id: "google", icon: "pin", title: "Google listing set up", body: "Customers find you on Search and Maps.", value: priced(3, 50) },
+      { id: "session", icon: "search", title: "Problem-finding session", body: "We sit with you and find what's really slowing you down.", value: priced(5, 300) },
+      { id: "brief", icon: "doc", title: "Your Build Brief", body: "What we'll build, in plain words, with one fixed price.", value: priced(5, 300) },
+      { id: "designs", icon: "design", title: "Clickable designs", body: "Tap through every screen before a line of code.", value: priced(10, 600) },
+      { id: "revisions", icon: "redo", title: "Design revision rounds", body: "Change it until it feels right.", value: priced(4, 240) },
+      { id: "software", icon: "code", title: "Your software, built", body: "The first release your problem needs, made for you.", value: priced(25, 1200) },
+      { id: "mobile", icon: "phone", title: "Works on every phone", body: "Fast on low-cost Android and patchy networks.", value: priced(3, 150) },
+      { id: "language", icon: "language", title: "Hindi and English", body: "Your team and customers use their own language.", value: priced(4, 180) },
+      { id: "hub", icon: "hub", title: "Your Client Hub", body: "See progress, approve work, ask questions — one place.", value: priced(3, 150) },
+      { id: "demos", icon: "play", title: "Weekly demo + test link", body: "Try the real thing every week, not slides.", value: priced(3, 150) },
+      { id: "ownership", icon: "key", title: "Code in your name", body: "Code, designs and data sit in your account from day 1.", value: priced(5, 300) },
+      { id: "security", icon: "shield", title: "Security and daily backups", body: "Logins, roles, HTTPS and automatic backups.", value: priced(4, 180) },
+      { id: "testing", icon: "check", title: "Tested on real phones", body: "We test on the devices your people actually use.", value: priced(3, 150) },
+      { id: "launch", icon: "rocket", title: "Hosting and go-live", body: "We set it up, put it live and watch launch day.", value: priced(3, 150) },
+      { id: "data", icon: "table", title: "Your Excel data moved in", body: "Start with your records, not an empty screen.", value: priced(4, 180) },
+      { id: "training", icon: "teach", title: "Training + user guide", body: "We train your team and leave a simple guide.", value: priced(4, 180) },
+      { id: "google", icon: "pin", title: "Google listing set up", body: "Customers find you on Search and Maps.", value: priced(3, 150) },
     ],
     bonus: [
-      { id: "alerts", icon: "whatsapp", title: "WhatsApp enquiry alerts", body: "Every new enquiry pings your phone.", value: priced(4, 60) },
-      { id: "feedback", icon: "chat", title: "30 days of changes after launch", body: "Use it for a month. Tell us what to change.", value: priced(6, 100) },
-      { id: "warranty", icon: "bug", title: "90-day bug-fix warranty", body: "Anything breaks after that? We fix it, free.", value: priced(9, 150) },
+      { id: "alerts", icon: "whatsapp", title: "WhatsApp enquiry alerts", body: "Every new enquiry pings your phone.", value: priced(4, 180) },
+      { id: "feedback", icon: "chat", title: "30 days of changes after launch", body: "Use it for a month. Tell us what to change.", value: priced(6, 300) },
+      { id: "warranty", icon: "bug", title: "90-day bug-fix warranty", body: "Anything breaks after that? We fix it, free.", value: priced(9, 450) },
     ],
     scopeNote: "The starting price covers a small first release — about three weeks of work. Bigger needs move to the next shelf.",
     shelvesNote: "Everything above stays in the cart. These are typical starting points — your Build Brief fixes the exact price.",
@@ -159,7 +159,7 @@ export const BROCHURES: Record<Exclude<BrochurePlan, "operate" | "automate">, Br
     callout: OPERATE_CALLOUT,
     shelves: [
       {
-        price: priced(25, 249),
+        price: priced(25, 2500),
         title: "Bigger cart",
         items: [
           { icon: "card", title: "Online payments" },
@@ -169,7 +169,7 @@ export const BROCHURES: Record<Exclude<BrochurePlan, "operate" | "automate">, Br
         ],
       },
       {
-        price: priced(35, 349),
+        price: priced(35, 3500),
         title: "Full trolley",
         items: [
           { icon: "link", title: "Connect to Tally or Zoho" },
@@ -523,28 +523,28 @@ export const AUTOMATE = {
   ] satisfies { icon: BrochureIcon; title: string; body: string }[],
   /** Everything every automation comes with; values are typical separate prices. */
   included: [
-    { id: "walkthrough", icon: "search", title: "Process walkthrough", body: "We sit with the people who do the work, step by step.", value: priced(5, 100) },
-    { id: "timemap", icon: "clock", title: "Where the hours go", body: "Your process mapped, with the time each step costs.", value: priced(4, 80) },
-    { id: "plan", icon: "doc", title: "Automation plan", body: "What we'll automate, in plain words, with one fixed price.", value: priced(4, 80) },
-    { id: "automation", icon: "flow", title: "Your automation, built", body: "Made for your process — not a generic tool.", value: priced(20, 350) },
-    { id: "tools", icon: "link", title: "Works with your tools", body: "Tally, WhatsApp, Excel, Zoho, email — nothing new to learn.", value: priced(6, 100) },
-    { id: "approval", icon: "check", title: "Approvals built in", body: "Prices, payments and filings stay in human hands.", value: priced(3, 60) },
-    { id: "logs", icon: "table", title: "Every step logged", body: "See exactly what ran, when and why.", value: priced(3, 50) },
-    { id: "exceptions", icon: "bell", title: "Odd cases sent to a person", body: "Anything unusual waits for a human.", value: priced(3, 50) },
-    { id: "sidebyside", icon: "redo", title: "Runs side by side first", body: "Your old way keeps going until you trust the new one.", value: priced(4, 80) },
-    { id: "testing", icon: "shield", title: "Tested with your real data", body: "Last month's orders and invoices, run through first.", value: priced(3, 60) },
-    { id: "training", icon: "teach", title: "Training + video guide", body: "Your team learns it in one sitting.", value: priced(3, 60) },
-    { id: "report", icon: "chart", title: "Time-saved report", body: "Hours saved, in numbers, after the first month.", value: priced(2, 40) },
-    { id: "ownership", icon: "key", title: "In your name", body: "Code, accounts and access belong to you.", value: priced(3, 60) },
+    { id: "walkthrough", icon: "search", title: "Process walkthrough", body: "We sit with the people who do the work, step by step.", value: priced(5, 300) },
+    { id: "timemap", icon: "clock", title: "Where the hours go", body: "Your process mapped, with the time each step costs.", value: priced(4, 240) },
+    { id: "plan", icon: "doc", title: "Automation plan", body: "What we'll automate, in plain words, with one fixed price.", value: priced(4, 240) },
+    { id: "automation", icon: "flow", title: "Your automation, built", body: "Made for your process — not a generic tool.", value: priced(20, 1050) },
+    { id: "tools", icon: "link", title: "Works with your tools", body: "Tally, WhatsApp, Excel, Zoho, email — nothing new to learn.", value: priced(6, 300) },
+    { id: "approval", icon: "check", title: "Approvals built in", body: "Prices, payments and filings stay in human hands.", value: priced(3, 180) },
+    { id: "logs", icon: "table", title: "Every step logged", body: "See exactly what ran, when and why.", value: priced(3, 150) },
+    { id: "exceptions", icon: "bell", title: "Odd cases sent to a person", body: "Anything unusual waits for a human.", value: priced(3, 150) },
+    { id: "sidebyside", icon: "redo", title: "Runs side by side first", body: "Your old way keeps going until you trust the new one.", value: priced(4, 240) },
+    { id: "testing", icon: "shield", title: "Tested with your real data", body: "Last month's orders and invoices, run through first.", value: priced(3, 180) },
+    { id: "training", icon: "teach", title: "Training + video guide", body: "Your team learns it in one sitting.", value: priced(3, 180) },
+    { id: "report", icon: "chart", title: "Time-saved report", body: "Hours saved, in numbers, after the first month.", value: priced(2, 120) },
+    { id: "ownership", icon: "key", title: "In your name", body: "Code, accounts and access belong to you.", value: priced(3, 180) },
   ] satisfies CartItem[],
   bonus: [
-    { id: "alerts", icon: "whatsapp", title: "WhatsApp alert when it needs you", body: "A message the moment something needs a person.", value: priced(3, 50) },
-    { id: "tweaks", icon: "chat", title: "30 days of tweaks after go-live", body: "Use it for a month. Tell us what to adjust.", value: priced(5, 100) },
-    { id: "warranty", icon: "bug", title: "90-day fix warranty", body: "If it breaks after that, we fix it, free.", value: priced(6, 120) },
+    { id: "alerts", icon: "whatsapp", title: "WhatsApp alert when it needs you", body: "A message the moment something needs a person.", value: priced(3, 150) },
+    { id: "tweaks", icon: "chat", title: "30 days of tweaks after go-live", body: "Use it for a month. Tell us what to adjust.", value: priced(5, 300) },
+    { id: "warranty", icon: "bug", title: "90-day fix warranty", body: "If it breaks after that, we fix it, free.", value: priced(6, 360) },
   ] satisfies CartItem[],
   tiers: [
     {
-      price: priced(15, 149),
+      price: priced(15, 1000),
       title: "One automation",
       body: "One process step, about two weeks of work.",
       items: [
@@ -554,7 +554,7 @@ export const AUTOMATE = {
       ],
     },
     {
-      price: priced(25, 249),
+      price: priced(25, 1750),
       title: "Connected steps",
       body: "Two steps that hand work to each other.",
       items: [
@@ -564,7 +564,7 @@ export const AUTOMATE = {
       ],
     },
     {
-      price: priced(35, 349),
+      price: priced(35, 2500),
       title: "A whole process",
       body: "End to end, from first message to final entry.",
       items: [

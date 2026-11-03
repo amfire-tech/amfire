@@ -1,6 +1,6 @@
 "use client";
 
-// The free-demo offer: flat ₹5,000 ($50) off any plan for everyone who books a
+// The free-demo offer: flat ₹5,000 ($150) off any plan for everyone who books a
 // free demo (DEMO_OFFER in src/knowledge/pricing.ts). The bar sits above every
 // public page and points visitors to the booking form; its message follows
 // them through booking to the promo code on the thank-you page.

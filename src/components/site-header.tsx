@@ -7,6 +7,7 @@ import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
 import { ButtonLink, Logo, cx } from "./ui";
 
 const LINKS = [
+  { href: "/solutions", label: "AI solutions" },
   { href: "/work", label: "Our work" },
   { href: "/industries", label: "Industries" },
   { href: "/about", label: "About" },

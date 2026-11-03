@@ -27,21 +27,34 @@ export const CURRENCY_COOKIE = "currency";
 const K = 1_000_00; // one thousand rupees, in paise
 const D = 100; // one US dollar, in cents
 
-/** Published "starts from" prices shown on the website. Operate is per month. */
+/**
+ * Published "starts from" prices shown on the website. Operate is per month.
+ * Dollar prices sit below typical US agency rates (builds $1.5k–15k, retainers
+ * $2.8k–7k a month) but high enough to read as professional work.
+ */
 export const STARTING_PRICE: Record<ServicePathId, Priced> = {
-  build: { INR: 15 * K, USD: 149 * D },
-  operate: { INR: 20 * K, USD: 199 * D },
-  automate: { INR: 15 * K, USD: 149 * D },
+  build: { INR: 15 * K, USD: 1_500 * D },
+  operate: { INR: 20 * K, USD: 750 * D },
+  automate: { INR: 15 * K, USD: 1_000 * D },
 };
+
+/** Monthly care for systems we built: monitoring, fixes, tuning and a report. */
+export const CARE_PLAN: Priced = { INR: 10 * K, USD: 300 * D };
+
+/** "Starts from" prices for the AI packages on /solutions. */
+export const AI_PACKAGE_PRICE = {
+  agent: { INR: 25 * K, USD: 2_000 * D },
+  system: { INR: 150 * K, USD: 6_000 * D },
+} satisfies Record<string, Priced>;
 
 /**
  * Free-demo offer: a flat amount off any plan for everyone who books a free
- * demo (₹5,000, or $50 for clients paying in dollars). Each booking gets its
+ * demo (₹5,000, or $150 for clients paying in dollars). Each booking gets its
  * own promo code (src/server/leads.ts), and the discount is added to every
  * proposal drafted from a booking.
  */
 export const DEMO_OFFER: { amount: Priced; terms: (currency: Currency) => string } = {
-  amount: { INR: 5 * K, USD: 50 * D },
+  amount: { INR: 5 * K, USD: 150 * D },
   terms: (currency) => `The ${formatMoney(DEMO_OFFER.amount[currency], currency)} free-demo offer is taken off your final milestone invoice.`,
 };
 
@@ -49,28 +62,28 @@ type Band = { low: number; high: number; weeks: number };
 
 const PRICE_BANDS: Record<ServicePathId, Record<ProjectSize, { weeks: number } & Record<Currency, [low: number, high: number]>>> = {
   build: {
-    small: { weeks: 3, INR: [15 * K, 50 * K], USD: [149 * D, 500 * D] },
-    medium: { weeks: 8, INR: [50 * K, 200 * K], USD: [500 * D, 2_000 * D] },
-    large: { weeks: 14, INR: [200 * K, 800 * K], USD: [2_000 * D, 8_000 * D] },
+    small: { weeks: 3, INR: [15 * K, 50 * K], USD: [1_500 * D, 5_000 * D] },
+    medium: { weeks: 8, INR: [50 * K, 200 * K], USD: [5_000 * D, 20_000 * D] },
+    large: { weeks: 14, INR: [200 * K, 800 * K], USD: [20_000 * D, 60_000 * D] },
   },
   automate: {
-    small: { weeks: 2, INR: [15 * K, 40 * K], USD: [149 * D, 400 * D] },
-    medium: { weeks: 5, INR: [40 * K, 150 * K], USD: [400 * D, 1_500 * D] },
-    large: { weeks: 10, INR: [150 * K, 500 * K], USD: [1_500 * D, 5_000 * D] },
+    small: { weeks: 2, INR: [15 * K, 40 * K], USD: [1_000 * D, 2_500 * D] },
+    medium: { weeks: 5, INR: [40 * K, 150 * K], USD: [2_500 * D, 6_000 * D] },
+    large: { weeks: 10, INR: [150 * K, 500 * K], USD: [6_000 * D, 15_000 * D] },
   },
   // Operate proposals cover onboarding plus the first month.
   operate: {
-    small: { weeks: 2, INR: [20 * K, 30 * K], USD: [199 * D, 300 * D] },
-    medium: { weeks: 3, INR: [30 * K, 60 * K], USD: [300 * D, 600 * D] },
-    large: { weeks: 4, INR: [60 * K, 150 * K], USD: [600 * D, 1_500 * D] },
+    small: { weeks: 2, INR: [20 * K, 30 * K], USD: [750 * D, 1_200 * D] },
+    medium: { weeks: 3, INR: [30 * K, 60 * K], USD: [1_200 * D, 2_000 * D] },
+    large: { weeks: 4, INR: [60 * K, 150 * K], USD: [2_000 * D, 4_000 * D] },
   },
 };
 
 /** Monthly Operate plan after onboarding. */
 export const OPERATE_RETAINER: Record<ProjectSize, Priced> = {
-  small: { INR: 20 * K, USD: 199 * D },
-  medium: { INR: 30 * K, USD: 300 * D },
-  large: { INR: 60 * K, USD: 600 * D },
+  small: { INR: 20 * K, USD: 750 * D },
+  medium: { INR: 30 * K, USD: 1_200 * D },
+  large: { INR: 60 * K, USD: 2_000 * D },
 };
 
 /** Milestone prices are rounded to ₹1,000 or $10. */

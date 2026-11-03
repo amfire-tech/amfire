@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { GiftIcon } from "@/components/demo-offer";
 import { CheckList, Container, Eyebrow } from "@/components/ui";
 import { contact, site } from "@/config/site";
-import { FREE_DEMO, OPPORTUNITY_MAP } from "@/knowledge/catalog";
+import { AGENCY_PARTNER, FREE_DEMO, OPPORTUNITY_MAP } from "@/knowledge/catalog";
 import { Money } from "@/components/currency";
 import { DEMO_OFFER } from "@/knowledge/pricing";
 import { DiscoveryForm } from "./discovery-form";
@@ -15,8 +15,8 @@ export const metadata: Metadata = {
 
 export default async function StartPage({ searchParams }: PageProps<"/start">) {
   const { goal } = await searchParams;
-  // Visitors coming for the free AI Opportunity Map see it framed that way; the booking is the same.
-  const intro = goal === OPPORTUNITY_MAP.goal ? OPPORTUNITY_MAP : FREE_DEMO;
+  // Visitors coming for the AI Opportunity Map or a partner call see it framed that way; the booking is the same.
+  const intro = goal === OPPORTUNITY_MAP.goal ? OPPORTUNITY_MAP : goal === AGENCY_PARTNER.goal ? AGENCY_PARTNER : FREE_DEMO;
   return (
     <div className="bg-subtle">
       {/* Phones: heading and offer, then the form, then the details. Desktop: details beside the form. */}
@@ -25,6 +25,8 @@ export default async function StartPage({ searchParams }: PageProps<"/start">) {
           <Eyebrow>Free · no obligation</Eyebrow>
           <h1 className="mt-3 text-[1.75rem] leading-tight font-semibold tracking-tight sm:mt-4 sm:text-4xl">{intro.title}</h1>
           <p className="mt-3 text-fg/75">{intro.summary}</p>
+          {/* The free-demo discount is for clients; partners get partner pricing instead. */}
+          {intro !== AGENCY_PARTNER && (
           <div className="shine mt-5 rounded-card bg-ink p-4 text-white sm:mt-6 sm:p-5">
             <div aria-hidden className="bg-brand absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl" />
             <div className="relative flex gap-4">
@@ -42,6 +44,7 @@ export default async function StartPage({ searchParams }: PageProps<"/start">) {
               </div>
             </div>
           </div>
+          )}
         </div>
         <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
           <DiscoveryForm initialGoal={typeof goal === "string" ? goal : undefined} />

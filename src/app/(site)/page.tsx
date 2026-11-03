@@ -14,8 +14,9 @@ import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, Swipe
 import { FREE_DEMO, HIRING, INDUSTRIES, SERVICES, SERVICE_DETAILS, TOOLS, type ServicePathId } from "@/knowledge/catalog";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
 import { EXAMPLES } from "@/knowledge/examples";
-import { Money } from "@/components/currency";
+import { ForCurrency, Money } from "@/components/currency";
 import { DEMO_OFFER, STARTING_PRICE } from "@/knowledge/pricing";
+import { SOLUTION_COUNT } from "@/knowledge/solutions";
 
 /** Salaries for a developer, a digital marketer and a social media person, per month. */
 const THREE_HIRES = { INR: 3 * HIRING.salary.INR.fresher * 100, USD: 3 * HIRING.salary.USD.fresher * 100 };
@@ -54,14 +55,27 @@ export default function HomePage() {
         <div aria-hidden className="bg-brand absolute -top-40 -left-40 -z-10 size-[28rem] rounded-full opacity-[0.12] blur-3xl" />
         <Container className="grid items-center gap-10 pt-10 pb-12 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pt-20">
           <div>
-            <Eyebrow>Technology partner for Indian businesses</Eyebrow>
+            {/* Visitors outside India (shown prices in dollars) get the international pitch; no flash, it's the same currency switch. */}
+            <Eyebrow>
+              <ForCurrency currency="INR">Technology partner for Indian businesses</ForCurrency>
+              <ForCurrency currency="USD">AI automation partner for growing businesses</ForCurrency>
+            </Eyebrow>
             <h1 className="mt-5 text-[2.35rem] leading-[1.06] font-semibold tracking-tight text-balance min-[400px]:text-[2.6rem] sm:text-6xl">
               Build what&apos;s missing. Run what matters. <span className="text-brand">Automate the rest.</span>
             </h1>
             <p className="mt-5 max-w-xl text-base text-muted sm:mt-6 sm:text-lg">
-              Tell us your business problem. We build the software for it, run everything online for you, and automate the work
-              that eats your team&apos;s day — so you can focus on your business.
+              <ForCurrency currency="INR">
+                Tell us your business problem. We build the software for it, run everything online for you, and automate the work
+                that eats your team&apos;s day — so you can focus on your business.
+              </ForCurrency>
+              <ForCurrency currency="USD">
+                Tell us where your business loses time. We build the AI agents and software that fix it, run them for you, and
+                automate the work that eats your team&apos;s day — from a team that delivers while you sleep.
+              </ForCurrency>
             </p>
+            <Link href="/solutions" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
+              Explore {SOLUTION_COUNT} AI solutions <Arrow />
+            </Link>
             <div className="mt-8 flex flex-col gap-2 sm:mt-9 sm:flex-row sm:items-center sm:gap-3">
               <ButtonLink href="/start" size="lg" className="w-full sm:w-auto">
                 {FREE_DEMO.cta} <Arrow />

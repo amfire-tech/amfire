@@ -18,6 +18,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     page("/services", 0.9),
     ...(Object.keys(SERVICES) as ServicePathId[]).map((p) => page(`/services/${p}`, 0.9)),
     page("/solutions", 0.9),
+    page("/agencies", 0.7),
     page("/how-we-work", 0.7),
     page("/industries", 0.7),
     page("/work", 0.8),

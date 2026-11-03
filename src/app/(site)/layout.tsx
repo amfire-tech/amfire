@@ -10,6 +10,8 @@ import { organizationJsonLd } from "@/config/structured-data";
 import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
 
 const COMPANY = [
+  { href: "/solutions", label: "AI solutions" },
+  { href: "/agencies", label: "For agencies" },
   { href: "/how-we-work", label: "How we work" },
   { href: "/work", label: "Our work" },
   { href: "/industries", label: "Industries" },

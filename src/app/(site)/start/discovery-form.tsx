@@ -4,7 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { submitDiscoveryAction, type DiscoveryState } from "@/app/actions/discovery";
 import { SubmitButton } from "@/components/forms";
 import { Button, Field, Notice, cx, inputClass } from "@/components/ui";
-import { BUSINESS_TYPES, CALL_TIMES, GOALS, OPPORTUNITY_MAP, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
+import { AGENCY_PARTNER, BUSINESS_TYPES, CALL_TIMES, GOALS, OPPORTUNITY_MAP, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
 import { Money } from "@/components/currency";
 import { track } from "@/lib/analytics";
 import { DEMO_OFFER } from "@/knowledge/pricing";
@@ -28,6 +28,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
 
   const errors = { ...(state?.errors ?? {}), ...localErrors };
   const wantsMap = values.goal === OPPORTUNITY_MAP.goal;
+  const partner = values.goal === AGENCY_PARTNER.goal;
   const set = (name: string, value: string) => {
     setValues((v) => ({ ...v, [name]: value }));
     setLocalErrors((e) => {
@@ -206,7 +207,11 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
       {/* Step 4 — contact */}
       <div hidden={step !== 3}>
         <h2 ref={step === 3 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
-          {wantsMap ? "Where should we send your AI Opportunity Map?" : "Where should we call you for your free demo?"}
+          {wantsMap
+            ? "Where should we send your AI Opportunity Map?"
+            : partner
+              ? "Where should we reach you for the partner call?"
+              : "Where should we call you for your free demo?"}
         </h2>
         <p className="mt-2 text-sm text-muted">
           A 30-minute call to understand your business. Free, with no obligation — and your <Money amounts={DEMO_OFFER.amount} /> promo code appears as soon as you book.
@@ -306,7 +311,13 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
         ) : (
           <SubmitButton pendingLabel="Booking…" size="lg" className="flex-1 whitespace-normal text-center leading-tight sm:flex-none">
             <span>
-              {wantsMap ? "Get my free AI Opportunity Map" : "Book my free demo"} · get <Money amounts={DEMO_OFFER.amount} /> off
+              {partner ? (
+                "Book my partner call"
+              ) : (
+                <>
+                  {wantsMap ? "Get my free AI Opportunity Map" : "Book my free demo"} · get <Money amounts={DEMO_OFFER.amount} /> off
+                </>
+              )}
             </span>
           </SubmitButton>
         )}

@@ -57,6 +57,7 @@ export const GOALS = [
   { id: "modernise", label: "Replace or modernise an old system", hint: "It works, but it's holding you back", path: "build" },
   { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, Instagram, leads", path: "operate" },
   { id: "keep-running", label: "Look after our software and IT", hint: "Hosting, email, fixes, security, backups", path: "operate" },
+  { id: "white-label", label: "Resell AI to my own clients", hint: "For agencies and coaches — we build under your brand", path: null },
   { id: "ai-opportunity-map", label: "Find where AI can save us time and money", hint: "Your free AI Opportunity Map within 48 hours", path: null },
   { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll sit with you and work it out, free", path: null },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; hint: string; path: ServicePathId | null }>;
@@ -131,6 +132,20 @@ export const OPPORTUNITY_MAP = {
     "Hours saved and the value of each, in plain numbers",
     "A fixed price and timeline for every item",
     "A short video walking you through it — keep it even if you never hire us",
+  ],
+} as const;
+
+/** The white-label partner call for marketing agencies and coaches (/agencies). */
+export const AGENCY_PARTNER = {
+  goal: "white-label",
+  cta: "Book a 15-minute partner call",
+  title: "Book your partner call",
+  summary:
+    "Fifteen minutes to hear which of your clients are asking for AI. We show a working demo for their industry and how white-label works. Free, with no obligation.",
+  points: [
+    "A working demo built for your clients' industry",
+    "How we build under your brand, step by step",
+    "Partner pricing, so you see your margin before you decide",
   ],
 } as const;
 

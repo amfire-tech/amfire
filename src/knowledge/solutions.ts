@@ -18,6 +18,8 @@ export type Department = {
   name: string;
   problem: string;
   solutions: Solution[];
+  /** A short product video of this department's systems at work (files in public/media/). Shown once it exists. */
+  video?: { src: string; poster?: string };
 };
 
 export const DEPARTMENTS: Department[] = [

@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { submitDiscoveryAction, type DiscoveryState } from "@/app/actions/discovery";
 import { SubmitButton } from "@/components/forms";
 import { Button, Field, Notice, cx, inputClass } from "@/components/ui";
-import { AGENCY_PARTNER, BUSINESS_TYPES, CALL_TIMES, GOALS, OPPORTUNITY_MAP, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
+import { AGENCY_PARTNER, BUSINESS_TYPES, CALL_TIMES, GOALS, LEAD_AUDIT, OPPORTUNITY_MAP, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
 import { Money } from "@/components/currency";
 import { track } from "@/lib/analytics";
 import { DEMO_OFFER } from "@/knowledge/pricing";
@@ -29,6 +30,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
   const errors = { ...(state?.errors ?? {}), ...localErrors };
   const wantsMap = values.goal === OPPORTUNITY_MAP.goal;
   const partner = values.goal === AGENCY_PARTNER.goal;
+  const wantsAudit = values.goal === LEAD_AUDIT.goal;
   const set = (name: string, value: string) => {
     setValues((v) => ({ ...v, [name]: value }));
     setLocalErrors((e) => {
@@ -171,13 +173,17 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
       {/* Step 3 — problem */}
       <div hidden={step !== 2}>
         <h2 ref={step === 2 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
-          Describe the problem in your own words
+          {wantsAudit ? "Which businesses should we test?" : "Describe the problem in your own words"}
         </h2>
         <div className="mt-6 grid gap-6">
           <Field
-            label="What is getting in the way?"
+            label={wantsAudit ? "Up to three websites to test" : "What is getting in the way?"}
             htmlFor="problem"
-            hint="Plain words are perfect — e.g. “We re-type every order from email into our spreadsheet and the accounts system.”"
+            hint={
+              wantsAudit
+                ? "One per line, your own or your clients' — e.g. “brightsmiledental.com, a dental clinic in Austin”."
+                : "Plain words are perfect — e.g. “We re-type every order from email into our spreadsheet and the accounts system.”"
+            }
             error={errors.problem}
           >
             <textarea
@@ -209,7 +215,9 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
         <h2 ref={step === 3 ? headingRef : undefined} tabIndex={-1} className="scroll-mt-24 text-xl font-semibold focus:outline-none sm:text-2xl">
           {wantsMap
             ? "Where should we send your AI Opportunity Map?"
-            : partner
+            : wantsAudit
+              ? "Where should we send your audit?"
+              : partner
               ? "Where should we reach you for the partner call?"
               : "Where should we call you for your free demo?"}
         </h2>
@@ -283,7 +291,11 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
               />
               <span>
                 Store my answers and contact details so amfire can review them and contact me about the demo. Answers may be analysed with AI-assisted tools to prepare a
-                recommendation; a person reviews it before anything is proposed.
+                recommendation; a person reviews it before anything is proposed. See our{" "}
+                <Link href="/privacy" target="_blank" className="underline underline-offset-4">
+                  privacy policy
+                </Link>
+                .
               </span>
             </label>
             {errors.consent && (
@@ -315,7 +327,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
                 "Book my partner call"
               ) : (
                 <>
-                  {wantsMap ? "Get my free AI Opportunity Map" : "Book my free demo"} · get <Money amounts={DEMO_OFFER.amount} /> off
+                  {wantsMap ? "Get my free AI Opportunity Map" : wantsAudit ? "Get my free audit" : "Book my free demo"} · get <Money amounts={DEMO_OFFER.amount} /> off
                 </>
               )}
             </span>

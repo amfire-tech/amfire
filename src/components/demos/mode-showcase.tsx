@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ForCurrency } from "@/components/currency";
 import { cx } from "@/components/ui";
 
 // Hero visual: each service told as a tiny story — the owner's problem,
 // then what amfire does about it. Cycles gently; pauses on hover/focus and
-// never auto-advances with reduced motion.
+// never auto-advances with reduced motion. Visitors seeing US dollars get
+// stories from US businesses (QuickBooks, not Tally); same switch as prices.
 
 const MODES = [
   { id: "build", label: "Build", tagline: "Software made for your problem" },
@@ -80,7 +82,7 @@ export function ModeShowcase() {
   );
 }
 
-function Problem({ who, children }: { who: string; children: React.ReactNode }) {
+function Problem({ who, children }: { who: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="rounded-xl bg-surface p-3 ring-1 ring-line">
       <p className="text-[11px] font-medium text-muted">The owner&apos;s problem · {who}</p>
@@ -101,11 +103,17 @@ function Solution({ children }: { children: React.ReactNode }) {
 function BuildStory() {
   return (
     <>
-      <Problem who="auto-parts maker, Ludhiana">“Dealers call all day asking ‘stock hai?’ and ‘order kahan pahuncha?’”</Problem>
+      <Problem who={<><ForCurrency currency="INR">auto-parts maker, Ludhiana</ForCurrency><ForCurrency currency="USD">parts distributor, Ohio</ForCurrency></>}>
+        <ForCurrency currency="INR">“Dealers call all day asking ‘stock hai?’ and ‘order kahan pahuncha?’”</ForCurrency>
+        <ForCurrency currency="USD">“Dealers call all day asking ‘is it in stock?’ and ‘where’s my order?’”</ForCurrency>
+      </Problem>
       <div className="rounded-xl bg-surface p-3 ring-1 ring-line">
         <div className="flex justify-between text-sm">
           <span className="font-medium">Order #SO-2291</span>
-          <span className="text-muted">₹8,400</span>
+          <span className="text-muted">
+            <ForCurrency currency="INR">₹8,400</ForCurrency>
+            <ForCurrency currency="USD">$1,240</ForCurrency>
+          </span>
         </div>
         <ol className="mt-2 flex items-center gap-1.5">
           {["Placed", "Approved", "Invoiced", "Shipped", "Delivered"].map((s, i) => (
@@ -125,7 +133,7 @@ function OperateStory() {
   const items = ["Website & hosting", "Business email", "Google listing & SEO", "Instagram & designs", "Backups & security", "Monthly report"];
   return (
     <>
-      <Problem who="showroom owner, Nagpur">“Website is old, Google shows wrong timings, nobody posts on Instagram.”</Problem>
+      <Problem who={<><ForCurrency currency="INR">showroom owner, Nagpur</ForCurrency><ForCurrency currency="USD">dental clinic owner, Austin</ForCurrency></>}>“Website is old, Google shows the wrong hours, nobody posts on Instagram.”</Problem>
       <ul className="grid grid-cols-2 gap-x-2 gap-y-1.5 rounded-xl bg-surface p-3 text-xs ring-1 ring-line">
         {items.map((i) => (
           <li key={i} className="flex items-start gap-1.5 leading-snug">
@@ -134,7 +142,7 @@ function OperateStory() {
           </li>
         ))}
       </ul>
-      <Solution>Becomes the showroom&apos;s tech team — everything online handled, no hiring needed.</Solution>
+      <Solution>Becomes their tech team — everything online handled, no hiring needed.</Solution>
     </>
   );
 }
@@ -142,15 +150,25 @@ function OperateStory() {
 function AutomateStory() {
   return (
     <>
-      <Problem who="fabric wholesaler, Surat">“Three people spend all day re-typing WhatsApp orders into Tally.”</Problem>
+      <Problem who={<><ForCurrency currency="INR">fabric wholesaler, Surat</ForCurrency><ForCurrency currency="USD">food distributor, New Jersey</ForCurrency></>}>
+        <ForCurrency currency="INR">“Three people spend all day re-typing WhatsApp orders into Tally.”</ForCurrency>
+        <ForCurrency currency="USD">“Three people spend all day re-typing emailed orders into QuickBooks.”</ForCurrency>
+      </Problem>
       <div className="flex flex-wrap items-center gap-2 text-xs">
         <span className="rounded-xl rounded-tl-sm bg-[#d9fdd3] px-3 py-2 text-[#111]">
-          Design 4521 – 40 thaan 🙏
+          <ForCurrency currency="INR">Design 4521 – 40 thaan 🙏</ForCurrency>
+          <ForCurrency currency="USD">PO 4521 – 40 cases, Friday</ForCurrency>
         </span>
         <span aria-hidden className="text-muted">→</span>
-        <span className="rounded-xl bg-surface px-3 py-2 ring-1 ring-line">Tally voucher ✓ e-invoice ✓</span>
+        <span className="rounded-xl bg-surface px-3 py-2 ring-1 ring-line">
+          <ForCurrency currency="INR">Tally voucher ✓ e-invoice ✓</ForCurrency>
+          <ForCurrency currency="USD">QuickBooks invoice ✓ confirmed ✓</ForCurrency>
+        </span>
       </div>
-      <Solution>Orders flow from WhatsApp into Tally automatically — staff just approve.</Solution>
+      <Solution>
+        <ForCurrency currency="INR">Orders flow from WhatsApp into Tally automatically — staff just approve.</ForCurrency>
+        <ForCurrency currency="USD">Orders flow from email into QuickBooks automatically — staff just approve.</ForCurrency>
+      </Solution>
     </>
   );
 }

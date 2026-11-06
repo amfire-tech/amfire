@@ -228,6 +228,10 @@ export async function getPublicDiscoveryResult(db: DB, publicRef: string) {
     .limit(1);
   return {
     firstName: lead.name.split(" ")[0],
+    // The visitor's own answers, to prefill the calendar on their thank-you page (the ref is unguessable).
+    name: lead.name,
+    email: lead.email,
+    goal: lead.goal,
     company: lead.company,
     offerCode: demoOfferCode(lead.publicRef),
     recommendation: rec

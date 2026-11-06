@@ -12,6 +12,7 @@ import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
 const COMPANY = [
   { href: "/solutions", label: "AI solutions" },
   { href: "/agencies", label: "For agencies" },
+  { href: "/audit", label: "Free lead response audit" },
   { href: "/how-we-work", label: "How we work" },
   { href: "/work", label: "Our work" },
   { href: "/industries", label: "Industries" },
@@ -87,7 +88,15 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
           </div>
         </Container>
         <Container className="relative flex flex-col gap-2 border-t border-white/10 py-6 text-xs text-white/40 sm:flex-row sm:justify-between">
-          <span>© {new Date().getFullYear()} amfire</span>
+          <span className="flex flex-wrap gap-x-4 gap-y-1">
+            <span>© {new Date().getFullYear()} amfire</span>
+            <Link href="/privacy" className="hover:text-white">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-white">
+              Terms
+            </Link>
+          </span>
           <span>Case studies are real client projects. Examples marked illustrative are scenarios, not client work.</span>
         </Container>
       </footer>

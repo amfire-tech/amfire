@@ -4,20 +4,21 @@ import { useState } from "react";
 import { useCurrency } from "@/components/currency";
 import { cx } from "@/components/ui";
 import { HIRING } from "@/knowledge/catalog";
-import { formatMoney, type Priced } from "@/knowledge/pricing";
+import { DEMO_OFFER, formatMoney } from "@/knowledge/pricing";
 
-/** Compares the salary cost of an in-house tech team with amfire's starting Operate plan, in the visitor's currency. */
-export function HireVsAmfire({ startingPrice }: { startingPrice: Priced }) {
+/**
+ * What an in-house tech team would cost, in the visitor's currency, against amfire
+ * running the same work. amfire's own price isn't shown on the site: it's set on
+ * the free call for exactly what we manage.
+ */
+export function HireVsAmfire() {
   const [roles, setRoles] = useState<string[]>(["developer", "marketer", "social"]);
   const [level, setLevel] = useState<"fresher" | "experienced">("fresher");
   const currency = useCurrency();
   const salary = HIRING.salary[currency];
   const money = (n: number) => formatMoney(n * 100, currency);
-  const startingMonthly = startingPrice[currency] / 100;
-
   const perPerson = salary[level];
   const inHouse = roles.length * perPerson;
-  const max = Math.max(inHouse, startingMonthly, 1);
 
   function toggle(id: string) {
     setRoles((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]));
@@ -61,19 +62,21 @@ export function HireVsAmfire({ startingPrice }: { startingPrice: Priced }) {
       </div>
 
       <div className="flex flex-col justify-center gap-6" aria-live="polite">
-        <Bar label={`In-house team (${roles.length} ${roles.length === 1 ? "person" : "people"})`} value={money(inHouse)} share={inHouse / max} tone="muted" />
-        <Bar label="amfire Operate" value={money(startingMonthly)} share={startingMonthly / max} tone="brand" prefix="from " />
+        <Bar label={`In-house team (${roles.length} ${roles.length === 1 ? "person" : "people"})`} value={money(inHouse)} share={roles.length ? 1 : 0} tone="muted" />
         <div className="rounded-2xl bg-ink p-5 text-white">
-          {inHouse > startingMonthly ? (
+          {inHouse > 0 ? (
             <>
-              <p className="text-sm text-white/70">Compared with our starting plan, that&apos;s up to</p>
-              <p className="text-brand text-3xl font-semibold tracking-tight">{money((inHouse - startingMonthly) * 12)} a year</p>
-              <p className="mt-1 text-sm text-white/70">you keep — with a whole team&apos;s skills instead of one person&apos;s.</p>
+              <p className="text-sm text-white/70">That&apos;s</p>
+              <p className="text-brand text-3xl font-semibold tracking-tight">{money(inHouse * 12)} a year</p>
+              <p className="mt-1 text-sm text-white/70">
+                in salaries alone. amfire gives you the whole team&apos;s skills for one monthly fee, a fraction of that, priced on a free call for exactly
+                what we manage.
+              </p>
             </>
           ) : (
             <p className="text-sm text-white/80">Pick the roles you&apos;d otherwise hire to compare.</p>
           )}
-          <p className="mt-3 text-xs text-white/50">Your plan is priced for exactly what we manage for you.</p>
+          <p className="mt-3 text-xs text-white/50">Book the free call and get flat {formatMoney(DEMO_OFFER.amount[currency], currency)} off your first plan.</p>
         </div>
       </div>
     </div>

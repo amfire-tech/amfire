@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { CalBooking } from "@/components/cal-booking";
+import { FounderNote } from "@/components/founder-note";
 import { FreeDemoSection } from "@/components/free-demo";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading } from "@/components/ui";
-import { AGENCY_PARTNER } from "@/knowledge/catalog";
-import { DEPARTMENTS, SOLUTION_COUNT } from "@/knowledge/solutions";
+import { site } from "@/config/site";
+import { AGENCY_PARTNER, LEAD_AUDIT } from "@/knowledge/catalog";
+import { DEPARTMENTS } from "@/knowledge/solutions";
 
 export const metadata: Metadata = {
   title: "White-Label AI for Marketing Agencies and Coaches",
@@ -13,9 +16,11 @@ export const metadata: Metadata = {
 };
 
 const CALL_HREF = `/start?goal=${AGENCY_PARTNER.goal}`;
+/** With the partner calendar set up, every call button scrolls to it; otherwise it opens the booking form. */
+const BOOK_HREF = site.booking.partner ? "#book" : CALL_HREF;
 
-/** The systems agencies resell most, picked from the catalogue by title. */
-const RESELL = ["Speed-to-lead engine", "AI chat agent", "AI voice receptionist", "AI search visibility", "Reviews and reputation", "Owner's morning brief"];
+/** The four systems agencies resell most, picked from the catalogue by title. Fewer choices, faster yes. */
+const RESELL = ["Speed-to-lead engine", "AI voice receptionist", "Reviews and reputation", "AI search visibility"];
 const resell = RESELL.map((title) => DEPARTMENTS.flatMap((d) => d.solutions).find((s) => s.title === title)).filter((s) => s !== undefined);
 
 const PROBLEMS = [
@@ -25,7 +30,7 @@ const PROBLEMS = [
 ];
 
 const STEPS = [
-  { title: "You brief us", body: "Fifteen minutes, or forward the client's request. We come back with the system, a fixed price and a timeline." },
+  { title: "You brief us", body: "Fifteen minutes, or forward the client's request. Or start with a free Lead Response Audit of three of your clients to show them the gap." },
   { title: "We build under your brand", body: "In your accounts or your client's, with your name on it. Most systems are live in 7–10 days." },
   { title: "You sell it", body: "Set your own price. We can join the sales call as your tech team and bring a working demo." },
   { title: "We run it every month", body: "Monitoring, fixes and improvements, with a report you can forward. You bill your client." },
@@ -33,11 +38,20 @@ const STEPS = [
 
 const PROMISES = [
   "Overnight delivery: our team is in India, so your brief at 6pm is worked on while you sleep",
+  "Live on calls during US mornings, 9 AM to 1 PM Eastern",
   "A written update every working day, and a short video for anything complex",
   "Fixed prices in writing before we start — no hourly surprises",
-  "Your client stays yours: we never contact them without you, in writing",
-  "Accounts, code and data in your or your client's name from day one",
   "Senior engineering: we built Skillship's AI school platform — 93 screens and 380+ automated tests",
+];
+
+/** What agencies fear most about white-label: losing the client. Each line is a promise in the partner agreement. */
+const CLIENTS_STAY_YOURS = [
+  { title: "We never contact your clients", body: "Not without you, not after the project, not ever. A non-solicit clause both ways, in writing." },
+  { title: "Your brand, not ours", body: "Our name appears nowhere your client can see: not in the product, the emails or the reports." },
+  { title: "Their accounts, from day one", body: "Everything lives in your or your client's accounts. You can walk away with all of it at any time." },
+  { title: "No copies of their data", body: "We get the access a build needs, keep no copies, and hand back every login when the work ends." },
+  { title: "NDA before the first brief", body: "Ask for it and we sign yours, or send ours, before you share a single client detail." },
+  { title: "You set the price", body: "Partner rates are private and sit well below what we charge direct, so your markup is always protected." },
 ];
 
 const FAQ = [
@@ -47,7 +61,7 @@ const FAQ = [
   },
   {
     q: "What does it cost?",
-    a: "Partner prices sit below our public prices, so you keep the margin and set your own price. We share the partner rate card on the call, with your margin worked out for your first client.",
+    a: "Partner rates sit well below what we charge businesses directly, so you keep the margin and set your own price. We share the partner rate card on the call, with your margin worked out for your first client.",
   },
   {
     q: "Which tools do you build on?",
@@ -82,11 +96,11 @@ export default function AgenciesPage() {
             and the margin.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <ButtonLink href={CALL_HREF} size="lg">
+            <ButtonLink href={BOOK_HREF} size="lg">
               {AGENCY_PARTNER.cta} <Arrow />
             </ButtonLink>
-            <ButtonLink href="/solutions" variant="secondary" size="lg">
-              See what you can resell
+            <ButtonLink href="/audit" variant="secondary" size="lg">
+              Free audit of 3 of your clients
             </ButtonLink>
           </div>
         </Container>
@@ -122,9 +136,9 @@ export default function AgenciesPage() {
         <SectionHeading
           eyebrow="What you can resell"
           title="The systems your clients ask for most."
-          description={`These six sell themselves to local and service businesses. The full catalogue has ${SOLUTION_COUNT} systems, and we build custom too.`}
+          description="Four systems that sell themselves to local and service businesses. If a client needs something else, we build it custom."
         />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {resell.map((s) => (
             <div key={s.title} className="rounded-[1.5rem] bg-surface p-6 ring-1 ring-line">
               <h3 className="text-lg font-semibold">{s.title}</h3>
@@ -132,10 +146,24 @@ export default function AgenciesPage() {
             </div>
           ))}
         </div>
-        <Link href="/solutions#catalogue" className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
-          See all {SOLUTION_COUNT} systems <Arrow />
+        <Link href={`/start?goal=${LEAD_AUDIT.goal}`} className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
+          Not sure which one a client needs? Start with a free Lead Response Audit <Arrow />
         </Link>
       </Container>
+
+      <section className="border-y border-line">
+        <Container className="py-16 sm:py-24">
+          <SectionHeading eyebrow="Your clients stay yours" title="We build behind your brand. We never step in front of it." />
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CLIENTS_STAY_YOURS.map((c) => (
+              <div key={c.title} className="rounded-[1.5rem] bg-surface p-6 ring-1 ring-line">
+                <h3 className="text-lg font-semibold">{c.title}</h3>
+                <p className="mt-2 text-sm text-muted">{c.body}</p>
+              </div>
+            ))}
+          </div>
+        </Container>
+      </section>
 
       <section className="bg-subtle">
         <Container className="grid gap-10 py-16 sm:py-24 lg:grid-cols-2">
@@ -155,13 +183,15 @@ export default function AgenciesPage() {
                 and us on the sales call to help close it.
               </p>
               <p className="mt-3 text-sm text-white/60">If it doesn&apos;t do what we agreed within 30 days of going live, we keep fixing it at no cost.</p>
-              <ButtonLink href={CALL_HREF} variant="inverse" size="lg" className="mt-6">
+              <ButtonLink href={BOOK_HREF} variant="inverse" size="lg" className="mt-6">
                 {AGENCY_PARTNER.cta} <Arrow />
               </ButtonLink>
             </div>
           </div>
         </Container>
       </section>
+
+      <FounderNote />
 
       <Container className="py-16 sm:py-24">
         <SectionHeading eyebrow="Questions" title="What partners ask first." />
@@ -180,12 +210,37 @@ export default function AgenciesPage() {
         </div>
       </Container>
 
-      <FreeDemoSection
-        goal={AGENCY_PARTNER.goal}
-        cta={AGENCY_PARTNER.cta}
-        title="Find out what you could resell this month."
-        body={AGENCY_PARTNER.summary}
-      />
+      {site.booking.partner ? (
+        <section id="book" aria-labelledby="book-title" className="scroll-mt-20 bg-subtle">
+          <Container className="grid gap-8 py-16 sm:py-24 lg:grid-cols-[0.8fr_1.4fr]">
+            <div>
+              <Eyebrow>15 minutes · free</Eyebrow>
+              <h2 id="book-title" className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+                Find out what you could resell this month.
+              </h2>
+              <p className="mt-4 text-muted">{AGENCY_PARTNER.summary}</p>
+              <div className="mt-6 text-sm">
+                <CheckList items={[...AGENCY_PARTNER.points]} />
+              </div>
+              <p className="mt-6 text-sm text-muted">
+                Times show in your own time zone. Rather send a brief first?{" "}
+                <Link href={CALL_HREF} className="font-medium text-fg underline underline-offset-4">
+                  Use the form
+                </Link>
+                .
+              </p>
+            </div>
+            <CalBooking calLink={site.booking.partner} kind="partner" />
+          </Container>
+        </section>
+      ) : (
+        <FreeDemoSection
+          goal={AGENCY_PARTNER.goal}
+          cta={AGENCY_PARTNER.cta}
+          title="Find out what you could resell this month."
+          body={AGENCY_PARTNER.summary}
+        />
+      )}
     </>
   );
 }

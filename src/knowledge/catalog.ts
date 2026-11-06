@@ -58,6 +58,7 @@ export const GOALS = [
   { id: "online-presence", label: "Manage our website, social media and online marketing", hint: "Website, Google listing, SEO, Instagram, leads", path: "operate" },
   { id: "keep-running", label: "Look after our software and IT", hint: "Hosting, email, fixes, security, backups", path: "operate" },
   { id: "white-label", label: "Resell AI to my own clients", hint: "For agencies and coaches — we build under your brand", path: null },
+  { id: "lead-response-audit", label: "Test how fast we (or our clients) answer new leads", hint: "Your free Lead Response Audit within 48 hours", path: null },
   { id: "ai-opportunity-map", label: "Find where AI can save us time and money", hint: "Your free AI Opportunity Map within 48 hours", path: null },
   { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll sit with you and work it out, free", path: null },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; hint: string; path: ServicePathId | null }>;
@@ -146,6 +147,25 @@ export const AGENCY_PARTNER = {
     "A working demo built for your clients' industry",
     "How we build under your brand, step by step",
     "Partner pricing, so you see your margin before you decide",
+  ],
+} as const;
+
+/**
+ * The free Lead Response Audit (/audit): we enquire at up to three businesses the way a
+ * real customer would (web form, call, WhatsApp or chat) and report how fast and how
+ * well each one answered. Agencies run it on their clients; owners on their own business.
+ */
+export const LEAD_AUDIT = {
+  goal: "lead-response-audit",
+  cta: "Get your free Lead Response Audit",
+  title: "Your free Lead Response Audit",
+  summary:
+    "Give us up to three businesses: your own, or your clients'. We contact each one the way a real customer would and, within 48 hours, send you how fast they answered, what they missed and what that costs. Free, with no obligation.",
+  points: [
+    "A real enquiry by web form, phone and chat, at each business",
+    "Time to first reply, follow-ups and what got missed, for each one",
+    "What slow replies cost, in plain numbers",
+    "For agencies: an unbranded report you can put your own name on",
   ],
 } as const;
 
@@ -362,6 +382,22 @@ export const INDUSTRIES = [
   { name: "Education", examples: ["coaching-institute-fees-and-parents"], problems: ["Fees and instalments", "Attendance and parent updates", "Admissions pipeline"] },
   { name: "CA & professional services", examples: ["gst-reconciliation-for-ca-firm"], problems: ["GST reconciliation", "Client document collection", "Compliance calendars"] },
 ] as const;
+
+/** The tools international clients and agencies ask about most (shown to visitors seeing USD). */
+export const TOOLS_GLOBAL = [
+  "HubSpot",
+  "GoHighLevel",
+  "Salesforce",
+  "Shopify",
+  "Stripe",
+  "QuickBooks",
+  "Google Workspace",
+  "Microsoft 365",
+  "Slack",
+  "Calendly",
+  "Twilio",
+  "WhatsApp Business",
+];
 
 export const TOOLS = [
   "TallyPrime",

@@ -3,7 +3,6 @@
 import { FOUNDERS } from "@/config/founders";
 import { site } from "@/config/site";
 import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
-import { STARTING_PRICE } from "@/knowledge/pricing";
 
 export const ORGANIZATION_ID = `${site.url}/#organization`;
 
@@ -65,16 +64,6 @@ export function serviceJsonLd(path: ServicePathId, name: string) {
     url: absolute(`/services/${path}`),
     provider: { "@id": ORGANIZATION_ID },
     areaServed: { "@type": "Country", name: "India" },
-    offers: {
-      "@type": "Offer",
-      priceCurrency: "INR",
-      // A "starts from" price, not a fixed one.
-      priceSpecification: {
-        "@type": path === "operate" ? "UnitPriceSpecification" : "PriceSpecification",
-        priceCurrency: "INR",
-        minPrice: STARTING_PRICE[path].INR / 100,
-        ...(path === "operate" && { unitText: "MONTH" }),
-      },
-    },
+    // No prices: they're agreed on a free call, so search results don't show one either.
   };
 }

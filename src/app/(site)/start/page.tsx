@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { GiftIcon } from "@/components/demo-offer";
 import { CheckList, Container, Eyebrow } from "@/components/ui";
 import { contact, site } from "@/config/site";
-import { AGENCY_PARTNER, FREE_DEMO, OPPORTUNITY_MAP } from "@/knowledge/catalog";
+import { AGENCY_PARTNER, FREE_DEMO, LEAD_AUDIT, OPPORTUNITY_MAP } from "@/knowledge/catalog";
 import { Money } from "@/components/currency";
 import { DEMO_OFFER } from "@/knowledge/pricing";
 import { DiscoveryForm } from "./discovery-form";
@@ -16,7 +16,8 @@ export const metadata: Metadata = {
 export default async function StartPage({ searchParams }: PageProps<"/start">) {
   const { goal } = await searchParams;
   // Visitors coming for the AI Opportunity Map or a partner call see it framed that way; the booking is the same.
-  const intro = goal === OPPORTUNITY_MAP.goal ? OPPORTUNITY_MAP : goal === AGENCY_PARTNER.goal ? AGENCY_PARTNER : FREE_DEMO;
+  const intro =
+    goal === OPPORTUNITY_MAP.goal ? OPPORTUNITY_MAP : goal === AGENCY_PARTNER.goal ? AGENCY_PARTNER : goal === LEAD_AUDIT.goal ? LEAD_AUDIT : FREE_DEMO;
   return (
     <div className="bg-subtle">
       {/* Phones: heading and offer, then the form, then the details. Desktop: details beside the form. */}

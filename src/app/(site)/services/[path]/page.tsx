@@ -16,7 +16,6 @@ import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, Swipe
 import { serviceJsonLd } from "@/config/structured-data";
 import { FREE_DEMO, SERVICES, SERVICE_DETAILS, type ServicePathId } from "@/knowledge/catalog";
 import { examplesFor } from "@/knowledge/examples";
-import { STARTING_PRICE } from "@/knowledge/pricing";
 
 const PATHS = Object.keys(SERVICES) as ServicePathId[];
 const isPath = (p: string): p is ServicePathId => (PATHS as string[]).includes(p);
@@ -160,7 +159,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
               }
             />
             <div className="mt-10">
-              <HireVsAmfire startingPrice={STARTING_PRICE.operate} />
+              <HireVsAmfire />
             </div>
           </Container>
         </section>

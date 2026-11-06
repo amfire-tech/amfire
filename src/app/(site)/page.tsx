@@ -4,23 +4,26 @@ import { AutomateDemo } from "@/components/demos/automate-demo";
 import { HireVsAmfire } from "@/components/demos/hire-vs-amfire";
 import { ModeShowcase } from "@/components/demos/mode-showcase";
 import { CaseStudyCard } from "@/components/case-study-card";
+import { DepartmentShowcase } from "@/components/departments";
+import { FounderNote } from "@/components/founder-note";
 import { ExampleCard } from "@/components/example-card";
 import { FreeDemoSection } from "@/components/free-demo";
 import { GiftIcon } from "@/components/demo-offer";
 import { JourneyVideo } from "@/components/journey-video";
-import { PricingSection } from "@/components/pricing-section";
 import { StoryTabs } from "@/components/story-tabs";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, SwipeRow } from "@/components/ui";
-import { FREE_DEMO, HIRING, INDUSTRIES, SERVICES, SERVICE_DETAILS, TOOLS, type ServicePathId } from "@/knowledge/catalog";
+import { FREE_DEMO, INDUSTRIES, SERVICES, SERVICE_DETAILS, TOOLS, TOOLS_GLOBAL, type ServicePathId } from "@/knowledge/catalog";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
 import { EXAMPLES } from "@/knowledge/examples";
 import { ForCurrency, Money } from "@/components/currency";
-import { DEMO_OFFER, STARTING_PRICE } from "@/knowledge/pricing";
+import { DEMO_OFFER } from "@/knowledge/pricing";
 import { SOLUTION_COUNT } from "@/knowledge/solutions";
+
+import { HIRING } from "@/knowledge/catalog";
+import { site } from "@/config/site";
 
 /** Salaries for a developer, a digital marketer and a social media person, per month. */
 const THREE_HIRES = { INR: 3 * HIRING.salary.INR.fresher * 100, USD: 3 * HIRING.salary.USD.fresher * 100 };
-import { site } from "@/config/site";
 
 const PATHS = Object.keys(SERVICES) as ServicePathId[];
 
@@ -80,8 +83,8 @@ export default function HomePage() {
               <ButtonLink href="/start" size="lg" className="w-full sm:w-auto">
                 {FREE_DEMO.cta} <Arrow />
               </ButtonLink>
-              <Link href="#stories" className="inline-flex items-center justify-center gap-1.5 px-2 py-3 text-sm font-semibold underline-offset-4 hover:underline">
-                See how it works for businesses like yours
+              <Link href="#departments" className="inline-flex items-center justify-center gap-1.5 px-2 py-3 text-sm font-semibold underline-offset-4 hover:underline">
+                See what we automate, department by department
               </Link>
             </div>
             <Link
@@ -99,19 +102,44 @@ export default function HomePage() {
 
       </section>
 
-      {/* Tools */}
-      <section aria-label="Works with the tools you already use" className="border-y border-line bg-subtle py-5 sm:py-6">
-        <Container className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
-          <p className="shrink-0 text-xs font-semibold tracking-widest text-muted uppercase">Works with what you use</p>
-          <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-            <ul className="flex w-max animate-marquee gap-3 hover:[animation-play-state:paused]">
-              {[...TOOLS, ...TOOLS].map((t, i) => (
-                <li key={i} aria-hidden={i >= TOOLS.length} className="rounded-full bg-surface px-4 py-1.5 text-sm font-medium whitespace-nowrap ring-1 ring-line">
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* Tools: Indian visitors see Tally, GST and UPI; everyone else the tools they use. */}
+      {([["INR", TOOLS], ["USD", TOOLS_GLOBAL]] as const).map(([currency, tools]) => (
+        <section
+          key={currency}
+          data-currency-only={currency}
+          aria-label="Works with the tools you already use"
+          className="border-y border-line bg-subtle py-5 sm:py-6"
+        >
+          <Container className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
+            <p className="shrink-0 text-xs font-semibold tracking-widest text-muted uppercase">Works with what you use</p>
+            <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+              <ul className="flex w-max animate-marquee gap-3 hover:[animation-play-state:paused]">
+                {[...tools, ...tools].map((t, i) => (
+                  <li key={i} aria-hidden={i >= tools.length} className="rounded-full bg-surface px-4 py-1.5 text-sm font-medium whitespace-nowrap ring-1 ring-line">
+                    {t}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Container>
+        </section>
+      ))}
+
+      {/* Visitors outside India: the white-label partner path for agencies. */}
+      <section data-currency-only="USD" aria-label="For marketing agencies">
+        <Container className="pt-10 sm:pt-14">
+          <Link
+            href="/agencies"
+            className="group flex flex-col gap-3 rounded-card bg-ink p-6 text-white sm:flex-row sm:items-center sm:justify-between sm:p-8"
+          >
+            <span>
+              <span className="block text-xs font-semibold tracking-[0.2em] text-flame uppercase">Run a marketing agency or coaching program?</span>
+              <span className="mt-2 block text-xl font-semibold tracking-tight sm:text-2xl">We&apos;re the AI build team behind your brand. You keep the client and the margin.</span>
+            </span>
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold group-hover:underline">
+              How white-label works <Arrow />
+            </span>
+          </Link>
         </Container>
       </section>
 
@@ -136,8 +164,12 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* Owner stories */}
-      <section id="stories" className="scroll-mt-20 border-y border-line bg-subtle">
+      <DepartmentShowcase />
+
+      <FounderNote />
+
+      {/* Owner stories (Indian businesses) */}
+      <section id="stories" data-currency-only="INR" className="scroll-mt-20 border-y border-line bg-subtle">
         <Container className="py-14 sm:py-24">
           <SectionHeading
             eyebrow="Stories"
@@ -180,15 +212,13 @@ export default function HomePage() {
             </div>
           </div>
           <div className="mt-10">
-            <HireVsAmfire startingPrice={STARTING_PRICE.operate} />
+            <HireVsAmfire />
           </div>
         </Container>
       </section>
 
-      <PricingSection />
-
-      {/* Live demo */}
-      <section className="relative overflow-hidden bg-ink text-white">
+      {/* Live demo: WhatsApp to Tally, for Indian visitors */}
+      <section data-currency-only="INR" className="relative overflow-hidden bg-ink text-white">
         <div aria-hidden className="bg-brand absolute top-1/3 -right-40 size-[30rem] rounded-full opacity-20 blur-3xl" />
         <Container className="relative grid gap-8 py-14 sm:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-12">
           <div>
@@ -208,8 +238,8 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* Examples */}
-      <section>
+      {/* Examples from Indian businesses */}
+      <section data-currency-only="INR">
         <Container className="py-14 sm:py-24">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
             <SectionHeading
@@ -251,8 +281,8 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* Industries */}
-      <section className="border-t border-line">
+      {/* Industries (India) */}
+      <section data-currency-only="INR" className="border-t border-line">
         <Container className="py-12 sm:py-16">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <h2 className="text-2xl font-semibold tracking-tight">Built around how Indian industries actually work</h2>

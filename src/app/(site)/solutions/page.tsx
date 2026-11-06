@@ -4,25 +4,26 @@ import { Money } from "@/components/currency";
 import { FreeDemoSection } from "@/components/free-demo";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, cx } from "@/components/ui";
 import { OPPORTUNITY_MAP, SERVICES } from "@/knowledge/catalog";
-import { AI_PACKAGE_PRICE, CARE_PLAN, STARTING_PRICE, type Priced } from "@/knowledge/pricing";
+import { DEMO_OFFER } from "@/knowledge/pricing";
 import { DEPARTMENTS, SOLUTION_COUNT } from "@/knowledge/solutions";
 
 export const metadata: Metadata = {
   title: "AI Automation Solutions — Agents, Workflows and Custom AI",
   description:
-    "Every AI system a business needs, by department: sales, customer service, marketing, operations, finance, HR and management — fixed prices, or custom. Start with a free AI Opportunity Map.",
+    "Every AI system a business needs, by department: sales, customer service, marketing, operations, finance, HR and management — ready-made or custom. Start with a free AI Opportunity Map.",
   alternates: { canonical: "/solutions" },
 };
 
 const MAP_HREF = `/start?goal=${OPPORTUNITY_MAP.goal}`;
 
-const PACKAGES: { name: string; body: string; price: Priced | null; from?: boolean; monthly?: boolean; highlight?: boolean }[] = [
-  { name: "AI Opportunity Map", body: "Where AI saves you the most, with a price and timeline for each. Within 48 hours.", price: null, highlight: true },
-  { name: "One AI system", body: "Any single system from the catalogue, built around your process and live in about two weeks.", price: STARTING_PRICE.automate, from: true },
-  { name: "AI agent", body: "A chat, voice, outbound or company-brain agent trained on your business.", price: AI_PACKAGE_PRICE.agent, from: true },
-  { name: "AI operating system", body: "Three to five connected systems, a company brain and your morning brief.", price: AI_PACKAGE_PRICE.system, from: true },
-  { name: "Care", body: "We monitor, fix and improve the systems we built, with a monthly report.", price: CARE_PLAN, monthly: true },
-  { name: "Operate", body: "Your whole tech and marketing team, AI included, for one monthly fee.", price: STARTING_PRICE.operate, from: true, monthly: true },
+// Ways to work with amfire. Prices are agreed on a free call, in writing, before any work starts.
+const PACKAGES: { name: string; body: string; tag: string; highlight?: boolean }[] = [
+  { name: "AI Opportunity Map", body: "Where AI saves you the most, with a timeline for each. Within 48 hours.", tag: "Free", highlight: true },
+  { name: "One AI system", body: "Any single system from the catalogue, built around your process and live in about two weeks.", tag: "Fixed price" },
+  { name: "AI agent", body: "A chat, voice, outbound or company-brain agent trained on your business.", tag: "Fixed price" },
+  { name: "AI operating system", body: "Three to five connected systems across departments, a company brain and your morning brief.", tag: "Fixed price, in milestones" },
+  { name: "Care", body: "We monitor, fix and improve the systems we built, with a monthly report.", tag: "Monthly" },
+  { name: "Operate", body: "Your whole tech and marketing team, AI included, for one monthly fee.", tag: "Monthly" },
 ];
 
 export default function SolutionsPage() {
@@ -113,30 +114,20 @@ export default function SolutionsPage() {
         <Container className="py-16 sm:py-24">
           <SectionHeading
             eyebrow="Packages"
-            title="Fixed prices, agreed before we start."
-            description="Every price is fixed in writing before any work begins, and you pay milestone by milestone after you approve the work."
+            title="Ways to work with us. Prices agreed before we start."
+            description="We price each system for your business on a free call, fixed in writing before any work begins. You pay milestone by milestone, after you approve the work."
           />
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {PACKAGES.map((p) => (
               <div key={p.name} className={cx("flex flex-col rounded-[1.5rem] p-6 ring-1", p.highlight ? "bg-ink text-white ring-ink" : "bg-surface ring-line")}>
                 <h3 className="text-lg font-semibold">{p.name}</h3>
                 <p className={cx("mt-1 text-sm", p.highlight ? "text-white/70" : "text-muted")}>{p.body}</p>
-                <p className="mt-auto pt-6 text-2xl font-semibold tracking-tight">
-                  {p.price ? (
-                    <>
-                      {p.from && <span className={cx("mr-1 text-sm font-normal", p.highlight ? "text-white/60" : "text-muted")}>from</span>}
-                      <Money amounts={p.price} />
-                      {p.monthly && <span className={cx("text-sm font-normal", p.highlight ? "text-white/60" : "text-muted")}> /month</span>}
-                    </>
-                  ) : (
-                    <span className="text-flame">Free</span>
-                  )}
-                </p>
+                <p className={cx("mt-auto pt-6 text-sm font-semibold tracking-wide uppercase", p.highlight ? "text-flame" : "text-muted")}>{p.tag}</p>
               </div>
             ))}
           </div>
           <p className="mt-6 text-sm text-muted">
-            Bigger custom software starts from <Money amounts={STARTING_PRICE.build} /> and is quoted after a free session.{" "}
+            Book the free call and get <strong className="text-fg">flat <Money amounts={DEMO_OFFER.amount} /> off</strong> whatever you start with.{" "}
             <Link href="/services" className="font-medium text-fg underline underline-offset-4">
               See how Build, Operate and Automate work
             </Link>

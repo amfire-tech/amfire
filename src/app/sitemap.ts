@@ -19,6 +19,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...(Object.keys(SERVICES) as ServicePathId[]).map((p) => page(`/services/${p}`, 0.9)),
     page("/solutions", 0.9),
     page("/agencies", 0.7),
+    page("/audit", 0.7),
     page("/how-we-work", 0.7),
     page("/industries", 0.7),
     page("/work", 0.8),
@@ -26,5 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...EXAMPLES.map((e) => page(`/work/${e.slug}`, 0.6)),
     page("/about", 0.6),
     page("/partners", 0.5),
+    page("/privacy", 0.2),
+    page("/terms", 0.2),
   ];
 }

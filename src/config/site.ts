@@ -18,6 +18,17 @@ export const site = {
     .split(",")
     .map((u) => u.trim())
     .filter(Boolean),
+  // Who the client contracts with, as named on /terms and /privacy. Update once the business is registered.
+  legalName: process.env.NEXT_PUBLIC_LEGAL_NAME ?? "amfire",
+  location: "Pune, Maharashtra, India",
+  // Cal.com booking links ("username/event-slug"). Each calendar stays hidden until its link is set,
+  // and visitors fall back to the booking form and a call back.
+  booking: {
+    /** 15-minute partner call for agencies and coaches, 9 AM–1 PM New York time on weekdays. */
+    partner: process.env.NEXT_PUBLIC_CAL_PARTNER_LINK ?? "amfire/partner-call",
+    /** 30-minute free demo / AI plan call, 11 AM–6 PM IST, Monday to Saturday. */
+    demo: process.env.NEXT_PUBLIC_CAL_DEMO_LINK ?? "amfire/ai-plan-call",
+  },
   // Published availability — keep these true; they are promises to clients.
   availability: {
     hours: "Monday to Saturday, 10 AM – 7 PM IST",

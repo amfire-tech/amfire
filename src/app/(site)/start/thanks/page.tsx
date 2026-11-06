@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { LeadConversion } from "@/components/analytics-client";
 import { WhatsAppIcon } from "@/components/contact";
+import { CalBooking } from "@/components/cal-booking";
 import { GiftIcon, PromoCode } from "@/components/demo-offer";
 import { BulletList, ButtonLink, Card, Container, PathBadge, buttonClass } from "@/components/ui";
 import { contact, site } from "@/config/site";
+import { AGENCY_PARTNER } from "@/knowledge/catalog";
 import { getDb } from "@/db";
 import { Money } from "@/components/currency";
 import { DEMO_OFFER } from "@/knowledge/pricing";
@@ -15,6 +17,9 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
   const { ref } = await searchParams;
   const result = typeof ref === "string" ? await getPublicDiscoveryResult(await getDb(), ref) : null;
   const rec = result?.recommendation;
+  // Partners book the 15-minute partner call; everyone else the 30-minute demo.
+  const partner = result?.goal === AGENCY_PARTNER.goal;
+  const calLink = result ? (partner ? site.booking.partner : site.booking.demo) : "";
 
   return (
     <div className="bg-subtle">
@@ -25,8 +30,28 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
           Thank you{result ? `, ${result.firstName}` : ""}.
         </h1>
         <p className="mt-3 text-fg/75">
-          Your free demo request is in. A person at amfire will call or email you to fix a time. Nothing is agreed until you approve a written proposal.
+          {calLink
+            ? "Your request is in. Pick a time below and the invite lands in your inbox straight away, or skip it and a person at amfire will call or email you to fix one."
+            : "Your free demo request is in. A person at amfire will call or email you to fix a time."}{" "}
+          Nothing is agreed until you approve a written proposal.
         </p>
+
+        {result && calLink && (
+          <section aria-labelledby="pick-a-time" className="mt-8">
+            <h2 id="pick-a-time" className="text-xl font-semibold tracking-tight">
+              {partner ? "Pick a time for your 15-minute partner call" : "Pick a time for your free 30-minute call"}
+            </h2>
+            <p className="mt-1 text-sm text-muted">Times are shown in your own time zone.</p>
+            <CalBooking
+              className="mt-4"
+              calLink={calLink}
+              kind={partner ? "partner" : "demo"}
+              name={result.name}
+              email={result.email ?? undefined}
+              notes={result.company ? `Business: ${result.company}` : undefined}
+            />
+          </section>
+        )}
 
         {result && (
           <section aria-labelledby="offer" className="relative mt-8 overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">

@@ -44,6 +44,7 @@ export async function sendEmail({
   fromName,
   fromAddress,
   idempotencyKey,
+  attachments,
 }: {
   to: string;
   subject: string;
@@ -53,6 +54,8 @@ export async function sendEmail({
   fromName?: string;
   fromAddress?: string;
   idempotencyKey?: string;
+  /** Files as Resend takes them: content is base64. */
+  attachments?: { filename: string; content: string; content_type?: string }[];
 }): Promise<string | null> {
   if (!emailConfigured()) throw new Error("Email isn't set up (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
   // Replies go to the support inbox (hello@amfire.in), whatever address sends.
@@ -64,6 +67,7 @@ export async function sendEmail({
     subject,
     text,
     ...(html ? { html } : {}),
+    ...(attachments?.length ? { attachments } : {}),
   });
   let lastError: Error = new Error("Resend didn't answer");
   for (let attempt = 0; attempt < 3; attempt++) {

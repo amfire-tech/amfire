@@ -10,7 +10,9 @@ import { openPglite, type DB } from "@/db";
 import { interactions, leads, prospects, touches, users } from "@/db/schema";
 import { loadActor, type Actor } from "@/server/access";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
-import { bookingOfferCode, CalWebhook, recordCalBooking, verifyCalSignature } from "@/server/bookings";
+import { bookedCall, bookingAlertEmail, bookingOfferCode, CalWebhook, callInvite, clientInviteEmail, recordCalBooking, verifyCalSignature, whatsappConfirmation } from "@/server/bookings";
+import { googleCalendarUrl } from "@/lib/ics";
+import { listLeads } from "@/server/hq";
 import { demoOfferCode, submitDiscovery } from "@/server/leads";
 import { addProspects } from "@/server/outreach";
 
@@ -118,5 +120,97 @@ describe("Cal.com bookings", () => {
     const [lead] = await db.select().from(leads).where(eq(leads.id, result.leadId));
     assert.equal(demoOfferCode(lead.publicRef), shown);
     assert.equal(await bookingOfferCode(db, uid), shown); // and after it
+  });
+
+  test("a returning lead who books comes to the top of HQ, and the alert says it isn't a new lead", async () => {
+    const { lead } = await submitDiscovery(db, {
+      goal: "customer-portal",
+      businessType: "Manufacturing",
+      urgency: "month",
+      problem: "We want an app for our camera rental business, bookings are on paper.",
+      name: "Aryan",
+      company: "Aryan Cameras",
+      email: "aryan@cameras.test",
+      consent: true,
+    });
+    await db.update(leads).set({ createdAt: new Date("2026-11-01"), updatedAt: new Date("2026-11-01") }).where(eq(leads.id, lead.id));
+    // A newer lead arrives after it.
+    await recordCalBooking(db, booking("BOOKING_CREATED", "newer-uid", "someone@else.test", { type: "ai-plan-call", title: "Free AI plan call" }));
+
+    const result = await recordCalBooking(db, booking("BOOKING_CREATED", "returning-uid", "Aryan@Cameras.test", { type: "ai-plan-call", title: "Free AI plan call" }));
+    assert.ok("alert" in result && result.alert);
+    assert.equal(result.leadId, lead.id);
+    assert.equal(result.alert.newLead, false);
+    const mail = bookingAlertEmail(result.alert, "https://amfire.test/hq/leads/x");
+    assert.match(mail.subject, /^New call booked: Crystal Williams, /);
+    assert.match(mail.text, /existing lead "Aryan/);
+
+    const { leads: list } = await listLeads(db, owner);
+    assert.equal(list[0].id, lead.id);
+  });
+
+  test("the business name from the booking form is kept, and replaces a placeholder on a returning lead", async () => {
+    const first = await recordCalBooking(db, booking("BOOKING_CREATED", "biz-uid-1", "aryan@gmail.com", { type: "ai-plan-call", title: "Free AI plan call", attendees: [{ email: "aryan@gmail.com", name: "Aryan" }], responses: { "business-name": { value: "Opticviyu" } } }));
+    assert.ok("leadId" in first && first.leadId);
+    const [created] = await db.select().from(leads).where(eq(leads.id, first.leadId));
+    assert.equal(created.company, "Opticviyu");
+    const [note] = await db.select().from(interactions).where(eq(interactions.leadId, created.id));
+    assert.match(note.summary, /by Aryan, Opticviyu/);
+
+    await db.update(leads).set({ company: "na" }).where(eq(leads.id, created.id));
+    await recordCalBooking(db, booking("BOOKING_RESCHEDULED", "biz-uid-2", "aryan@gmail.com", { type: "ai-plan-call", title: "Free AI plan call", attendees: [{ email: "aryan@gmail.com", name: "Aryan" }], responses: { "business-name": { value: "Opticviyu" } } }));
+    const [after] = await db.select().from(leads).where(eq(leads.id, created.id));
+    assert.equal(after.company, "Opticviyu");
+  });
+
+  test("the client gets amfire's own calendar invite, the owner a one-tap WhatsApp confirmation, and the page finds the Meet link", async () => {
+    const result = await recordCalBooking(
+      db,
+      booking("BOOKING_CREATED", "invite-uid-1", "meera@clinic.test", {
+        type: "ai-plan-call",
+        title: "Free AI plan call",
+        startTime: "2026-11-09T05:30:00Z",
+        endTime: "2026-11-09T06:00:00Z",
+        iCalUID: "abc123@Cal.com",
+        organizer: { email: "amfire.info@gmail.com", name: "Navanish" },
+        metadata: { videoCallUrl: "https://meet.google.com/wsp-ossm-ckm" },
+        attendees: [{ email: "meera@clinic.test", name: "Meera Shah", timeZone: "Asia/Kolkata" }],
+        responses: { attendeePhoneNumber: { value: "+91 98765 43210" } },
+      }),
+    );
+    assert.ok("alert" in result && result.alert);
+    const a = result.alert;
+    assert.equal(a.phone, "919876543210");
+
+    const mail = clientInviteEmail(a, new Date("2026-11-07T06:00:00Z"));
+    assert.ok(mail);
+    assert.match(mail.subject, /^Confirmed: our call on Mon, 9 Nov/);
+    assert.match(mail.text, /Join: https:\/\/meet\.google\.com\/wsp-ossm-ckm/);
+    assert.match(mail.text, /tap "Yes"/);
+    assert.match(mail.text, /DEMO5K-/);
+    assert.match(mail.ics, /METHOD:REQUEST/);
+    assert.match(mail.ics, /UID:abc123@Cal\.com/);
+    assert.match(mail.ics, /DTSTART:20261109T053000Z/);
+    assert.match(mail.ics, /ORGANIZER;CN=Navanish Pandey · amfire:mailto:amfire\.info@gmail\.com/);
+    assert.ok(mail.ics.split("\r\n").every((line) => Buffer.byteLength(line, "utf8") <= 75), "lines are folded");
+
+    const wa = whatsappConfirmation(a);
+    assert.ok(wa?.startsWith("https://wa.me/919876543210?text="));
+    assert.match(decodeURIComponent(wa!), /Join here: https:\/\/meet\.google\.com/);
+    assert.match(bookingAlertEmail(a, "https://amfire.test/hq/leads/x").text, /Confirm on WhatsApp/);
+
+    // The booked page's calendar buttons, a few seconds later: the webhook's record wins over the page's hint.
+    const call = await bookedCall(db, "invite-uid-1", { start: "2026-01-01T00:00:00Z" });
+    assert.equal(call?.meetUrl, "https://meet.google.com/wsp-ossm-ckm");
+    assert.equal(call?.start.toISOString(), "2026-11-09T05:30:00.000Z");
+    assert.match(googleCalendarUrl(callInvite(call!)), /dates=20261109T053000Z%2F20261109T060000Z/);
+
+    // Before the webhook arrives, the time Cal.com gave the page is enough.
+    const early = await bookedCall(db, "not-yet-uid", { start: "2026-11-10T05:30:00Z" });
+    assert.equal(early?.end.toISOString(), "2026-11-10T06:00:00.000Z");
+    assert.equal(await bookedCall(db, "nothing-uid"), null);
+
+    const cancel = clientInviteEmail({ ...a, trigger: "BOOKING_CANCELLED" });
+    assert.match(cancel!.ics, /METHOD:CANCEL/);
   });
 });

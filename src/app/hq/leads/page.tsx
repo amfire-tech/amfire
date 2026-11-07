@@ -55,7 +55,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/hq/leads">
                     <div className="min-w-0">
                       <p className="font-medium">{l.company}</p>
                       <p className="text-xs text-muted">
-                        {l.name} · {timeAgo(l.createdAt)}
+                        {l.name} · {seen(l)}
                       </p>
                     </div>
                     <StatusBadge status={l.status} />
@@ -91,7 +91,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/hq/leads">
                         {l.company}
                       </Link>
                       <div className="text-xs text-muted">
-                        {l.name} · {timeAgo(l.createdAt)}
+                        {l.name} · {seen(l)}
                       </div>
                     </td>
                     <td>
@@ -137,4 +137,9 @@ function FilterLink({ href, active, children }: { href: string; active: boolean;
       {children}
     </Link>
   );
+}
+
+/** When the lead came in, or when it last moved if that was later (a returning lead booking a call). */
+function seen(l: { createdAt: Date; updatedAt: Date }) {
+  return l.updatedAt.getTime() - l.createdAt.getTime() > 60_000 ? `active ${timeAgo(l.updatedAt)}` : timeAgo(l.createdAt);
 }

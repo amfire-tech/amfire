@@ -28,7 +28,9 @@ export function OfferBar({ path }: { path?: string }) {
   const current = usePathname();
   const pathname = path ?? current;
   const booking = pathname === "/start";
-  const booked = pathname.startsWith("/start/thanks") || pathname.startsWith("/start/booked");
+  const booked = pathname.startsWith("/start/thanks");
+  // After a calendar booking the code unlocks once the call is in their calendar (see AddToCalendar).
+  const addToCalendar = pathname.startsWith("/start/booked");
 
   return (
     <div className="relative z-50 bg-ink text-white">
@@ -36,7 +38,11 @@ export function OfferBar({ path }: { path?: string }) {
         <span className="bg-brand grid size-6 shrink-0 place-items-center rounded-full text-ink">
           <GiftIcon className="size-3.5" />
         </span>
-        {booked ? (
+        {addToCalendar ? (
+          <p>
+            Add the call to your calendar below to unlock <strong className="text-flame">{OFFER} off</strong>.
+          </p>
+        ) : booked ? (
           <p>
             <strong className="text-flame">{OFFER} off unlocked.</strong> Your promo code is below.
           </p>

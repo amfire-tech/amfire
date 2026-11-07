@@ -52,27 +52,37 @@ export function loadCal() {
 
 export type CalKind = "partner" | "demo";
 
-/** Where a visitor lands once the calendar confirms a booking: their promo code and next steps. */
-export function bookedUrl(kind: CalKind, uid?: string) {
+/** What Cal.com tells the page about a booking it just confirmed. */
+export type Booked = { uid?: string; start?: string; end?: string };
+
+/** Where a visitor lands once the calendar confirms a booking: adding it to their calendar, then their promo code. */
+export function bookedUrl(kind: CalKind, booked: Booked = {}) {
   const params = new URLSearchParams({ k: kind });
-  if (uid) params.set("b", uid);
+  if (booked.uid) params.set("b", booked.uid);
+  if (booked.start) params.set("s", booked.start);
+  if (booked.end) params.set("e", booked.end);
   return `/start/booked?${params}`;
 }
 
-/** The booking's id from either of Cal.com's success events. */
-function bookingUid(e: unknown): string | undefined {
-  const data = (e as { detail?: { data?: { uid?: unknown; booking?: { uid?: unknown } } } })?.detail?.data;
-  const uid = data?.uid ?? data?.booking?.uid;
-  return typeof uid === "string" ? uid : undefined;
+/** The booking from either of Cal.com's success events. */
+function bookingDetails(e: unknown): Booked {
+  type Data = { uid?: unknown; startTime?: unknown; endTime?: unknown; date?: unknown; duration?: unknown; booking?: { uid?: unknown; startTime?: unknown; endTime?: unknown } };
+  const data = (e as { detail?: { data?: Data } })?.detail?.data;
+  const str = (v: unknown) => (typeof v === "string" && v ? v : undefined);
+  return {
+    uid: str(data?.uid) ?? str(data?.booking?.uid),
+    start: str(data?.startTime) ?? str(data?.booking?.startTime) ?? str(data?.date),
+    end: str(data?.endTime) ?? str(data?.booking?.endTime),
+  };
 }
 
 /** Runs `done` once per booking, whichever of Cal.com's success events arrives first. */
-function onBooked(api: (...args: unknown[]) => void, done: (uid?: string) => void) {
+function onBooked(api: (...args: unknown[]) => void, done: (booked: Booked) => void) {
   let fired = false;
   const once = (e: unknown) => {
     if (fired) return;
     fired = true;
-    done(bookingUid(e));
+    done(bookingDetails(e));
   };
   api("on", { action: "bookingSuccessfulV2", callback: once });
   api("on", { action: "bookingSuccessful", callback: once });
@@ -121,9 +131,9 @@ export function CalBooking({
       },
     });
     api()("ui", UI);
-    onBooked(api(), (uid) => {
+    onBooked(api(), (booked) => {
       track("call_booked", { kind });
-      if (redirect) window.location.assign(bookedUrl(kind, uid));
+      if (redirect) window.location.assign(bookedUrl(kind, booked));
       else setBooked(true);
     });
   }, [calLink, name, email, notes, namespace, kind, redirect]);
@@ -154,9 +164,9 @@ function popupApi(kind: CalKind) {
     ready.add(kind);
     Cal("init", ns, { origin: "https://cal.com" });
     Cal.ns[ns]("ui", UI);
-    onBooked(Cal.ns[ns], (uid) => {
+    onBooked(Cal.ns[ns], (booked) => {
       track("call_booked", { kind, via: "popup" });
-      window.location.assign(bookedUrl(kind, uid));
+      window.location.assign(bookedUrl(kind, booked));
     });
   }
   return Cal.ns[ns];

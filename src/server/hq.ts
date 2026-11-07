@@ -72,7 +72,8 @@ export async function listLeads(db: DB, actor: Actor | null, filter: { source?: 
       .select()
       .from(leads)
       .where(filter.source ? eq(leads.source, filter.source) : undefined)
-      .orderBy(desc(leads.createdAt)),
+      // Latest activity first, so a returning lead who just booked a call comes to the top.
+      .orderBy(desc(leads.updatedAt), desc(leads.createdAt)),
     // Every lead, counted by source, for the source filter.
     db
       .select({ source: leads.source, total: count(), won: sql<number>`count(*) filter (where ${leads.status} = 'won')`.mapWith(Number) })

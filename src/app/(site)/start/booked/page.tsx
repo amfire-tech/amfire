@@ -1,59 +1,48 @@
 import type { Metadata } from "next";
 import { LeadConversion } from "@/components/analytics-client";
 import { WhatsAppIcon } from "@/components/contact";
-import { GiftIcon, PromoCode } from "@/components/demo-offer";
 import { CheckList, Container, buttonClass } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { getDb } from "@/db";
 import { Money } from "@/components/currency";
 import { DEMO_OFFER } from "@/knowledge/pricing";
-import { bookingOfferCode } from "@/server/bookings";
+import { bookedCall, bookingOfferCode } from "@/server/bookings";
+import { AddToCalendar } from "./add-to-calendar";
 
 export const metadata: Metadata = { title: "You're booked", robots: { index: false } };
 
 // Where the calendar sends visitors the moment a call is booked (see OneClickBooking).
 export default async function BookedPage({ searchParams }: PageProps<"/start/booked">) {
-  const { b, k } = await searchParams;
+  const { b, k, s, e } = await searchParams;
   const uid = typeof b === "string" && /^[\w-]{6,64}$/.test(b) ? b : null;
   const partner = k === "partner";
-  const code = uid && !partner ? await bookingOfferCode(await getDb(), uid) : null;
+  const iso = (v: unknown) => (typeof v === "string" && !Number.isNaN(new Date(v).getTime()) ? v : undefined);
+  const db = uid ? await getDb() : null;
+  const code = db && uid && !partner ? await bookingOfferCode(db, uid) : null;
+  // The time from Cal.com's success message, else from its webhook if that has already arrived.
+  const call = db && uid ? await bookedCall(db, uid, { start: iso(s), end: iso(e), partner }) : null;
 
   return (
     <div className="bg-subtle">
-      <Container className="max-w-3xl py-12 sm:py-16">
+      <Container className="max-w-3xl py-10 sm:py-16">
         {uid && <LeadConversion bookingRef={uid} path={partner ? "partner" : "demo"} />}
-        <p className="text-sm font-medium text-muted">Booked</p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">You&apos;re booked. See you on the call.</h1>
-        <p className="mt-3 text-fg/75">
-          The calendar invite with the Google Meet link is on its way to your inbox. Nothing to prepare: come as you are, and we&apos;ll do the work of
-          understanding your business.
+        <p className="flex items-center gap-2 text-sm font-semibold text-success">
+          <span aria-hidden>✓</span> Booked
         </p>
+        <h1 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">You&apos;re booked. See you on the call.</h1>
+        <p className="mt-2 text-fg/75">We&apos;ve emailed your invite with the Google Meet link. Nothing to prepare: come as you are.</p>
 
-        {!partner && (
-          <section aria-labelledby="offer" className="relative mt-8 overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
-            <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-30 blur-3xl" />
-            <div className="relative">
-              <p className="flex items-center gap-2 text-sm font-semibold tracking-widest text-flame uppercase">
-                <GiftIcon /> Unlocked
-              </p>
-              <h2 id="offer" className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-                You&apos;ve got <span className="text-brand"><Money amounts={DEMO_OFFER.amount} /> off</span> any plan
-              </h2>
-              {code ? (
-                <>
-                  <p className="mt-2 text-white/75">Here&apos;s your personal promo code. It&apos;s linked to this booking.</p>
-                  <div className="mt-5 max-w-md">
-                    <PromoCode code={code} />
-                  </div>
-                </>
-              ) : (
-                <p className="mt-2 text-white/75">It&apos;s linked to your booking.</p>
-              )}
-              <p className="mt-4 text-sm text-white/60">
-                There&apos;s nothing to enter later: we take <Money amounts={DEMO_OFFER.amount} /> off your proposal, and you&apos;ll see it there before you accept.
-              </p>
-            </div>
-          </section>
+        {uid ? (
+          <AddToCalendar
+            uid={uid}
+            kind={partner ? "partner" : "demo"}
+            start={call?.start.toISOString()}
+            end={call?.end.toISOString()}
+            code={code}
+            offer={<Money amounts={DEMO_OFFER.amount} />}
+          />
+        ) : (
+          <p className="mt-6 rounded-card bg-surface p-5 ring-1 ring-line">Your invite is in your email: open it and tap &ldquo;Yes&rdquo; to add the call to your calendar.</p>
         )}
 
         <section aria-labelledby="on-the-call" className="mt-8 rounded-card bg-surface p-6 ring-1 ring-line sm:p-8">

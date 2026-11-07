@@ -6,6 +6,8 @@
 // Renders nothing until the link is configured in site.booking.
 
 import { useEffect, useId, useRef, useState } from "react";
+import { site } from "@/config/site";
+import { AGENCY_PARTNER, GOALS, LEAD_AUDIT } from "@/knowledge/catalog";
 import { track } from "@/lib/analytics";
 
 type CalApi = ((...args: unknown[]) => void) & { ns: Record<string, (...args: unknown[]) => void>; loaded?: boolean; q?: unknown[] };
@@ -17,7 +19,7 @@ declare global {
 }
 
 /** Cal.com's loader, as published in their embed snippet: queues calls until embed.js arrives. */
-function loadCal() {
+export function loadCal() {
   if (window.Cal) return window.Cal;
   const push = (api: { q: unknown[] }, args: unknown) => api.q.push(args);
   const cal = function (...args: unknown[]) {
@@ -48,6 +50,36 @@ function loadCal() {
   return cal;
 }
 
+export type CalKind = "partner" | "demo";
+
+/** Where a visitor lands once the calendar confirms a booking: their promo code and next steps. */
+export function bookedUrl(kind: CalKind, uid?: string) {
+  const params = new URLSearchParams({ k: kind });
+  if (uid) params.set("b", uid);
+  return `/start/booked?${params}`;
+}
+
+/** The booking's id from either of Cal.com's success events. */
+function bookingUid(e: unknown): string | undefined {
+  const data = (e as { detail?: { data?: { uid?: unknown; booking?: { uid?: unknown } } } })?.detail?.data;
+  const uid = data?.uid ?? data?.booking?.uid;
+  return typeof uid === "string" ? uid : undefined;
+}
+
+/** Runs `done` once per booking, whichever of Cal.com's success events arrives first. */
+function onBooked(api: (...args: unknown[]) => void, done: (uid?: string) => void) {
+  let fired = false;
+  const once = (e: unknown) => {
+    if (fired) return;
+    fired = true;
+    done(bookingUid(e));
+  };
+  api("on", { action: "bookingSuccessfulV2", callback: once });
+  api("on", { action: "bookingSuccessful", callback: once });
+}
+
+const UI = { hideEventTypeDetails: false, layout: "month_view", styles: { branding: { brandColor: "#ff453a" } } };
+
 export function CalBooking({
   calLink,
   name,
@@ -55,6 +87,7 @@ export function CalBooking({
   notes,
   kind,
   className,
+  redirect,
 }: {
   /** "username/event-slug" on cal.com. */
   calLink: string;
@@ -62,8 +95,10 @@ export function CalBooking({
   email?: string;
   notes?: string;
   /** For analytics: which calendar this is. */
-  kind: "partner" | "demo";
+  kind: CalKind;
   className?: string;
+  /** Send the visitor to their promo code page once booked, instead of a note above the calendar. */
+  redirect?: boolean;
 }) {
   const id = useId().replace(/:/g, "");
   const namespace = `amfire${id}`;
@@ -85,14 +120,13 @@ export function CalBooking({
         ...(notes ? { notes } : {}),
       },
     });
-    api()("ui", { hideEventTypeDetails: false, layout: "month_view", styles: { branding: { brandColor: "#ff453a" } } });
-    const done = () => {
-      setBooked(true);
+    api()("ui", UI);
+    onBooked(api(), (uid) => {
       track("call_booked", { kind });
-    };
-    api()("on", { action: "bookingSuccessful", callback: done });
-    api()("on", { action: "bookingSuccessfulV2", callback: done });
-  }, [calLink, name, email, notes, namespace, kind]);
+      if (redirect) window.location.assign(bookedUrl(kind, uid));
+      else setBooked(true);
+    });
+  }, [calLink, name, email, notes, namespace, kind, redirect]);
 
   if (!calLink) return null;
   return (
@@ -105,4 +139,73 @@ export function CalBooking({
       <div ref={box} className="min-h-[34rem] w-full overflow-auto rounded-[1.5rem] bg-surface ring-1 ring-line" />
     </div>
   );
+}
+
+// --- One-click booking --------------------------------------------------------
+
+const POPUP_NS: Record<CalKind, string> = { demo: "amfire-demo", partner: "amfire-partner" };
+const ready = new Set<CalKind>();
+
+/** Sets up a popup calendar once per page: Cal.com's script, the brand colours and the success hand-off. */
+function popupApi(kind: CalKind) {
+  const Cal = loadCal();
+  const ns = POPUP_NS[kind];
+  if (!ready.has(kind)) {
+    ready.add(kind);
+    Cal("init", ns, { origin: "https://cal.com" });
+    Cal.ns[ns]("ui", UI);
+    onBooked(Cal.ns[ns], (uid) => {
+      track("call_booked", { kind, via: "popup" });
+      window.location.assign(bookedUrl(kind, uid));
+    });
+  }
+  return Cal.ns[ns];
+}
+
+/** Opens the calendar over the current page: one click from any button to picking a time. */
+export function openBooking(kind: CalKind, notes?: string) {
+  const calLink = kind === "partner" ? site.booking.partner : site.booking.demo;
+  if (!calLink) return false;
+  popupApi(kind)("modal", { calLink, config: { layout: "month_view", ...(notes ? { notes } : {}) } });
+  track("booking_opened", { kind, page: window.location.pathname });
+  return true;
+}
+
+// Goals whose form gathers something the call can't do without (the audit needs the clients to test).
+const FORM_FIRST = new Set<string>([LEAD_AUDIT.goal]);
+
+/**
+ * Turns every "Book a free demo" link on the public site (any link to /start)
+ * into the calendar popup, so nobody has to fill in a form before picking a
+ * time. The link still works without JavaScript, and a new-tab click is left alone.
+ */
+export function OneClickBooking() {
+  useEffect(() => {
+    // Warm up Cal.com's script once the page has settled, so the first click opens at once.
+    const warm = window.setTimeout(() => {
+      if (!site.booking.demo) return;
+      popupApi("demo")("preload", { calLink: site.booking.demo });
+    }, 2500);
+
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = (e.target as Element | null)?.closest?.("a");
+      const href = a?.getAttribute("href");
+      if (!a || !href || a.target === "_blank" || !/^\/start(\?|$)/.test(href)) return;
+      const goal = new URL(href, window.location.origin).searchParams.get("goal") ?? "";
+      if (FORM_FIRST.has(goal)) return;
+      const partner = goal === AGENCY_PARTNER.goal;
+      const topic = goal && !partner ? GOALS.find((g) => g.id === goal)?.label : undefined;
+      if (!openBooking(partner ? "partner" : "demo", topic ? `Interested in: ${topic}` : undefined)) return;
+      // Stop Next.js from also following the link.
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener("click", onClick, { capture: true });
+    return () => {
+      window.clearTimeout(warm);
+      document.removeEventListener("click", onClick, { capture: true });
+    };
+  }, []);
+  return null;
 }

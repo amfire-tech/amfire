@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { GiftIcon } from "@/components/demo-offer";
 import { CheckList, Container, Eyebrow } from "@/components/ui";
 import { contact, site } from "@/config/site";
-import { AGENCY_PARTNER, FREE_DEMO, LEAD_AUDIT, OPPORTUNITY_MAP } from "@/knowledge/catalog";
+import { AGENCY_PARTNER, FREE_DEMO, GOALS, LEAD_AUDIT, OPPORTUNITY_MAP } from "@/knowledge/catalog";
+import { CalBooking } from "@/components/cal-booking";
 import { Money } from "@/components/currency";
 import { DEMO_OFFER } from "@/knowledge/pricing";
 import { DiscoveryForm } from "./discovery-form";
@@ -18,6 +19,12 @@ export default async function StartPage({ searchParams }: PageProps<"/start">) {
   // Visitors coming for the AI Opportunity Map or a partner call see it framed that way; the booking is the same.
   const intro =
     goal === OPPORTUNITY_MAP.goal ? OPPORTUNITY_MAP : goal === AGENCY_PARTNER.goal ? AGENCY_PARTNER : goal === LEAD_AUDIT.goal ? LEAD_AUDIT : FREE_DEMO;
+  const initialGoal = typeof goal === "string" ? goal : undefined;
+  const partner = intro === AGENCY_PARTNER;
+  // The calendar comes first: owners pick a time without filling in a form. Only the lead
+  // response audit keeps the form first, because it needs the clients to test.
+  const calLink = intro === LEAD_AUDIT ? "" : partner ? site.booking.partner : site.booking.demo;
+  const topic = initialGoal && !partner ? GOALS.find((g) => g.id === initialGoal)?.label : undefined;
   return (
     <div className="bg-subtle">
       {/* Phones: heading and offer, then the form, then the details. Desktop: details beside the form. */}
@@ -48,7 +55,23 @@ export default async function StartPage({ searchParams }: PageProps<"/start">) {
           )}
         </div>
         <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <DiscoveryForm initialGoal={typeof goal === "string" ? goal : undefined} />
+          {calLink ? (
+            <>
+              <h2 className="text-xl font-semibold tracking-tight">{partner ? "Pick a time for your 15-minute partner call" : "Pick a time for your free 30-minute call"}</h2>
+              <p className="mt-1 text-sm text-muted">Times are shown in your own time zone. Just your name and email, and the invite is in your inbox.</p>
+              <CalBooking className="mt-4" calLink={calLink} kind={partner ? "partner" : "demo"} notes={topic ? `Interested in: ${topic}` : undefined} redirect />
+              <details className="group mt-6 rounded-card bg-surface ring-1 ring-line">
+                <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium marker:hidden">
+                  Rather tell us about your business first? <span className="text-muted">Answer four quick questions instead (optional)</span>
+                </summary>
+                <div className="border-t border-line p-1 sm:p-2">
+                  <DiscoveryForm initialGoal={initialGoal} />
+                </div>
+              </details>
+            </>
+          ) : (
+            <DiscoveryForm initialGoal={initialGoal} />
+          )}
         </div>
         <div className="lg:col-start-1">
           <div className="text-sm lg:mt-6">

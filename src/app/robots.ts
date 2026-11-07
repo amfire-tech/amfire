@@ -7,7 +7,7 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
       // Workspaces, sign-in and per-booking pages are private or worthless to search engines.
-      disallow: ["/hq", "/hub", "/login", "/auth/", "/start/thanks", "/reel"],
+      disallow: ["/hq", "/hub", "/login", "/auth/", "/start/thanks", "/start/booked", "/reel"],
     },
     sitemap: `${site.url}/sitemap.xml`,
   };

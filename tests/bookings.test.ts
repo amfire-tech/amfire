@@ -10,8 +10,8 @@ import { openPglite, type DB } from "@/db";
 import { interactions, leads, prospects, touches, users } from "@/db/schema";
 import { loadActor, type Actor } from "@/server/access";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
-import { CalWebhook, recordCalBooking, verifyCalSignature } from "@/server/bookings";
-import { submitDiscovery } from "@/server/leads";
+import { bookingOfferCode, CalWebhook, recordCalBooking, verifyCalSignature } from "@/server/bookings";
+import { demoOfferCode, submitDiscovery } from "@/server/leads";
 import { addProspects } from "@/server/outreach";
 
 let db: DB;
@@ -108,5 +108,15 @@ describe("Cal.com bookings", () => {
   test("other events and bookings without an attendee are ignored", async () => {
     assert.deepEqual(await recordCalBooking(db, booking("MEETING_ENDED", "uid-3", "x@y.com")), { ignored: "MEETING_ENDED" });
     assert.deepEqual(await recordCalBooking(db, booking("BOOKING_CREATED", "uid-4", "x@y.com", { attendees: [] })), { ignored: "no attendee" });
+  });
+
+  test("the promo code shown the moment someone books on the calendar is the one their lead gets", async () => {
+    const uid = "one-click-uid-1";
+    const shown = await bookingOfferCode(db, uid); // the page loads before the webhook arrives
+    const result = await recordCalBooking(db, booking("BOOKING_CREATED", uid, "owner@sharmatraders.in", { type: "ai-plan-call", title: "Free AI plan call" }));
+    assert.ok("leadId" in result && result.leadId);
+    const [lead] = await db.select().from(leads).where(eq(leads.id, result.leadId));
+    assert.equal(demoOfferCode(lead.publicRef), shown);
+    assert.equal(await bookingOfferCode(db, uid), shown); // and after it
   });
 });

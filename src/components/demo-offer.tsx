@@ -28,7 +28,7 @@ export function OfferBar({ path }: { path?: string }) {
   const current = usePathname();
   const pathname = path ?? current;
   const booking = pathname === "/start";
-  const booked = pathname.startsWith("/start/thanks");
+  const booked = pathname.startsWith("/start/thanks") || pathname.startsWith("/start/booked");
 
   return (
     <div className="relative z-50 bg-ink text-white">
@@ -43,7 +43,7 @@ export function OfferBar({ path }: { path?: string }) {
         ) : booking ? (
           <p>
             You&apos;re one step from <strong className="text-flame">flat {OFFER} off</strong> any plan.
-            <span className="hidden sm:inline"> Finish booking and your promo code appears instantly.</span>
+            <span className="hidden sm:inline"> Pick a time and your promo code appears instantly.</span>
           </p>
         ) : (
           <>

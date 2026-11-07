@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Analytics } from "@/components/analytics";
+import { OneClickBooking } from "@/components/cal-booking";
+import { MobileBookBar } from "@/components/mobile-book-bar";
 import { PhoneIcon, WhatsAppIcon } from "@/components/contact";
 import { OfferBar } from "@/components/demo-offer";
 import { JsonLd } from "@/components/json-ld";
@@ -24,6 +26,8 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
     <>
       <JsonLd data={organizationJsonLd()} />
       <Analytics />
+      <OneClickBooking />
+      <MobileBookBar />
       <a
         href="#main"
         className="sr-only z-50 rounded-full bg-fg px-4 py-2 text-page focus:not-sr-only focus:fixed focus:top-3 focus:left-3"

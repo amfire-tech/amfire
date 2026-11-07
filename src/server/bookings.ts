@@ -3,13 +3,14 @@
 // booking form usually came first) or create one, note the call on the lead,
 // and mark a matching outreach prospect as "meeting booked".
 
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
 import { auditEvents, interactions, leads, prospects } from "@/db/schema";
 import { audit } from "./audit";
 import { connectorActor } from "./connector";
+import { demoOfferCode } from "./leads";
 import { logTouch } from "./outreach";
 
 /** Cal.com signs the raw body with the webhook's secret (HMAC-SHA256, hex) in X-Cal-Signature-256. */
@@ -18,6 +19,16 @@ export function verifyCalSignature(raw: string, signature: string | null, secret
   const expected = Buffer.from(createHmac("sha256", secret).update(raw).digest("hex"));
   const given = Buffer.from(signature.trim());
   return expected.length === given.length && timingSafeEqual(expected, given);
+}
+
+/**
+ * The lead reference for someone who booked straight on the calendar, derived
+ * from the Cal.com booking id. The page they land on after booking and the
+ * webhook that creates their lead both derive it, so the promo code shown
+ * the moment they book is the one on their proposal later.
+ */
+export function calLeadRef(bookingUid: string, secret = process.env.CAL_WEBHOOK_SECRET || "amfire-cal") {
+  return createHmac("sha256", secret).update(`cal-lead:${bookingUid}`).digest("base64url").slice(0, 16);
 }
 
 const Answer = z.object({ value: z.unknown().optional() }).passthrough();
@@ -96,14 +107,14 @@ export async function recordCalBooking(db: DB, event: CalWebhook, now = new Date
       [row] = await tx
         .insert(leads)
         .values({
-          publicRef: randomBytes(12).toString("base64url"),
+          publicRef: calLeadRef(uid),
           name,
           email,
           company,
           goal: partner ? "white-label" : "not-sure",
           businessType: "Something else",
           urgency: "month",
-          problem: notes || "Booked a call on Cal.com without filling in the booking form.",
+          problem: notes || "Booked a call straight from the calendar, without the booking form.",
           currency: /^Asia\/(Kolkata|Calcutta)$/.test(zone) ? "INR" : "USD",
           source: "direct",
           sourceNote: "Booked through Cal.com",
@@ -133,4 +144,22 @@ export async function recordCalBooking(db: DB, event: CalWebhook, now = new Date
     }
   }
   return { leadId: lead.id, prospectId: prospect?.id ?? null };
+}
+
+/**
+ * The free-demo promo code for a booking made on the calendar. When the booking
+ * belongs to a lead who filled in the form earlier, it is that lead's code;
+ * otherwise the code of the lead the webhook creates (or has created) for it.
+ */
+export async function bookingOfferCode(db: DB, bookingUid: string) {
+  const [event] = await db
+    .select({ leadId: auditEvents.subjectId })
+    .from(auditEvents)
+    .where(and(eq(auditEvents.action, "booking.booking_created"), sql`${auditEvents.data}->>'uid' = ${bookingUid}`))
+    .limit(1);
+  if (event?.leadId) {
+    const [lead] = await db.select({ publicRef: leads.publicRef }).from(leads).where(eq(leads.id, event.leadId)).limit(1);
+    if (lead) return demoOfferCode(lead.publicRef);
+  }
+  return demoOfferCode(calLeadRef(bookingUid));
 }

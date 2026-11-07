@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { EmberField } from "@/components/ember-field";
 import { FlowLine } from "@/components/flow-line";
+import { FreeDemoSection } from "@/components/free-demo";
 import { CONVERSATION_CTA } from "@/components/site-header";
 import { Arrow, ButtonLink, Container, Eyebrow } from "@/components/ui";
 import { FOUNDERS, FOUNDERS_PROMISE } from "@/config/founders";
@@ -62,39 +64,42 @@ export default function HomePage() {
 
   return (
     <>
-      {/* 1 · First screen: headline at full width, the drawing as its own band. */}
+      {/* 1 · First screen: a centred cover. One axis down the middle balances the page on wide
+          screens; a faint ember field with grain moves behind it so the paper is never flat. */}
       <section>
-        <Container className="pt-20 pb-20 sm:pt-28 sm:pb-24">
-          <Eyebrow>{site.tagline}</Eyebrow>
-          <h1 className="mt-6 max-w-[13.5em] text-[2.75rem] leading-[1.02] font-medium tracking-[-0.04em] text-balance sm:text-6xl lg:text-[4.75rem] lg:leading-none">
-            A company that runs without you chasing it.
-          </h1>
-          {/* One left edge: label, headline, line, buttons and promises all start at the same x, read top to bottom. */}
-          <p className={`mt-8 max-w-[36rem] text-pretty sm:mt-10 ${LEDE}`}>
-            We build systems around how your company works, so your team keeps moving and you are free to lead its growth.
-          </p>
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
-            <ButtonLink href="/start" size="lg">
-              {CONVERSATION_CTA}
-            </ButtonLink>
-            <Link href="/how-we-work" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
-              How we work <Arrow />
-            </Link>
-          </div>
-          {/* The promises belong to the hero: a quiet line under the buttons, not a separate bordered band. */}
-          <ul className="mt-14 grid grid-cols-1 gap-x-10 gap-y-2.5 text-sm text-muted sm:mt-16 sm:flex sm:flex-wrap" aria-label="Working with us">
-            {SAFETY.map((s) => (
-              <li key={s.title} className="flex items-center gap-2.5">
-                <span aria-hidden className="size-1 shrink-0 rounded-full bg-fg/50" />
-                {s.title}
-              </li>
-            ))}
-          </ul>
-        </Container>
+        <div className="relative isolate flex min-h-[calc(100svh-4rem)] flex-col justify-center overflow-hidden">
+          <EmberField variant="light" />
+          <Container className="flex flex-col items-center py-[clamp(2.5rem,6vh,5rem)] text-center">
+            <Eyebrow>{site.tagline}</Eyebrow>
+            <h1 className="mt-[clamp(1rem,2.5vh,1.5rem)] max-w-[13.5em] text-[length:clamp(2.75rem,min(5.6vw,10.5vh),4.75rem)] leading-[1.02] font-medium tracking-[-0.04em] text-balance sm:leading-none">
+              A company that runs without you chasing it.
+            </h1>
+            <p className={`mt-[clamp(1.25rem,3.5vh,2.5rem)] max-w-[36rem] text-balance ${LEDE}`}>
+              We build systems around how your company works, so your team keeps moving and you are free to lead its growth.
+            </p>
+            <div className="mt-[clamp(1.5rem,4vh,2.5rem)] flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:gap-8">
+              <ButtonLink href="/start" size="lg" className="w-full sm:w-auto">
+                {CONVERSATION_CTA}
+              </ButtonLink>
+              <Link href="/how-we-work" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
+                How we work <Arrow />
+              </Link>
+            </div>
+            {/* The promises belong to the hero: a quiet centred line under the buttons. */}
+            <ul className="mt-[clamp(1.5rem,5vh,4rem)] grid grid-cols-2 gap-x-6 gap-y-3 text-[13px] text-muted sm:flex sm:flex-wrap sm:justify-center sm:gap-x-10 sm:text-sm" aria-label="Working with us">
+              {SAFETY.map((s) => (
+                <li key={s.title} className="flex items-center justify-center gap-2 sm:gap-2.5">
+                  <span aria-hidden className="size-1 shrink-0 rounded-full bg-fg/50" />
+                  {s.title}
+                </li>
+              ))}
+            </ul>
+          </Container>
+        </div>
         {/* The drawing gets its own band, set apart by one hairline. */}
         <div className="border-t border-line">
           <Container className="py-20 sm:py-24">
-            <Eyebrow>How work moves through a company</Eyebrow>
+            <Eyebrow className="text-center">How work moves through a company</Eyebrow>
             <FlowLine className="mt-10" />
           </Container>
         </div>
@@ -218,7 +223,7 @@ export default function HomePage() {
       {/* 5 · Where we usually start */}
       <section>
         <Container className="py-24 sm:py-32">
-          <div className="max-w-2xl">
+          <div className="mx-auto max-w-2xl text-center">
             <Eyebrow>Where we usually start</Eyebrow>
             <h2 className={`mt-5 ${H2}`}>Four places companies lose the most time.</h2>
           </div>
@@ -241,10 +246,10 @@ export default function HomePage() {
       {FOUNDERS.length > 0 && (
         <section className="border-t border-line bg-subtle">
           <Container className="py-24 sm:py-32">
-            <figure className="max-w-4xl">
+            <figure className="mx-auto max-w-4xl text-center">
               <Eyebrow>From the founders</Eyebrow>
-              <blockquote className="mt-8 font-serif text-[1.75rem] leading-[1.3] text-pretty italic sm:text-[2.5rem] sm:leading-[1.25]">“{FOUNDERS_PROMISE}”</blockquote>
-              <figcaption className="mt-10 flex flex-col gap-4 border-t border-fg/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
+              <blockquote className="mt-8 font-serif text-[1.75rem] leading-[1.3] text-balance italic sm:text-[2.5rem] sm:leading-[1.25]">“{FOUNDERS_PROMISE}”</blockquote>
+              <figcaption className="mt-10 flex flex-col items-center gap-3">
                 <span>
                   <span className="font-medium">{FOUNDERS.map((f) => f.name).join(" and ")}</span>
                   <span className="ml-3 text-[15px] text-muted">{FOUNDERS.length > 1 ? "Founders" : "Founder"}, amfire</span>
@@ -261,7 +266,7 @@ export default function HomePage() {
       {/* 7 · Working with us, then the close */}
       <section className="border-t border-line">
         <Container className="py-24 sm:py-32">
-          <Eyebrow>Working with us</Eyebrow>
+          <Eyebrow className="text-center">Working with us</Eyebrow>
           <dl className="mt-8 grid border-t border-line sm:grid-cols-2 lg:grid-cols-4">
             {SAFETY.map((s) => (
               <div key={s.title} className="border-b border-line py-7 sm:pr-8 lg:border-b-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:pl-8">
@@ -271,20 +276,10 @@ export default function HomePage() {
             ))}
           </dl>
         </Container>
-        <div className="bg-ink text-white">
-          <Container className="flex flex-col gap-10 py-24 sm:py-28 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <h2 className="text-[2.5rem] leading-[1.05] font-medium tracking-[-0.035em] text-balance sm:text-[3.5rem]">Tell us where work gets stuck.</h2>
-              <p className="mt-6 max-w-xl text-lg leading-[1.55] text-white/65 sm:text-xl">
-                A 30-minute conversation with the founders about how your company runs today. If we are not the right fit, we will tell you.
-              </p>
-            </div>
-            <ButtonLink href="/start" size="lg" className="shrink-0">
-              {CONVERSATION_CTA} <Arrow />
-            </ButtonLink>
-          </Container>
-        </div>
       </section>
+
+      {/* The shared closing invitation: same words on every page. */}
+      <FreeDemoSection />
     </>
   );
 }

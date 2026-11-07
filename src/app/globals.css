@@ -118,6 +118,135 @@
   background-color: var(--color-ember);
 }
 
+/* The closing invitation's living background (see src/components/ember-field.tsx).
+   Ember has one meaning as a mark ("stuck"); here it is light, not a mark, and it
+   lives only in the dark closing band. Shapes drift slowly; transforms only. */
+.ember-field {
+  /* The closing band is centred: words on top stay on black, the glow rises from below
+     behind the button, and the bottom edge fades back to black to meet the footer. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 18%, #000 58%, #000 72%, transparent 96%);
+  mask-image: linear-gradient(to bottom, transparent 18%, #000 58%, #000 72%, transparent 96%);
+}
+.ember-shape {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+/* The deep core: ember red, low and centred under the button. */
+.ember-shape-core {
+  width: 56%;
+  aspect-ratio: 1.9;
+  left: 22%;
+  bottom: -34%;
+  background: radial-gradient(closest-side, rgb(232 72 42 / 0.85), rgb(232 72 42 / 0) 100%);
+  filter: blur(40px);
+  animation: ember-drift-a 16s ease-in-out infinite alternate;
+}
+/* The flame: lighter orange, drifting the other way. */
+.ember-shape-flame {
+  width: 40%;
+  aspect-ratio: 1.6;
+  left: 46%;
+  bottom: -28%;
+  background: radial-gradient(closest-side, rgb(255 135 71 / 0.6), rgb(255 135 71 / 0) 100%);
+  filter: blur(48px);
+  animation: ember-drift-b 12s ease-in-out infinite alternate;
+}
+/* The light: a warm pale sweep, like the bright edge of a flame. */
+.ember-shape-light {
+  width: 50%;
+  aspect-ratio: 3;
+  left: 12%;
+  top: 46%;
+  background: radial-gradient(closest-side, rgb(255 226 206 / 0.4), rgb(255 226 206 / 0) 100%);
+  filter: blur(44px);
+  transform: rotate(-10deg);
+  animation: ember-drift-c 20s ease-in-out infinite alternate;
+}
+/* Film grain over the colour. Soft-light leaves pure black untouched, so grain only shows in the light. */
+.ember-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.38;
+  mix-blend-mode: soft-light;
+}
+/* Phones: a taller band, so the shapes grow to fill the width behind the button. */
+@media (max-width: 639px) {
+  .ember-shape-core { width: 130%; left: -15%; bottom: -18%; }
+  .ember-shape-flame { width: 100%; left: 20%; bottom: -14%; }
+  .ember-shape-light { width: 120%; left: -20%; top: 50%; }
+}
+@keyframes ember-drift-a {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(-18%, 10%, 0) scale(1.15); }
+  66% { transform: translate3d(12%, -8%, 0) scale(0.92); }
+  100% { transform: translate3d(-6%, 14%, 0) scale(1.08); }
+}
+@keyframes ember-drift-b {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(22%, -16%, 0) scale(1.2); }
+  100% { transform: translate3d(-14%, 8%, 0) scale(0.9); }
+}
+@keyframes ember-drift-c {
+  0% { transform: translate3d(0, 0, 0) rotate(-14deg) scale(1); }
+  50% { transform: translate3d(-24%, 14%, 0) rotate(6deg) scale(1.15); }
+  100% { transform: translate3d(10%, -10%, 0) rotate(-24deg) scale(0.95); }
+}
+
+/* Light variant, for the homepage hero on paper: a faint warm wash behind the headline,
+   drifting on the same slow loops, with fine dark grain so the paper has texture.
+   Kept faint enough that ink text keeps full contrast. Fades out at the bottom. */
+.ember-field-light {
+  -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  -webkit-mask-composite: source-over;
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
+  mask-composite: add;
+}
+.ember-field-light .ember-shape-core {
+  width: 60%;
+  aspect-ratio: 1.8;
+  left: 20%;
+  right: auto;
+  top: -32%;
+  bottom: auto;
+  background: radial-gradient(closest-side, rgb(255 135 71 / 0.34), rgb(255 135 71 / 0) 100%);
+  filter: blur(56px);
+}
+.ember-field-light .ember-shape-flame {
+  width: 40%;
+  aspect-ratio: 1.3;
+  right: -8%;
+  left: auto;
+  bottom: -6%;
+  top: auto;
+  background: radial-gradient(closest-side, rgb(232 72 42 / 0.2), rgb(232 72 42 / 0) 100%);
+  filter: blur(60px);
+}
+.ember-field-light .ember-shape-light {
+  width: 42%;
+  aspect-ratio: 2.2;
+  left: -12%;
+  right: auto;
+  top: 40%;
+  background: radial-gradient(closest-side, rgb(255 180 140 / 0.32), rgb(255 180 140 / 0) 100%);
+  filter: blur(56px);
+}
+.ember-field-light .ember-grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.07;
+  mix-blend-mode: multiply;
+}
+@media (max-width: 639px) {
+  .ember-field-light {
+    -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 60%, transparent 100%);
+  }
+  .ember-field-light .ember-shape-core { width: 140%; left: -20%; top: -12%; bottom: auto; right: auto; }
+  .ember-field-light .ember-shape-flame { width: 90%; right: -30%; bottom: 0; }
+  .ember-field-light .ember-shape-light { width: 100%; left: -40%; top: 50%; }
+}
+
 /* Primary buttons are solid ink; inside an always-dark (bg-ink) section they
    turn paper-white so they stay visible. Unlayered, so it beats the utilities. */
 .bg-ink .btn-primary {

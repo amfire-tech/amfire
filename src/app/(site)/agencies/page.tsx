@@ -3,7 +3,7 @@ import Link from "next/link";
 import { CalBooking } from "@/components/cal-booking";
 import { FounderNote } from "@/components/founder-note";
 import { FreeDemoSection } from "@/components/free-demo";
-import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading } from "@/components/ui";
+import { Arrow, ButtonLink, CheckList, Container, Eyebrow } from "@/components/ui";
 import { site } from "@/config/site";
 import { AGENCY_PARTNER, LEAD_AUDIT } from "@/knowledge/catalog";
 import { DEPARTMENTS } from "@/knowledge/solutions";
@@ -81,146 +81,178 @@ const FAQ = [
   },
 ];
 
+// Look and feel follow the rest of the site (7 Nov 2026): centred openings, ruled rows
+// instead of cards, no orange accents, labels in 13px Geist, open answers instead of
+// accordions. The words are unchanged for now; a copy spec for this page comes next.
+
+const H2 = "text-[2rem] leading-[1.1] font-medium tracking-[-0.025em] text-balance sm:text-[2.75rem]";
+const LEDE = "text-lg leading-[1.55] text-muted sm:text-xl";
+/** A cell in a ruled grid: a hairline under each item, dividers between columns on wide screens. */
+const CELL = "border-b border-fg/15 py-8 sm:pr-8";
+
+function Intro({ eyebrow, title, description }: { eyebrow: string; title: string; description?: string }) {
+  return (
+    <div className="mx-auto max-w-2xl text-center">
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className={`mt-5 ${H2}`}>{title}</h2>
+      {description && <p className={`mt-6 ${LEDE}`}>{description}</p>}
+    </div>
+  );
+}
+
 export default function AgenciesPage() {
   return (
     <>
-      <section className="relative isolate overflow-hidden">
-        <Container className="py-12 sm:py-20">
+      {/* Opening */}
+      <section>
+        <Container className="flex flex-col items-center pt-[clamp(3.5rem,10vh,7rem)] pb-20 text-center sm:pb-24">
           <Eyebrow>For marketing agencies and coaches</Eyebrow>
-          <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-            Your AI build team. Your brand. <span className="text-brand">Delivered under your name.</span>
+          <h1 className="mt-[clamp(1rem,2.5vh,1.5rem)] max-w-[14em] text-[length:clamp(2.75rem,min(4.6vw,8.5vh),3.75rem)] leading-[1.03] font-medium tracking-[-0.04em] text-balance sm:leading-[1.02]">
+            Your AI build team. Your brand. Delivered under your name.
           </h1>
-          <p className="mt-5 max-w-2xl text-lg text-muted">
+          <p className={`mt-[clamp(1.25rem,3.5vh,2.5rem)] max-w-[38rem] text-balance ${LEDE}`}>
             Your clients want AI. We build it under your name — chat and voice agents, lead follow-up, automations and AI search visibility — and you keep the client
             and the margin.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <ButtonLink href={BOOK_HREF} size="lg">
+          <div className="mt-[clamp(1.5rem,4vh,2.5rem)] flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:gap-8">
+            <ButtonLink href={BOOK_HREF} size="lg" className="w-full sm:w-auto">
               {AGENCY_PARTNER.cta} <Arrow />
             </ButtonLink>
-            <ButtonLink href="/audit" variant="secondary" size="lg">
-              Free audit of 3 of your clients
-            </ButtonLink>
+            <Link href="/audit" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
+              Free audit of 3 of your clients <Arrow />
+            </Link>
           </div>
         </Container>
       </section>
 
-      <Container className="pb-16 sm:pb-24">
-        <div className="grid gap-4 md:grid-cols-3">
-          {PROBLEMS.map((p) => (
-            <div key={p.title} className="rounded-[1.5rem] bg-surface p-6 ring-1 ring-line">
-              <h2 className="text-lg font-semibold">{p.title}</h2>
-              <p className="mt-2 text-sm text-muted">{p.body}</p>
-            </div>
-          ))}
-        </div>
-      </Container>
+      {/* The problem, in three ruled columns */}
+      <section>
+        <Container className="pb-24 sm:pb-32">
+          <ul className="grid border-t border-fg/15 md:grid-cols-3">
+            {PROBLEMS.map((p) => (
+              <li key={p.title} className={`${CELL} md:border-b-0 md:[&:not(:first-child)]:border-l md:[&:not(:first-child)]:pl-8`}>
+                <h2 className="text-xl leading-snug font-medium tracking-tight">{p.title}</h2>
+                <p className="mt-3 text-[17px] leading-relaxed text-muted">{p.body}</p>
+              </li>
+            ))}
+          </ul>
+        </Container>
+      </section>
 
-      <section className="bg-subtle">
-        <Container className="py-16 sm:py-24">
-          <SectionHeading eyebrow="How white-label works" title="You own the client. We do the building." />
-          <ol className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* How white-label works: a real sequence, so numbered */}
+      <section className="border-t border-line bg-subtle">
+        <Container className="py-24 sm:py-32">
+          <Intro eyebrow="How white-label works" title="You own the client. We do the building." />
+          <ol className="mt-14 grid border-t border-fg/15 sm:grid-cols-2 lg:grid-cols-4">
             {STEPS.map((s, i) => (
-              <li key={s.title} className="rounded-[1.5rem] bg-surface p-6 ring-1 ring-line">
-                <span className="text-brand text-sm font-bold">0{i + 1}</span>
-                <h3 className="mt-2 text-lg font-semibold">{s.title}</h3>
-                <p className="mt-2 text-sm text-muted">{s.body}</p>
+              <li key={s.title} className={`${CELL} lg:border-b-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:pl-8`}>
+                <p className="font-mono text-[13px] text-fg">0{i + 1}</p>
+                <h3 className="mt-4 text-xl font-medium tracking-tight">{s.title}</h3>
+                <p className="mt-3 text-[17px] leading-relaxed text-muted">{s.body}</p>
               </li>
             ))}
           </ol>
         </Container>
       </section>
 
-      <Container className="py-16 sm:py-24">
-        <SectionHeading
-          eyebrow="What you can resell"
-          title="The systems your clients ask for most."
-          description="Four systems that sell themselves to local and service businesses. If a client needs something else, we build it custom."
-        />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {resell.map((s) => (
-            <div key={s.title} className="rounded-[1.5rem] bg-surface p-6 ring-1 ring-line">
-              <h3 className="text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted">{s.does}</p>
-            </div>
-          ))}
-        </div>
-        <Link href={`/start?goal=${LEAD_AUDIT.goal}`} className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
-          Not sure which one a client needs? Start with a free Lead Response Audit <Arrow />
-        </Link>
-      </Container>
-
-      <section className="border-y border-line">
-        <Container className="py-16 sm:py-24">
-          <SectionHeading eyebrow="Your clients stay yours" title="We build behind your brand. We never step in front of it." />
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {CLIENTS_STAY_YOURS.map((c) => (
-              <div key={c.title} className="rounded-[1.5rem] bg-surface p-6 ring-1 ring-line">
-                <h3 className="text-lg font-semibold">{c.title}</h3>
-                <p className="mt-2 text-sm text-muted">{c.body}</p>
-              </div>
+      {/* What you can resell */}
+      <section className="border-t border-line">
+        <Container className="py-24 sm:py-32">
+          <Intro
+            eyebrow="What you can resell"
+            title="The systems your clients ask for most."
+            description="Four systems that sell themselves to local and service businesses. If a client needs something else, we build it custom."
+          />
+          <ul className="mt-14 grid border-t border-fg/15 sm:grid-cols-2 lg:grid-cols-4">
+            {resell.map((s) => (
+              <li key={s.title} className={`${CELL} lg:border-b-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:pl-8`}>
+                <h3 className="text-xl font-medium tracking-tight">{s.title}</h3>
+                <p className="mt-3 text-[17px] leading-relaxed text-muted">{s.does}</p>
+              </li>
             ))}
-          </div>
+          </ul>
+          <p className="mt-10 text-center">
+            <Link href={`/start?goal=${LEAD_AUDIT.goal}`} className="inline-flex items-center gap-1.5 text-[15px] font-medium underline-offset-[6px] hover:underline">
+              Not sure which one a client needs? Start with a free Lead Response Audit <Arrow />
+            </Link>
+          </p>
         </Container>
       </section>
 
-      <section className="bg-subtle">
-        <Container className="grid gap-10 py-16 sm:py-24 lg:grid-cols-2">
+      {/* Your clients stay yours */}
+      <section className="border-t border-line bg-subtle">
+        <Container className="py-24 sm:py-32">
+          <Intro eyebrow="Your clients stay yours" title="We build behind your brand. We never step in front of it." />
+          <dl className="mt-14 grid gap-x-12 border-t border-fg/15 sm:grid-cols-2 lg:grid-cols-3">
+            {CLIENTS_STAY_YOURS.map((c) => (
+              <div key={c.title} className="border-b border-fg/15 py-8">
+                <dt className="text-xl font-medium tracking-tight">{c.title}</dt>
+                <dd className="mt-3 text-[17px] leading-relaxed text-muted">{c.body}</dd>
+              </div>
+            ))}
+          </dl>
+        </Container>
+      </section>
+
+      {/* Team and the founding partner offer */}
+      <section className="border-t border-line">
+        <Container className="grid gap-12 py-24 sm:py-32 lg:grid-cols-2 lg:gap-16">
           <div>
-            <SectionHeading eyebrow="Why a team in India" title="Agency quality, on your clock." />
-            <div className="mt-8">
-              <CheckList items={PROMISES} />
-            </div>
+            <Eyebrow>Why a team in India</Eyebrow>
+            <h2 className={`mt-5 ${H2}`}>Agency quality, on your clock.</h2>
+            <ul className="mt-10 border-t border-line">
+              {PROMISES.map((p) => (
+                <li key={p} className="border-b border-line py-5 text-[17px] leading-relaxed">
+                  {p}
+                </li>
+              ))}
+            </ul>
           </div>
-          <div className="relative self-start overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
-            <div className="relative">
-              <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">Founding partners · until 31 January 2027</p>
-              <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your first client build at half price.</h2>
-              <p className="mt-3 text-white/75">
-                We&apos;re taking on our first ten partners. Founding partners get their first client build at 50% off, partner pricing on everything after it,
-                and us on the sales call to help close it.
-              </p>
-              <p className="mt-3 text-sm text-white/60">If it doesn&apos;t do what we agreed within 30 days of going live, we keep fixing it at no cost.</p>
-              <ButtonLink href={BOOK_HREF} variant="inverse" size="lg" className="mt-6">
-                {AGENCY_PARTNER.cta} <Arrow />
-              </ButtonLink>
-            </div>
+          <div className="self-start rounded-md bg-ink p-8 text-white sm:p-10">
+            <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">Founding partners · until 31 January 2027</p>
+            <h2 className="mt-4 text-[1.75rem] leading-[1.15] font-medium tracking-[-0.025em] text-balance sm:text-[2.25rem]">Your first client build at half price.</h2>
+            <p className="mt-5 text-[17px] leading-relaxed text-white/70">
+              We&apos;re taking on our first ten partners. Founding partners get their first client build at 50% off, partner pricing on everything after it, and
+              us on the sales call to help close it.
+            </p>
+            <p className="mt-4 text-[15px] leading-relaxed text-white/55">If it doesn&apos;t do what we agreed within 30 days of going live, we keep fixing it at no cost.</p>
+            <ButtonLink href={BOOK_HREF} size="lg" className="mt-8 w-full sm:w-auto">
+              {AGENCY_PARTNER.cta} <Arrow />
+            </ButtonLink>
           </div>
         </Container>
       </section>
 
       <FounderNote />
 
-      <Container className="py-16 sm:py-24">
-        <SectionHeading eyebrow="Questions" title="What partners ask first." />
-        <div className="mt-8 divide-y divide-line rounded-[1.5rem] bg-surface ring-1 ring-line">
-          {FAQ.map((f) => (
-            <details key={f.q} className="group p-5 sm:p-6">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
-                {f.q}
-                <span aria-hidden className="text-muted transition group-open:rotate-45">
-                  +
-                </span>
-              </summary>
-              <p className="mt-3 text-sm text-muted">{f.a}</p>
-            </details>
-          ))}
-        </div>
-      </Container>
+      {/* Questions, open rather than hidden behind clicks */}
+      <section className="border-t border-line">
+        <Container className="py-24 sm:py-32">
+          <Intro eyebrow="Questions" title="What partners ask first." />
+          <dl className="mt-14 grid gap-x-16 border-t border-fg/15 md:grid-cols-2">
+            {FAQ.map((f) => (
+              <div key={f.q} className="border-b border-fg/15 py-8">
+                <dt className="text-xl leading-snug font-medium tracking-tight">{f.q}</dt>
+                <dd className="mt-3 text-[17px] leading-relaxed text-muted">{f.a}</dd>
+              </div>
+            ))}
+          </dl>
+        </Container>
+      </section>
 
       {site.booking.partner ? (
-        <section id="book" aria-labelledby="book-title" className="scroll-mt-20 bg-subtle">
-          <Container className="grid gap-8 py-16 sm:py-24 lg:grid-cols-[0.8fr_1.4fr]">
+        <section id="book" aria-labelledby="book-title" className="scroll-mt-20 border-t border-line bg-subtle">
+          <Container className="grid gap-10 py-24 sm:py-32 lg:grid-cols-[0.8fr_1.4fr] lg:gap-16">
             <div>
               <Eyebrow>15 minutes · free</Eyebrow>
-              <h2 id="book-title" className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
+              <h2 id="book-title" className={`mt-5 ${H2}`}>
                 Find out what you could resell this month.
               </h2>
-              <p className="mt-4 text-muted">{AGENCY_PARTNER.summary}</p>
-              <div className="mt-6 text-sm">
+              <p className={`mt-6 ${LEDE}`}>{AGENCY_PARTNER.summary}</p>
+              <div className="mt-8 text-[15px]">
                 <CheckList items={[...AGENCY_PARTNER.points]} />
               </div>
-              <p className="mt-6 text-sm text-muted">
+              <p className="mt-8 text-[15px] text-muted">
                 Times show in your own time zone. Rather send a brief first?{" "}
                 <Link href={CALL_HREF} className="font-medium text-fg underline underline-offset-4">
                   Use the form

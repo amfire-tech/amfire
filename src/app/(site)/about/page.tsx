@@ -67,12 +67,12 @@ export default function AboutPage() {
     <>
       {/* 1 · Why we exist */}
       <section>
-        <Container className="pt-20 pb-20 sm:pt-28 sm:pb-24">
+        <Container className="flex flex-col items-center pt-[clamp(3.5rem,10vh,7rem)] pb-20 text-center sm:pb-24">
           <Eyebrow>About amfire</Eyebrow>
-          <h1 className="mt-6 max-w-[13em] text-[2.75rem] leading-[1.03] font-medium tracking-[-0.04em] text-balance sm:text-6xl sm:leading-[1.02]">
+          <h1 className="mt-[clamp(1rem,2.5vh,1.5rem)] max-w-[13em] text-[length:clamp(2.75rem,min(4.6vw,8.5vh),3.75rem)] leading-[1.03] font-medium tracking-[-0.04em] text-balance sm:leading-[1.02]">
             You should lead your company, not chase it.
           </h1>
-          <p className={`mt-8 max-w-[33rem] text-pretty sm:mt-10 ${LEDE}`}>
+          <p className={`mt-[clamp(1.25rem,3.5vh,2.5rem)] max-w-[36rem] text-balance ${LEDE}`}>
             amfire is a small team based in Pune. We build systems around how your company works, so your team keeps moving and you are free to lead its growth.
           </p>
         </Container>
@@ -82,7 +82,7 @@ export default function AboutPage() {
       {FOUNDERS.length > 0 && (
         <section aria-labelledby="founders" className="border-t border-line">
           <Container className="py-24 sm:py-32">
-            <div className="max-w-2xl">
+            <div className="mx-auto max-w-2xl text-center">
               <Eyebrow>The people behind amfire</Eyebrow>
               <h2 id="founders" className={`mt-5 ${H2}`}>
                 You work with {several ? "the founders" : "a founder"}, directly.
@@ -103,7 +103,7 @@ export default function AboutPage() {
       {/* 3 · How we behave */}
       <section className="border-t border-line bg-subtle">
         <Container className="py-24 sm:py-32">
-          <Eyebrow>What you can hold us to</Eyebrow>
+          <Eyebrow className="text-center">What you can hold us to</Eyebrow>
           <dl className="mt-10 grid border-t border-fg/15 sm:grid-cols-2 lg:grid-cols-4">
             {COMMITMENTS.map((c) => (
               <div key={c.title} className="border-b border-fg/15 py-8 sm:pr-8 lg:border-b-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:pl-8">

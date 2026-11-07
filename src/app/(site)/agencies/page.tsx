@@ -37,7 +37,7 @@ const STEPS = [
 ];
 
 const PROMISES = [
-  "Overnight delivery: our team is in India, so your brief at 6pm is worked on while you sleep",
+  "Follow-the-sun delivery: a brief sent at 6 pm your time shows progress by your next morning",
   "Live on calls during US mornings, 9 AM to 1 PM Eastern",
   "A written update every working day, and a short video for anything complex",
   "Fixed prices in writing before we start — no hourly surprises",
@@ -73,7 +73,7 @@ const FAQ = [
   },
   {
     q: "What about time zones?",
-    a: "We overlap with US mornings for calls, and the rest of our day is your night — so work moves while you sleep. Replies within one working day, usually much faster.",
+    a: "We overlap with US mornings for calls, and the rest of our day is your night, so work keeps moving between your working days. Replies within one working day, usually much faster.",
   },
   {
     q: "What if the first system doesn't work?",
@@ -85,11 +85,10 @@ export default function AgenciesPage() {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <div aria-hidden className="bg-brand absolute -top-40 -right-40 -z-10 size-[28rem] rounded-full opacity-[0.12] blur-3xl" />
         <Container className="py-12 sm:py-20">
           <Eyebrow>For marketing agencies and coaches</Eyebrow>
           <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-            Your AI build team. Your brand. <span className="text-brand">Built while you sleep.</span>
+            Your AI build team. Your brand. <span className="text-brand">Delivered under your name.</span>
           </h1>
           <p className="mt-5 max-w-2xl text-lg text-muted">
             Your clients want AI. We build it under your name — chat and voice agents, lead follow-up, automations and AI search visibility — and you keep the client
@@ -168,15 +167,14 @@ export default function AgenciesPage() {
       <section className="bg-subtle">
         <Container className="grid gap-10 py-16 sm:py-24 lg:grid-cols-2">
           <div>
-            <SectionHeading eyebrow="Why a team in India" title="Agency quality, delivered overnight." />
+            <SectionHeading eyebrow="Why a team in India" title="Agency quality, on your clock." />
             <div className="mt-8">
               <CheckList items={PROMISES} />
             </div>
           </div>
-          <div className="shine relative self-start overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
-            <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-30 blur-3xl" />
+          <div className="relative self-start overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
             <div className="relative">
-              <p className="text-xs font-semibold tracking-[0.2em] text-flame uppercase">Founding partners · until 31 January 2027</p>
+              <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">Founding partners · until 31 January 2027</p>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Your first client build at half price.</h2>
               <p className="mt-3 text-white/75">
                 We&apos;re taking on our first ten partners. Founding partners get their first client build at 50% off, partner pricing on everything after it,

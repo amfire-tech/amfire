@@ -2,13 +2,10 @@ import type { Metadata } from "next";
 import { LeadConversion } from "@/components/analytics-client";
 import { WhatsAppIcon } from "@/components/contact";
 import { CalBooking } from "@/components/cal-booking";
-import { GiftIcon, PromoCode } from "@/components/demo-offer";
 import { BulletList, ButtonLink, Card, Container, PathBadge, buttonClass } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { AGENCY_PARTNER } from "@/knowledge/catalog";
 import { getDb } from "@/db";
-import { Money } from "@/components/currency";
-import { DEMO_OFFER } from "@/knowledge/pricing";
 import { getPublicDiscoveryResult } from "@/server/leads";
 
 export const metadata: Metadata = { title: "Thank you", robots: { index: false } };
@@ -32,14 +29,14 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
         <p className="mt-3 text-fg/75">
           {calLink
             ? "Your request is in. Pick a time below and the invite lands in your inbox straight away, or skip it and a person at amfire will call or email you to fix one."
-            : "Your free demo request is in. A person at amfire will call or email you to fix a time."}{" "}
+            : "Your request is in. The founder will call or email you within one working day to fix a time."}{" "}
           Nothing is agreed until you approve a written proposal.
         </p>
 
         {result && calLink && (
           <section aria-labelledby="pick-a-time" className="mt-8">
             <h2 id="pick-a-time" className="text-xl font-semibold tracking-tight">
-              {partner ? "Pick a time for your 15-minute partner call" : "Pick a time for your free 30-minute call"}
+              {partner ? "Pick a time for your 15-minute partner call" : "Pick a time for your 30-minute conversation"}
             </h2>
             <p className="mt-1 text-sm text-muted">Times are shown in your own time zone.</p>
             <CalBooking
@@ -50,28 +47,6 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
               email={result.email ?? undefined}
               notes={result.company ? `Business: ${result.company}` : undefined}
             />
-          </section>
-        )}
-
-        {result && (
-          <section aria-labelledby="offer" className="relative mt-8 overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
-            <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-30 blur-3xl" />
-            <div className="relative">
-              <p className="flex items-center gap-2 text-sm font-semibold tracking-widest text-flame uppercase">
-                <GiftIcon /> Unlocked
-              </p>
-              <h2 id="offer" className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-                You&apos;ve got <span className="text-brand"><Money amounts={DEMO_OFFER.amount} /> off</span> any plan
-              </h2>
-              <p className="mt-2 text-white/75">Here&apos;s your personal promo code. It&apos;s linked to this booking.</p>
-              <div className="mt-5 max-w-md">
-                <PromoCode code={result.offerCode} />
-              </div>
-              <p className="mt-4 text-sm text-white/60">
-                There&apos;s nothing to enter later: we take <Money amounts={DEMO_OFFER.amount} /> off your proposal, and you&apos;ll see it there before you accept. Keep the
-                code for your records.
-              </p>
-            </div>
           </section>
         )}
 
@@ -117,7 +92,7 @@ export default async function ThanksPage({ searchParams }: PageProps<"/start/tha
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <a
-              href={contact.whatsapp("Hi amfire, I just booked a free demo.")}
+              href={contact.whatsapp("Hi amfire, I just asked for a conversation.")}
               target="_blank"
               rel="noopener noreferrer"
               className={buttonClass("inverse")}

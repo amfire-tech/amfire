@@ -1,24 +1,23 @@
 import Link from "next/link";
 import { Analytics } from "@/components/analytics";
 import { OneClickBooking } from "@/components/cal-booking";
-import { MobileBookBar } from "@/components/mobile-book-bar";
 import { PhoneIcon, WhatsAppIcon } from "@/components/contact";
-import { OfferBar } from "@/components/demo-offer";
 import { JsonLd } from "@/components/json-ld";
 import { SiteHeader } from "@/components/site-header";
 import { Container, Logo } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { organizationJsonLd } from "@/config/structured-data";
-import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
 
 const COMPANY = [
-  { href: "/solutions", label: "AI solutions" },
-  { href: "/agencies", label: "For agencies" },
-  { href: "/audit", label: "Free lead response audit" },
   { href: "/how-we-work", label: "How we work" },
-  { href: "/work", label: "Our work" },
-  { href: "/industries", label: "Industries" },
+  { href: "/work", label: "Work" },
   { href: "/about", label: "About" },
+];
+
+// Side doors: partner audiences reach these from outreach and from here, not from the main navigation.
+const PARTNERS = [
+  { href: "/agencies", label: "For agencies" },
+  { href: "/partners", label: "For CA firms" },
 ];
 
 export default function SiteLayout({ children }: LayoutProps<"/">) {
@@ -27,46 +26,43 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
       <JsonLd data={organizationJsonLd()} />
       <Analytics />
       <OneClickBooking />
-      <MobileBookBar />
       <a
         href="#main"
-        className="sr-only z-50 rounded-full bg-fg px-4 py-2 text-page focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
+        className="sr-only z-50 rounded-md bg-fg px-4 py-2 text-page focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
-      <OfferBar />
       <SiteHeader />
 
       <main id="main" className="flex-1">
         {children}
       </main>
 
-      <footer className="relative overflow-hidden bg-ink text-white/70">
-        <div aria-hidden className="bg-brand absolute -bottom-40 left-1/2 h-64 w-[48rem] -translate-x-1/2 rounded-full opacity-15 blur-3xl" />
-        <Container className="relative grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:py-16 lg:grid-cols-[1.6fr_1fr_1fr_1.2fr]">
+      <footer className="bg-ink text-white/65">
+        <Container className="grid grid-cols-2 gap-x-6 gap-y-10 py-14 sm:py-20 lg:grid-cols-[1.6fr_1fr_1fr_1.2fr]">
           <div className="col-span-2 lg:col-span-1">
-            <Logo inverse className="h-8" />
-            <p className="mt-3 text-xs tracking-[0.25em] text-white/50 uppercase">{site.tagline}</p>
-            <p className="mt-4 max-w-sm text-sm">{site.description}</p>
+            <Logo inverse className="h-7" />
+            <p className="mt-4 text-[13px] font-medium tracking-[0.12em] text-white/45 uppercase">{site.tagline}</p>
+            <p className="mt-4 max-w-sm text-sm leading-relaxed">{site.description}</p>
           </div>
-          <nav aria-label="Services" className="flex flex-col text-sm">
-            <p className="mb-1.5 font-medium text-white">Services</p>
-            {(Object.keys(SERVICES) as ServicePathId[]).map((p) => (
-              <Link key={p} href={`/services/${p}`} className="py-1.5 hover:text-white">
-                {SERVICES[p].name}
-              </Link>
-            ))}
-          </nav>
           <nav aria-label="Company" className="flex flex-col text-sm">
-            <p className="mb-1.5 font-medium text-white">Company</p>
+            <p className="mb-2 text-[13px] font-medium tracking-[0.12em] text-white/45 uppercase">amfire</p>
             {COMPANY.map((item) => (
               <Link key={item.href} href={item.href} className="py-1.5 hover:text-white">
                 {item.label}
               </Link>
             ))}
           </nav>
+          <nav aria-label="Partners" className="flex flex-col text-sm">
+            <p className="mb-2 text-[13px] font-medium tracking-[0.12em] text-white/45 uppercase">Partners</p>
+            {PARTNERS.map((item) => (
+              <Link key={item.href} href={item.href} className="py-1.5 hover:text-white">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
           <div className="col-span-2 text-sm sm:col-span-1">
-            <p className="font-medium text-white">Talk to a person</p>
+            <p className="mb-2 text-[13px] font-medium tracking-[0.12em] text-white/45 uppercase">Talk to us</p>
             <a href={contact.email} className="mt-1 inline-block py-1.5 underline-offset-4 hover:text-white hover:underline">
               {site.contactEmail}
             </a>
@@ -86,14 +82,14 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
             <p className="mt-2 text-xs text-white/50">{site.availability.hours}</p>
             <p className="mt-4">
               <Link href="/login" className="inline-block py-1.5 hover:text-white">
-                Client sign in →
+                Client sign-in →
               </Link>
             </p>
           </div>
         </Container>
-        <Container className="relative flex flex-col gap-2 border-t border-white/10 py-6 text-xs text-white/40 sm:flex-row sm:justify-between">
+        <Container className="flex flex-col gap-2 border-t border-white/10 py-6 text-xs text-white/40 sm:flex-row sm:justify-between">
           <span className="flex flex-wrap gap-x-4 gap-y-1">
-            <span>© {new Date().getFullYear()} amfire</span>
+            <span>© {new Date().getFullYear()} amfire · {site.location}</span>
             <Link href="/privacy" className="hover:text-white">
               Privacy
             </Link>
@@ -101,7 +97,7 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
               Terms
             </Link>
           </span>
-          <span>Case studies are real client projects. Examples marked illustrative are scenarios, not client work.</span>
+          <span>Every case study is a real client project.</span>
         </Container>
       </footer>
     </>

@@ -45,7 +45,7 @@ export default function ServicesPage() {
           </article>
         ))}
       </Container>
-      <FreeDemoSection title="Not sure which one you need? That's what the free demo is for." />
+      <FreeDemoSection title="Not sure where to start? That's what the first conversation is for." />
     </>
   );
 }

@@ -47,7 +47,6 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
   const name = SERVICES[plan].name;
   return (
     <div className="relative overflow-hidden bg-ink text-white">
-      <div aria-hidden className="bg-brand absolute -top-40 -left-20 size-[28rem] rounded-full opacity-20 blur-3xl" />
       <Container className="relative grid items-center gap-10 py-12 sm:py-20 lg:grid-cols-[1.1fr_1fr]">
         <div>
           <div className="flex items-center gap-3">

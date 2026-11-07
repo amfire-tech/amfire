@@ -1,23 +1,18 @@
 import { FREE_DEMO } from "@/knowledge/catalog";
-import { Arrow, ButtonLink, CheckList, Container } from "./ui";
+import { Arrow, ButtonLink, Container } from "./ui";
 
-/** The one primary call to action used across the site. */
+/** The one closing call to action used across the site: a quiet invitation to talk. */
 export function FreeDemoSection({ goal, title, body, cta }: { goal?: string; title?: string; body?: string; cta?: string }) {
   return (
-    <section className="relative overflow-hidden bg-ink text-white">
-      <div aria-hidden className="bg-brand absolute -bottom-32 left-1/2 h-72 w-[40rem] -translate-x-1/2 rounded-full opacity-30 blur-3xl" />
-      <Container className="relative grid gap-10 py-14 sm:py-20 lg:grid-cols-[1.2fr_1fr] lg:items-center">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.2em] text-white/60 uppercase">Free · no obligation</p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title ?? "Not sure where to start? Book a free demo."}</h2>
-          <p className="mt-4 max-w-xl text-white/70">{body ?? FREE_DEMO.summary}</p>
-          <ButtonLink href={goal ? `/start?goal=${goal}` : "/start"} size="lg" className="mt-8">
-            {cta ?? FREE_DEMO.cta} <Arrow />
-          </ButtonLink>
+    <section className="bg-ink text-white">
+      <Container className="flex flex-col gap-10 py-20 sm:py-28 lg:flex-row lg:items-end lg:justify-between">
+        <div className="max-w-2xl">
+          <h2 className="text-4xl leading-[1.05] font-medium tracking-[-0.035em] text-balance sm:text-5xl">{title ?? "Tell us where work gets stuck."}</h2>
+          <p className="mt-6 max-w-xl text-lg leading-relaxed text-white/65">{body ?? FREE_DEMO.summary}</p>
         </div>
-        <div className="rounded-2xl bg-white/5 p-6 text-sm text-white/85 ring-1 ring-white/10">
-          <CheckList items={FREE_DEMO.points} />
-        </div>
+        <ButtonLink href={goal ? `/start?goal=${goal}` : "/start"} size="lg" className="shrink-0">
+          {cta ?? FREE_DEMO.cta} <Arrow />
+        </ButtonLink>
       </Container>
     </section>
   );

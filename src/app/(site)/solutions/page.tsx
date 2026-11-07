@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Money } from "@/components/currency";
 import { FreeDemoSection } from "@/components/free-demo";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, cx } from "@/components/ui";
 import { OPPORTUNITY_MAP, SERVICES } from "@/knowledge/catalog";
-import { DEMO_OFFER } from "@/knowledge/pricing";
 import { DEPARTMENTS, SOLUTION_COUNT } from "@/knowledge/solutions";
 
 export const metadata: Metadata = {
@@ -51,11 +49,10 @@ export default function SolutionsPage() {
 
       {/* The free way in */}
       <Container>
-        <div className="shine relative overflow-hidden rounded-card bg-ink p-6 text-white sm:p-10">
-          <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-72 rounded-full opacity-30 blur-3xl" />
+        <div className="relative overflow-hidden rounded-card bg-ink p-6 text-white sm:p-10">
           <div className="relative grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:items-center">
             <div>
-              <p className="text-xs font-semibold tracking-[0.2em] text-flame uppercase">Free · within 48 hours</p>
+              <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">Free · within 48 hours</p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{OPPORTUNITY_MAP.title}</h2>
               <p className="mt-4 text-white/75">{OPPORTUNITY_MAP.summary}</p>
               <ButtonLink href={MAP_HREF} variant="inverse" size="lg" className="mt-7">
@@ -122,12 +119,11 @@ export default function SolutionsPage() {
               <div key={p.name} className={cx("flex flex-col rounded-[1.5rem] p-6 ring-1", p.highlight ? "bg-ink text-white ring-ink" : "bg-surface ring-line")}>
                 <h3 className="text-lg font-semibold">{p.name}</h3>
                 <p className={cx("mt-1 text-sm", p.highlight ? "text-white/70" : "text-muted")}>{p.body}</p>
-                <p className={cx("mt-auto pt-6 text-sm font-semibold tracking-wide uppercase", p.highlight ? "text-flame" : "text-muted")}>{p.tag}</p>
+                <p className={cx("mt-auto pt-6 text-sm font-semibold tracking-wide uppercase", p.highlight ? "text-white/60" : "text-muted")}>{p.tag}</p>
               </div>
             ))}
           </div>
           <p className="mt-6 text-sm text-muted">
-            Book the free call and get <strong className="text-fg">flat <Money amounts={DEMO_OFFER.amount} /> off</strong> whatever you start with.{" "}
             <Link href="/services" className="font-medium text-fg underline underline-offset-4">
               See how Build, Operate and Automate work
             </Link>

@@ -54,7 +54,7 @@ export default function IndustriesPage() {
         <Container className="flex flex-col items-start gap-6 py-12 sm:py-16 md:flex-row md:items-center md:justify-between">
           <h2 className="max-w-xl text-2xl font-semibold tracking-tight">Your industry isn&apos;t listed? The approach is the same — start with the problem.</h2>
           <ButtonLink href="/start" size="lg">
-            Book a free demo <Arrow />
+            Start a conversation <Arrow />
           </ButtonLink>
         </Container>
       </section>

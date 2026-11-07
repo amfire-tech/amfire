@@ -1,8 +1,8 @@
 export const site = {
   name: "amfire",
-  tagline: "Build · Operate · Automate",
+  tagline: "Operations engineering",
   description:
-    "amfire builds software for your business problems, runs everything online as your technology partner, and automates the manual work — for Indian businesses.",
+    "amfire learns how work moves through your company, finds where it gets stuck, and builds the systems that keep it moving. Then we stay and run them.",
   // Shown wherever a visitor or client wants to reach a real person (enquiries
   // and support), and the reply-to address on emails sent to clients.
   // Sign-in for the owner is a separate account (OWNER_EMAIL).

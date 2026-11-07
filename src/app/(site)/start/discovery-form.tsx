@@ -6,9 +6,7 @@ import { submitDiscoveryAction, type DiscoveryState } from "@/app/actions/discov
 import { SubmitButton } from "@/components/forms";
 import { Button, Field, Notice, cx, inputClass } from "@/components/ui";
 import { AGENCY_PARTNER, BUSINESS_TYPES, CALL_TIMES, GOALS, LEAD_AUDIT, OPPORTUNITY_MAP, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
-import { Money } from "@/components/currency";
 import { track } from "@/lib/analytics";
-import { DEMO_OFFER } from "@/knowledge/pricing";
 
 const STEPS = ["Your goal", "Your business", "The problem", "Book your demo"] as const;
 
@@ -219,10 +217,10 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
               ? "Where should we send your audit?"
               : partner
               ? "Where should we reach you for the partner call?"
-              : "Where should we call you for your free demo?"}
+              : "Where should we reach you?"}
         </h2>
         <p className="mt-2 text-sm text-muted">
-          A 30-minute call to understand your business. Free, with no obligation — and your <Money amounts={DEMO_OFFER.amount} /> promo code appears as soon as you book.
+          A 30-minute conversation with the founder about how your company runs. If we are not the right fit, we will say so.
         </p>
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <Field label="Your name" htmlFor="name" error={errors.name}>
@@ -326,9 +324,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
               {partner ? (
                 "Book my partner call"
               ) : (
-                <>
-                  {wantsMap ? "Get my free AI Opportunity Map" : wantsAudit ? "Get my free audit" : "Book my free demo"} · get <Money amounts={DEMO_OFFER.amount} /> off
-                </>
+                <>{wantsMap ? "Request my AI Opportunity Map" : wantsAudit ? "Request my audit" : "Request a conversation"}</>
               )}
             </span>
           </SubmitButton>

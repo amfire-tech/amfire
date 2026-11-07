@@ -123,11 +123,10 @@ export default async function ExamplePage({ params }: PageProps<"/work/[slug]">)
             <p className="mt-3 text-xs text-muted">We agree a baseline with you first, so results are measured — not claimed.</p>
           </div>
           <div className="relative overflow-hidden rounded-card bg-ink p-6 text-white">
-            <div aria-hidden className="bg-brand absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl" />
             <p className="relative font-semibold">Have a similar problem?</p>
             <p className="relative mt-1 text-sm text-white/70">Tell us about it — a person replies with a clear next step.</p>
             <ButtonLink href={`/start?goal=${SERVICE_DETAILS[example.path].goal}`} className="relative mt-5 w-full">
-              Book a free demo <Arrow />
+              Start a conversation <Arrow />
             </ButtonLink>
           </div>
         </aside>

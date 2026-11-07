@@ -4,9 +4,7 @@ import { WhatsAppIcon } from "@/components/contact";
 import { CheckList, Container, buttonClass } from "@/components/ui";
 import { contact, site } from "@/config/site";
 import { getDb } from "@/db";
-import { Money } from "@/components/currency";
-import { DEMO_OFFER } from "@/knowledge/pricing";
-import { bookedCall, bookingOfferCode } from "@/server/bookings";
+import { bookedCall } from "@/server/bookings";
 import { AddToCalendar } from "./add-to-calendar";
 
 export const metadata: Metadata = { title: "You're booked", robots: { index: false } };
@@ -18,7 +16,6 @@ export default async function BookedPage({ searchParams }: PageProps<"/start/boo
   const partner = k === "partner";
   const iso = (v: unknown) => (typeof v === "string" && !Number.isNaN(new Date(v).getTime()) ? v : undefined);
   const db = uid ? await getDb() : null;
-  const code = db && uid && !partner ? await bookingOfferCode(db, uid) : null;
   // The time from Cal.com's success message, else from its webhook if that has already arrived.
   const call = db && uid ? await bookedCall(db, uid, { start: iso(s), end: iso(e), partner }) : null;
 
@@ -38,8 +35,6 @@ export default async function BookedPage({ searchParams }: PageProps<"/start/boo
             kind={partner ? "partner" : "demo"}
             start={call?.start.toISOString()}
             end={call?.end.toISOString()}
-            code={code}
-            offer={<Money amounts={DEMO_OFFER.amount} />}
           />
         ) : (
           <p className="mt-6 rounded-card bg-surface p-5 ring-1 ring-line">Your invite is in your email: open it and tap &ldquo;Yes&rdquo; to add the call to your calendar.</p>
@@ -53,9 +48,9 @@ export default async function BookedPage({ searchParams }: PageProps<"/start/boo
                 partner
                   ? ["How the white-label deal works and what you'd resell", "What we'd build for your first client", "Prices in writing before anything starts"]
                   : [
-                      "You tell us how the business runs today, in your own words",
-                      "We show working examples close to yours",
-                      "You leave with where AI and automation would save you the most, even if the answer is that you don't need us yet",
+                      "You tell us how the company runs today, in your own words",
+                      "We sketch how work and money move between your teams, and where they wait",
+                      "You leave with a straight view of where to start, even if the answer is that you don't need us yet",
                     ]
               }
             />

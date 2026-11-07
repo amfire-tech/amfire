@@ -73,7 +73,7 @@ export default function HowWeWorkPage() {
             ))}
           </div>
           <ButtonLink href="/start" size="lg" className="mt-10">
-            Book a free demo
+            Start a conversation
           </ButtonLink>
         </Container>
       </section>

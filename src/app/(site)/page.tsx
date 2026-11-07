@@ -1,36 +1,23 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
-import { AutomateDemo } from "@/components/demos/automate-demo";
-import { HireVsAmfire } from "@/components/demos/hire-vs-amfire";
-import { ModeShowcase } from "@/components/demos/mode-showcase";
-import { CaseStudyCard } from "@/components/case-study-card";
-import { DepartmentShowcase } from "@/components/departments";
-import { FounderNote } from "@/components/founder-note";
-import { ExampleCard } from "@/components/example-card";
-import { FreeDemoSection } from "@/components/free-demo";
-import { GiftIcon } from "@/components/demo-offer";
-import { JourneyVideo } from "@/components/journey-video";
-import { StoryTabs } from "@/components/story-tabs";
-import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, SwipeRow } from "@/components/ui";
-import { FREE_DEMO, INDUSTRIES, SERVICES, SERVICE_DETAILS, TOOLS, TOOLS_GLOBAL, type ServicePathId } from "@/knowledge/catalog";
-import { CASE_STUDIES } from "@/knowledge/case-studies";
-import { EXAMPLES } from "@/knowledge/examples";
-import { ForCurrency, Money } from "@/components/currency";
-import { DEMO_OFFER } from "@/knowledge/pricing";
-import { SOLUTION_COUNT } from "@/knowledge/solutions";
-
-import { HIRING } from "@/knowledge/catalog";
+import { FlowLine } from "@/components/flow-line";
+import { CONVERSATION_CTA } from "@/components/site-header";
+import { Arrow, ButtonLink, Container, Eyebrow } from "@/components/ui";
+import { FOUNDERS } from "@/config/founders";
 import { site } from "@/config/site";
+import { CASE_STUDIES } from "@/knowledge/case-studies";
 
-/** Salaries for a developer, a digital marketer and a social media person, per month. */
-const THREE_HIRES = { INR: 3 * HIRING.salary.INR.fresher * 100, USD: 3 * HIRING.salary.USD.fresher * 100 };
+// Homepage, built from the approved spec (https://claude.ai/artifact/38tzFL5QhwHXtW4RWNBJoq).
+// Seven screens, in the order a careful buyer asks: is this serious, do they get my
+// problem, how do they work, can they deliver, what would they do for me, who are
+// they, is it safe. Copy rules: plain words a busy MD reads once, nothing tied to one
+// country, nothing we can't prove, calm, and nothing any other agency could say.
+// The vocabulary is four words: work moves, gets stuck, the owner chases, and sees.
+// Orange means "stuck" and nothing else. Mono is for figures only. No text under 13px.
 
-const PATHS = Object.keys(SERVICES) as ServicePathId[];
-
-// The browser tab and search results show this title.
-const TITLE = "amfire - Streamlined workflow";
-const DESCRIPTION =
-  "Custom software, WhatsApp-to-Tally and GST automation, and a managed website, SEO and IT team for one monthly fee — for Indian businesses. Book a free 30-minute demo.";
+const TITLE = "amfire · Operations engineering";
+const DESCRIPTION = site.description;
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },
@@ -38,271 +25,266 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const TRANSPARENCY = [
-  { term: "We're available", value: site.availability.hours },
-  { term: "First response", value: `We reply ${site.availability.firstResponse}` },
-  { term: "Free demo", value: `${site.availability.demoLength}, no obligation` },
-  { term: "You pay", value: "Only for work you have approved" },
-  { term: "Your Client Hub", value: "Progress, decisions and updates — any time" },
-  { term: "Talk to a person", value: "One point of contact, every step of the way" },
+/** Promises already in our terms (see /terms: payment, ownership, confidentiality). */
+const SAFETY = [
+  { title: "You own what we build", body: "Code, designs and content made for you are yours once paid." },
+  { title: "Confidential by default", body: "Your information is used only for your work. We sign your NDA, or ours." },
+  { title: "Scope fixed in writing", body: "Nothing starts until you approve the proposal." },
+  { title: "Paid on approval", body: "Each milestone is invoiced only after you sign it off." },
 ];
 
+const BETWEEN_TEAMS = [
+  { from: "Sales", to: "Accounts", body: "A quote sits in someone’s inbox while the customer waits." },
+  { from: "Orders", to: "Dispatch", body: "The same order is typed in again by three different people." },
+  { from: "Accounts", to: "You", body: "You hear about a late payment at month end, when it is already late." },
+];
+
+const METHOD = [
+  { title: "Understand", body: "We sit with each team and see how work actually moves today, step by step." },
+  { title: "Measure", body: "We record where things stand: how long work takes, how often it is redone, how long payments take. Nothing is promised before this." },
+  { title: "Build", body: "We build for the one problem that costs you most, with the people who will use it, connected to the tools you already have." },
+  { title: "Run", body: "We stay. We look after it, improve it, and show you what changed against where you started." },
+];
+
+/** Named after the stages in the drawing, so the page keeps one picture. */
+const STARTING_POINTS = [
+  { name: "Enquiry to sale", body: "Every enquiry answered quickly and followed up until it is won or closed.", measure: "Reply time, enquiries won" },
+  { name: "Order to delivery", body: "An order entered once, and visible to everyone who needs it.", measure: "Re-entry, errors, delivery time" },
+  { name: "Invoice to payment", body: "Invoices raised on time and payments followed up without anyone having to remember.", measure: "Days to get paid" },
+  { name: "Your view of the company", body: "One screen, every morning: what is stuck, with whom, and for how long.", measure: "Time spent chasing updates" },
+];
+
+const H2 = "text-[2rem] leading-[1.1] font-medium tracking-[-0.025em] text-balance sm:text-[2.75rem]";
+const LEDE = "text-lg leading-[1.55] text-muted sm:text-xl";
+
 export default function HomePage() {
-  const featured = PATHS.flatMap((p) => EXAMPLES.filter((e) => e.path === p).slice(0, 2));
-  const stories = PATHS.map((p) => ({ path: p, name: SERVICES[p].name, tagline: SERVICES[p].tagline, story: SERVICE_DETAILS[p].story }));
+  const [lead, ...rest] = CASE_STUDIES;
+  const founder = FOUNDERS.find((f) => f.note);
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative isolate overflow-hidden">
-        <div aria-hidden className="bg-brand absolute -top-40 -left-40 -z-10 size-[28rem] rounded-full opacity-[0.12] blur-3xl" />
-        <Container className="grid items-center gap-10 pt-10 pb-12 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-12 lg:pt-16">
-          <div>
-            {/* Visitors outside India (shown prices in dollars) get the international pitch; no flash, it's the same currency switch. */}
-            <Eyebrow>
-              <ForCurrency currency="INR">Technology partner for Indian businesses</ForCurrency>
-              <ForCurrency currency="USD">AI automation partner for growing businesses</ForCurrency>
-            </Eyebrow>
-            <h1 className="mt-5 text-[2.35rem] leading-[1.06] font-semibold tracking-tight text-balance min-[400px]:text-[2.6rem] sm:text-6xl">
-              Build what&apos;s missing. Run what matters. <span className="text-brand">Automate the rest.</span>
-            </h1>
-            <p className="mt-5 max-w-xl text-base text-muted sm:mt-6 sm:text-lg">
-              <ForCurrency currency="INR">
-                Tell us your business problem. We build the software for it, run everything online for you, and automate the work
-                that eats your team&apos;s day — so you can focus on your business.
-              </ForCurrency>
-              <ForCurrency currency="USD">
-                Tell us where your business loses time. We build the AI agents and software that fix it, run them for you, and
-                automate the work that eats your team&apos;s day — from a team that delivers while you sleep.
-              </ForCurrency>
-            </p>
-            <Link href="/solutions" className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold underline-offset-4 hover:underline">
-              Explore {SOLUTION_COUNT} AI solutions <Arrow />
-            </Link>
-            <div className="mt-8 flex flex-col gap-2 sm:mt-9 sm:flex-row sm:items-center sm:gap-3">
-              <ButtonLink href="/start" size="lg" className="w-full sm:w-auto">
-                {FREE_DEMO.cta} <Arrow />
+      {/* 1 · First screen: headline at full width, the drawing as its own band. */}
+      <section>
+        <Container className="pt-20 pb-16 sm:pt-28 sm:pb-20">
+          <Eyebrow>{site.tagline}</Eyebrow>
+          <h1 className="mt-6 max-w-[13.5em] text-[2.75rem] leading-[1.02] font-medium tracking-[-0.04em] text-balance sm:text-6xl lg:text-[4.75rem] lg:leading-none">
+            A company that runs without you chasing it.
+          </h1>
+          {/* One left edge: label, headline, line and buttons all start at the same x, read top to bottom. */}
+          <p className={`mt-8 max-w-[33rem] text-pretty sm:mt-10 ${LEDE}`}>
+            We learn how work really moves through your company, find where it gets stuck, and build the systems that keep it moving. Then we stay and run them.
+          </p>
+          <div className="mt-10">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+              <ButtonLink href="/start" size="lg">
+                {CONVERSATION_CTA}
               </ButtonLink>
-              <Link href="#departments" className="inline-flex items-center justify-center gap-1.5 px-2 py-3 text-sm font-semibold underline-offset-4 hover:underline">
-                See what we automate, department by department
+              <Link href="/how-we-work" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
+                How we work <Arrow />
               </Link>
             </div>
-            <Link
-              href="/start"
-              className="bg-brand shine mt-3 flex items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm text-ink shadow-[0_10px_30px_-12px_rgba(255,69,58,0.8)] sm:mt-4 sm:inline-flex sm:rounded-full"
-            >
-              <GiftIcon className="shrink-0" />
-              <span>
-                Book a free demo and get <strong className="font-bold">flat <Money amounts={DEMO_OFFER.amount} /> off</strong> any plan.
-              </span>
-            </Link>
           </div>
-          <ModeShowcase />
         </Container>
-
+        <div className="border-y border-line">
+          <Container className="grid grid-cols-1 gap-x-8 gap-y-2 py-5 text-sm text-muted sm:grid-cols-2 lg:grid-cols-4">
+            {SAFETY.map((s) => (
+              <p key={s.title} className="flex items-center gap-2.5">
+                <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-fg/60" />
+                {s.title}
+              </p>
+            ))}
+          </Container>
+        </div>
+        <Container className="py-14 sm:py-20">
+          <Eyebrow>How work moves through a company</Eyebrow>
+          <FlowLine className="mt-10" />
+        </Container>
       </section>
 
-      {/* Tools: Indian visitors see Tally, GST and UPI; everyone else the tools they use. */}
-      {([["INR", TOOLS], ["USD", TOOLS_GLOBAL]] as const).map(([currency, tools]) => (
-        <section
-          key={currency}
-          data-currency-only={currency}
-          aria-label="Works with the tools you already use"
-          className="border-y border-line bg-subtle py-5 sm:py-6"
-        >
-          <Container className="flex flex-col items-center gap-3 sm:flex-row sm:gap-4">
-            <p className="shrink-0 text-xs font-semibold tracking-widest text-muted uppercase">Works with what you use</p>
-            <div className="relative w-full overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
-              <ul className="flex w-max animate-marquee gap-3 hover:[animation-play-state:paused]">
-                {[...tools, ...tools].map((t, i) => (
-                  <li key={i} aria-hidden={i >= tools.length} className="rounded-full bg-surface px-4 py-1.5 text-sm font-medium whitespace-nowrap ring-1 ring-line">
-                    {t}
+      {/* 2 · Point of view */}
+      <section className="border-t border-line">
+        <Container className="py-24 sm:py-32">
+          <div className="grid gap-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-20">
+            <div>
+              <Eyebrow>Where work gets stuck</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>Work rarely gets stuck inside a team. It gets stuck between teams.</h2>
+              <p className={`mt-6 max-w-md ${LEDE}`}>
+                Each team does its own job well. The delays happen when work passes from one team to the next, and nobody owns that moment.
+              </p>
+            </div>
+            <div className="lg:pt-2">
+              <ul className="border-t border-line">
+                {BETWEEN_TEAMS.map((b) => (
+                  <li key={b.from} className="grid gap-2 border-b border-line py-7 sm:grid-cols-[11rem_1fr] sm:gap-8">
+                    <p className="pt-1 text-[13px] font-medium tracking-[0.12em] text-muted uppercase">
+                      {b.from} <span className="text-ember">→</span> {b.to}
+                    </p>
+                    <p className="text-lg leading-snug tracking-tight sm:text-xl">{b.body}</p>
                   </li>
                 ))}
               </ul>
+              <p className="mt-5 text-sm text-muted">Patterns we look for in every company we study.</p>
             </div>
-          </Container>
-        </section>
-      ))}
-
-      {/* Visitors outside India: the white-label partner path for agencies. */}
-      <section data-currency-only="USD" aria-label="For marketing agencies">
-        <Container className="pt-10 sm:pt-14">
-          <Link
-            href="/agencies"
-            className="group flex flex-col gap-3 rounded-card bg-ink p-6 text-white sm:flex-row sm:items-center sm:justify-between sm:p-8"
-          >
-            <span>
-              <span className="block text-xs font-semibold tracking-[0.2em] text-flame uppercase">Run a marketing agency or coaching program?</span>
-              <span className="mt-2 block text-xl font-semibold tracking-tight sm:text-2xl">We&apos;re the AI build team behind your brand. You keep the client and the margin.</span>
-            </span>
-            <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold group-hover:underline">
-              How white-label works <Arrow />
-            </span>
-          </Link>
+          </div>
         </Container>
       </section>
 
-      {/* Delivered work — real proof before illustrative stories */}
-      <section>
-        <Container className="py-14 sm:py-24">
+      {/* 3 · How we work */}
+      <section className="border-t border-line bg-subtle">
+        <Container className="py-24 sm:py-32">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <SectionHeading
-              eyebrow="Our work"
-              title="Live projects, built by amfire"
-              description="From an AI platform used by schools to a premium website for a smart-garden brand — open them and see for yourself."
-            />
-            <Link href="/work" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold">
-              All our work <Arrow />
+            <div className="max-w-2xl">
+              <Eyebrow>How we work</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>Understand first. Build second. Stay after.</h2>
+            </div>
+            <Link href="/how-we-work" className="inline-flex shrink-0 items-center gap-1.5 text-[15px] font-medium underline-offset-[6px] hover:underline">
+              More on how we work <Arrow />
             </Link>
           </div>
-          <div className="mt-8 grid gap-5 sm:mt-12 lg:grid-cols-2">
-            {CASE_STUDIES.map((c) => (
-              <CaseStudyCard key={c.slug} study={c} />
+          <ol className="mt-14 grid border-t border-fg/15 sm:grid-cols-2 lg:grid-cols-4">
+            {METHOD.map((m, i) => (
+              <li key={m.title} className="border-b border-fg/15 py-8 sm:pr-8 lg:border-b-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:pl-8">
+                <p className="font-mono text-[13px] text-fg">0{i + 1}</p>
+                <h3 className="mt-4 text-2xl font-medium tracking-tight">{m.title}</h3>
+                <p className="mt-3 text-[17px] leading-relaxed text-muted">{m.body}</p>
+              </li>
             ))}
-          </div>
+          </ol>
         </Container>
       </section>
 
-      <DepartmentShowcase />
-
-      <FounderNote />
-
-      {/* Owner stories (Indian businesses) */}
-      <section id="stories" data-currency-only="INR" className="scroll-mt-20 border-y border-line bg-subtle">
-        <Container className="py-14 sm:py-24">
-          <SectionHeading
-            eyebrow="Stories"
-            title="What this looks like for a business like yours"
-            description="Illustrative stories based on situations common across Indian businesses."
-          />
-          <div className="mt-10">
-            <StoryTabs stories={stories} />
-          </div>
-        </Container>
-      </section>
-
-      {/* Operate: cost of hiring */}
-      <section>
-        <Container className="py-14 sm:py-24">
-          <div className="grid gap-10 lg:grid-cols-[1fr_1fr] lg:items-end">
-            <div>
-              <Eyebrow>Operate · your tech team, without hiring</Eyebrow>
-              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">
-                Why hire an IT team when you can have a technology partner?
-              </h2>
-              <p className="mt-4 text-muted">
-                A developer, a digital marketer and someone for social media can cost <Money amounts={THREE_HIRES} /> or more a month. amfire manages your
-                website, email, software, social media, SEO, online marketing and lead follow-up — for one monthly fee.
-              </p>
-              <div className="mt-6 text-sm">
-                <CheckList
-                  items={[
-                    "One partner for everything on the internet",
-                    "Always updated on new technology — including AI agents",
-                    "You focus on your core business; we handle the rest",
-                  ]}
-                />
-              </div>
-            </div>
-            <div className="lg:pb-2">
-              <Link href="/services/operate" className="inline-flex items-center gap-1.5 text-sm font-semibold">
-                What Operate includes <Arrow />
-              </Link>
-            </div>
-          </div>
-          <div className="mt-10">
-            <HireVsAmfire />
-          </div>
-        </Container>
-      </section>
-
-      {/* Live demo: WhatsApp to Tally, for Indian visitors */}
-      <section data-currency-only="INR" className="relative overflow-hidden bg-ink text-white">
-        <div aria-hidden className="bg-brand absolute top-1/3 -right-40 size-[30rem] rounded-full opacity-20 blur-3xl" />
-        <Container className="relative grid gap-8 py-14 sm:py-24 lg:grid-cols-[0.8fr_1.2fr] lg:items-center lg:gap-12">
-          <div>
-            <Eyebrow className="text-white/60">Automate · try it yourself</Eyebrow>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">A WhatsApp order, posted to Tally — with a person in charge.</h2>
-            <p className="mt-4 text-white/70">
-              Follow an order from a Surat fabric wholesaler: read from WhatsApp, checked against stock and credit, approved by the
-              owner, posted to TallyPrime with the e-invoice, and confirmed back to the customer.
-            </p>
-            <Link href="/services/automate" className="mt-8 inline-flex items-center gap-1.5 text-sm font-semibold">
-              More about Automate <Arrow />
-            </Link>
-          </div>
-          <div className="text-fg">
-            <AutomateDemo />
-          </div>
-        </Container>
-      </section>
-
-      {/* Examples from Indian businesses */}
-      <section data-currency-only="INR">
-        <Container className="py-14 sm:py-24">
+      {/* 4 · Our work */}
+      <section className="bg-ink text-white">
+        <Container className="py-24 sm:py-32">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-            <SectionHeading
-              eyebrow="Examples"
-              title="More examples from Indian businesses"
-              description="Illustrative engagements — from Surat to Ludhiana to Chennai."
-            />
-            <Link href="/work" className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold">
-              All {EXAMPLES.length} examples <Arrow />
+            <div className="max-w-2xl">
+              <Eyebrow className="text-white/55">Our work</Eyebrow>
+              <h2 className={`mt-5 ${H2}`}>Systems in daily use, built by amfire.</h2>
+            </div>
+            <Link href="/work" className="inline-flex shrink-0 items-center gap-1.5 text-[15px] font-medium text-white/80 underline-offset-[6px] hover:text-white hover:underline">
+              All work <Arrow />
             </Link>
           </div>
-          <SwipeRow className="mt-8 sm:mt-12">
-            {featured.map((e) => (
-              <ExampleCard key={e.slug} example={e} />
-            ))}
-          </SwipeRow>
-        </Container>
-      </section>
 
-      {/* How it works — the real client journey on video */}
-      <section id="how-it-works" className="scroll-mt-20 border-t border-line bg-subtle">
-        <Container className="py-14 sm:py-24">
-          <SectionHeading
-            eyebrow="How it works"
-            title="See exactly what happens after you book a demo"
-            description="The real client journey on amfire, from booking a free demo to approving milestones and receiving your finished project in the Client Hub."
-          />
-          <div className="mt-10">
-            <JourneyVideo />
-          </div>
-          <dl className="mt-8 grid grid-cols-2 gap-px overflow-hidden rounded-[1.5rem] bg-line ring-1 ring-line sm:mt-10 lg:grid-cols-3">
-            {TRANSPARENCY.map((t) => (
-              <div key={t.term} className="bg-surface p-4 sm:p-6">
-                <dt className="text-[11px] font-semibold tracking-widest text-muted uppercase sm:text-xs">{t.term}</dt>
-                <dd className="mt-1.5 text-sm font-medium sm:mt-2 sm:text-base">{t.value}</dd>
+          {lead && (
+            <Link href={`/work/${lead.slug}`} className="group mt-14 grid gap-10 border-t border-white/15 pt-10 lg:grid-cols-[1.25fr_1fr] lg:gap-14">
+              <div className="relative aspect-[1200/630] overflow-hidden rounded-md bg-white/5 ring-1 ring-white/10">
+                <Image src={lead.cover} alt={lead.coverAlt} fill sizes="(min-width: 1024px) 620px, 100vw" className="object-cover transition duration-700 group-hover:scale-[1.015]" />
               </div>
-            ))}
-          </dl>
+              <div className="flex flex-col">
+                <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">
+                  {lead.client} · {lead.sector}
+                </p>
+                <h3 className="mt-4 text-2xl leading-snug font-medium tracking-tight sm:text-3xl">{lead.title}</h3>
+                <p className="mt-4 text-[17px] leading-relaxed text-white/65">{lead.summary}</p>
+                <dl className="mt-8 grid grid-cols-2 gap-x-6 gap-y-6 border-t border-white/15 pt-6">
+                  {lead.facts.map((f) => (
+                    <div key={f.label} className="flex flex-col-reverse">
+                      <dt className="mt-1 text-sm text-white/60">{f.label}</dt>
+                      <dd className="font-mono text-[1.75rem] leading-tight text-white">{f.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <span className="mt-8 inline-flex items-center gap-1.5 text-[15px] font-medium">
+                  Read the case study <Arrow className="transition group-hover:translate-x-0.5" />
+                </span>
+              </div>
+            </Link>
+          )}
+
+          {rest.length > 0 && (
+            <ul className={`mt-14 grid gap-px overflow-hidden rounded-md bg-white/10 ring-1 ring-white/10 ${rest.length > 1 ? "sm:grid-cols-2" : ""}`}>
+              {rest.map((c) => (
+                <li key={c.slug} className="bg-ink">
+                  <Link href={`/work/${c.slug}`} className="group flex h-full items-center gap-6 p-6 hover:bg-white/[0.03]">
+                    <div className="relative hidden aspect-square w-24 shrink-0 overflow-hidden rounded-sm sm:block">
+                      <Image src={c.cover} alt="" fill sizes="96px" className="object-cover" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">{c.client}</p>
+                      <p className="mt-2 text-xl leading-snug tracking-tight">{c.title}</p>
+                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm text-white/70 group-hover:text-white">
+                        Read the case study <Arrow className="size-3.5" />
+                      </span>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Container>
       </section>
 
-      {/* Industries (India) */}
-      <section data-currency-only="INR" className="border-t border-line">
-        <Container className="py-12 sm:py-16">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Built around how Indian industries actually work</h2>
-            <Link href="/industries" className="inline-flex items-center gap-1.5 text-sm font-semibold">
-              Industries <Arrow />
-            </Link>
+      {/* 5 · Where we usually start */}
+      <section>
+        <Container className="py-24 sm:py-32">
+          <div className="max-w-2xl">
+            <Eyebrow>Where we usually start</Eyebrow>
+            <h2 className={`mt-5 ${H2}`}>Four places companies lose the most time.</h2>
           </div>
-          <ul className="mt-8 flex flex-wrap gap-2">
-            {INDUSTRIES.map((i) => (
-              <li key={i.name}>
-                <Link href="/industries" className="inline-flex rounded-full bg-surface px-4 py-2 text-sm ring-1 ring-line hover:ring-fg/30">
-                  {i.name}
-                </Link>
+          <ul className="mt-14 border-t border-line">
+            {STARTING_POINTS.map((p) => (
+              <li key={p.name} className="grid gap-3 border-b border-line py-8 md:grid-cols-[17rem_1fr_15rem] md:gap-10">
+                <h3 className="text-2xl font-medium tracking-tight">{p.name}</h3>
+                <p className="max-w-xl text-[17px] leading-relaxed text-muted">{p.body}</p>
+                <div className="md:text-right">
+                  <p className="text-[13px] font-medium tracking-[0.12em] text-muted uppercase">We measure</p>
+                  <p className="mt-1 text-[15px]">{p.measure}</p>
+                </div>
               </li>
             ))}
           </ul>
         </Container>
       </section>
 
-      <FreeDemoSection />
+      {/* 6 · The founders' note. Faces live on /about; here the words carry it. */}
+      {founder && (
+        <section className="border-t border-line bg-subtle">
+          <Container className="py-24 sm:py-32">
+            <figure className="max-w-4xl">
+              <Eyebrow>You work with the people who build it</Eyebrow>
+              <blockquote className="mt-8 font-serif text-[1.75rem] leading-[1.3] text-pretty italic sm:text-[2.5rem] sm:leading-[1.25]">“{founder.note}”</blockquote>
+              <figcaption className="mt-10 flex flex-col gap-4 border-t border-fg/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                <span>
+                  <span className="font-medium">{founder.name}</span>
+                  <span className="ml-3 text-[15px] text-muted">{founder.role}, amfire</span>
+                </span>
+                <Link href="/about" className="inline-flex items-center gap-1.5 text-[15px] font-medium underline-offset-[6px] hover:underline">
+                  Meet the founders <Arrow />
+                </Link>
+              </figcaption>
+            </figure>
+          </Container>
+        </section>
+      )}
+
+      {/* 7 · Working with us, then the close */}
+      <section className="border-t border-line">
+        <Container className="py-24 sm:py-32">
+          <Eyebrow>Working with us</Eyebrow>
+          <dl className="mt-8 grid border-t border-line sm:grid-cols-2 lg:grid-cols-4">
+            {SAFETY.map((s) => (
+              <div key={s.title} className="border-b border-line py-7 sm:pr-8 lg:border-b-0 lg:[&:not(:first-child)]:border-l lg:[&:not(:first-child)]:pl-8">
+                <dt className="text-lg font-medium tracking-tight">{s.title}</dt>
+                <dd className="mt-2 text-[15px] leading-relaxed text-muted">{s.body}</dd>
+              </div>
+            ))}
+          </dl>
+        </Container>
+        <div className="bg-ink text-white">
+          <Container className="flex flex-col gap-10 py-24 sm:py-28 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-2xl">
+              <h2 className="text-[2.5rem] leading-[1.05] font-medium tracking-[-0.035em] text-balance sm:text-[3.5rem]">Tell us where work gets stuck.</h2>
+              <p className="mt-6 max-w-xl text-lg leading-[1.55] text-white/65 sm:text-xl">
+                A 30-minute conversation with the founder about how your company runs today. If we are not the right fit, we will tell you.
+              </p>
+            </div>
+            <ButtonLink href="/start" size="lg" className="shrink-0">
+              {CONVERSATION_CTA} <Arrow />
+            </ButtonLink>
+          </Container>
+        </div>
+      </section>
     </>
   );
 }

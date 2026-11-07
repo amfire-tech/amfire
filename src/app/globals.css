@@ -7,15 +7,20 @@
   display: none;
 }
 
-/* amfire brand tokens — constant in both themes */
+/* amfire brand tokens — constant in both themes.
+   Premium direction (7 Nov 2026): ink and paper. Ember (orange) has one meaning on
+   the public site — "work gets stuck here" — plus the logo. Don't use it as decoration. */
 @theme {
-  --color-ink: #080808;
+  --color-ink: #0b0b0c;
   --color-signal: #ff453a;
   --color-flame: #ff8747;
-  --color-paper: #ffffff;
+  --color-ember: #e8482a;
+  --color-paper: #fafaf7;
 
-  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
-  --radius-card: 1.25rem;
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --radius-card: 0.5rem;
 
   --animate-float: float 7s ease-in-out infinite;
   --animate-marquee: marquee 40s linear infinite;
@@ -87,12 +92,12 @@
 
 /* Semantic tokens — the site is light only */
 :root {
-  --page: #ffffff;
+  --page: #fafaf7;
   --surface: #ffffff;
-  --subtle: #f4f4f4;
-  --fg: #080808;
-  --muted: #5a5a5a;
-  --line: #e6e6e6;
+  --subtle: #f3f2ee;
+  --fg: #0b0b0c;
+  --muted: #57575d;
+  --line: #e6e4df;
   --danger: #b42318;
   --success: #067647;
   color-scheme: light;
@@ -110,14 +115,23 @@
 }
 
 @utility bg-brand {
-  background-image: linear-gradient(90deg, var(--color-signal) 0%, var(--color-flame) 100%);
+  background-color: var(--color-ember);
 }
 
+/* Primary buttons are solid ink; inside an always-dark (bg-ink) section they
+   turn paper-white so they stay visible. Unlayered, so it beats the utilities. */
+.bg-ink .btn-primary {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+.bg-ink .btn-primary:hover {
+  background-color: #ffffff;
+}
+
+/* Accent words in headings: a quieter tone of the surrounding text, on light or dark.
+   Not orange — orange is reserved for stuck points. */
 @utility text-brand {
-  background-image: linear-gradient(90deg, #ff3b30 0%, var(--color-flame) 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+  color: color-mix(in srgb, currentColor 52%, transparent);
 }
 
 @layer base {
@@ -148,13 +162,13 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-signal);
+  outline: 2px solid currentColor;
   outline-offset: 2px;
   border-radius: 6px;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--color-flame) 35%, transparent);
+  background: color-mix(in srgb, var(--color-ember) 22%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {

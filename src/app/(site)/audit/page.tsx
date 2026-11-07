@@ -29,7 +29,6 @@ export default function AuditPage() {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <div aria-hidden className="bg-brand absolute -top-40 -right-40 -z-10 size-[28rem] rounded-full opacity-[0.12] blur-3xl" />
         <Container className="grid gap-10 py-12 sm:py-20 lg:grid-cols-[1.2fr_1fr] lg:items-center">
           <div>
             <Eyebrow>Free · within 48 hours</Eyebrow>
@@ -42,7 +41,7 @@ export default function AuditPage() {
             </ButtonLink>
           </div>
           <div className="rounded-card bg-ink p-6 text-white sm:p-8">
-            <p className="text-xs font-semibold tracking-[0.2em] text-flame uppercase">What you get</p>
+            <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">What you get</p>
             <div className="mt-4 text-sm text-white/85">
               <CheckList items={[...LEAD_AUDIT.points]} />
             </div>

@@ -17,7 +17,6 @@ export default async function OpenBrochurePage({ searchParams }: PageProps<"/bro
 
   return (
     <div className="relative overflow-hidden bg-ink text-white">
-      <div aria-hidden className="bg-brand absolute -top-32 left-1/2 size-96 -translate-x-1/2 rounded-full opacity-25 blur-3xl" />
       <Container className="relative flex min-h-[70vh] flex-col items-center justify-center py-16 text-center">
         <Flame className="h-24 w-auto" />
         {req ? (

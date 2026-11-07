@@ -26,7 +26,7 @@ const BENEFITS = [
 
 const STEPS = [
   { title: "A 15-minute meeting", body: "We understand your client base and the problems you see most: billing, GST data, collections, enquiries." },
-  { title: "Your referral link", body: "Your firm gets its own link. Anyone who books a free demo through it is credited to you, and you can see the count anytime." },
+  { title: "Your referral link", body: "Your firm gets its own link. Anyone who books a call through it is credited to you, and you can see the count anytime." },
   { title: "We look after your clients", body: "Free problem-finding call, written proposal, delivery in milestones. We never give tax or accounting advice; that stays with you." },
 ];
 

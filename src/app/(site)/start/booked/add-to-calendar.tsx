@@ -1,11 +1,9 @@
 "use client";
 
 // The one job of the booked page: get the call into the client's own calendar
-// before they leave. The ₹5,000 code stays locked until they tap one of the
-// calendar buttons, so nobody skips it.
+// before they leave.
 
-import { useState, useSyncExternalStore, type ReactNode } from "react";
-import { PromoCode } from "@/components/demo-offer";
+import { useState, useSyncExternalStore } from "react";
 import { track } from "@/lib/analytics";
 
 type Props = {
@@ -13,10 +11,6 @@ type Props = {
   kind: "demo" | "partner";
   start?: string;
   end?: string;
-  /** The promo code, revealed once the call is in their calendar; null for partner calls. */
-  code: string | null;
-  /** The discount, as shown in the visitor's currency. */
-  offer: ReactNode;
 };
 
 const storageKey = (uid: string) => `call-in-calendar:${uid}`;
@@ -39,7 +33,7 @@ function localWhen(start?: string) {
   return `${day}, ${time}`;
 }
 
-export function AddToCalendar({ uid, kind, start, end, code, offer }: Props) {
+export function AddToCalendar({ uid, kind, start, end }: Props) {
   const [clicked, setClicked] = useState(false);
   // Remembered across a reload; the server never knows, so it renders the locked state first.
   const remembered = useSyncExternalStore(noop, () => readStored(uid), () => false);
@@ -63,9 +57,9 @@ export function AddToCalendar({ uid, kind, start, end, code, offer }: Props) {
 
   return (
     <>
-      <section aria-labelledby="add-to-calendar" className="mt-8 rounded-card bg-surface p-6 ring-2 ring-[#ff453a] sm:p-10">
-        <p className="text-sm font-semibold tracking-widest text-[#ff453a] uppercase">{added ? "Done ✓" : "One last step"}</p>
-        <h2 id="add-to-calendar" className="mt-2 text-3xl leading-tight font-semibold tracking-tight sm:text-5xl">
+      <section aria-labelledby="add-to-calendar" className="mt-8 rounded-card bg-surface p-6 ring-1 ring-line sm:p-10">
+        <p className="text-[13px] font-medium tracking-[0.12em] text-muted uppercase">{added ? "Done ✓" : "One last step"}</p>
+        <h2 id="add-to-calendar" className="mt-3 text-3xl leading-tight font-medium tracking-[-0.03em] sm:text-5xl">
           {added ? "It's in your calendar." : "Add the call to your calendar now."}
         </h2>
         {when && <p className="mt-3 text-xl font-medium sm:text-2xl">{when}</p>}
@@ -81,22 +75,22 @@ export function AddToCalendar({ uid, kind, start, end, code, offer }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => markAdded("google")}
-            className="bg-brand shine flex items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-semibold text-ink shadow-[0_10px_30px_-12px_rgba(255,69,58,0.8)] hover:brightness-105"
+            className="flex items-center justify-center gap-2 rounded-md bg-ink px-6 py-4 text-base font-medium text-white hover:bg-ink/85"
           >
             <CalendarIcon /> Add to Google Calendar
           </a>
           <a
             href={link("ics")}
             onClick={() => markAdded("ics")}
-            className="flex items-center justify-center gap-2 rounded-full bg-ink px-6 py-4 text-lg font-semibold text-white hover:bg-ink/90"
+            className="flex items-center justify-center gap-2 rounded-md px-6 py-4 text-base font-medium ring-1 ring-fg/20 ring-inset hover:ring-fg/45"
           >
             <CalendarIcon /> Outlook / Apple / other
           </a>
         </div>
 
-        <div className="mt-8 rounded-2xl bg-subtle p-5 sm:p-6">
-          <p className="text-xl leading-snug font-semibold sm:text-2xl">
-            Then open the invite we&apos;ve emailed you and tap <span className="text-[#ff453a]">&ldquo;Yes&rdquo;</span>.
+        <div className="mt-8 rounded-md bg-subtle p-5 sm:p-6">
+          <p className="text-xl leading-snug font-medium sm:text-2xl">
+            Then open the invite we&apos;ve emailed you and tap &ldquo;Yes&rdquo;.
           </p>
           <p className="mt-2 text-base text-fg/75 sm:text-lg">
             After that, Gmail treats amfire as someone you know, and our invites go straight into your calendar. Using Gmail? The invite may be under the{" "}
@@ -105,32 +99,6 @@ export function AddToCalendar({ uid, kind, start, end, code, offer }: Props) {
         </div>
       </section>
 
-      {code && (
-        <section aria-labelledby="offer" className="relative mt-8 overflow-hidden rounded-card bg-ink p-6 text-white sm:p-8">
-          <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-30 blur-3xl" />
-          <div className="relative">
-            <p className="text-sm font-semibold tracking-widest text-flame uppercase">{added ? "Unlocked" : "Locked"}</p>
-            <h2 id="offer" className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-              {added ? (
-                <>You&apos;ve got <span className="text-brand">{offer} off</span> any plan</>
-              ) : (
-                <>Your <span className="text-brand">{offer} off</span> code unlocks once the call is in your calendar</>
-              )}
-            </h2>
-            {added ? (
-              <>
-                <p className="mt-2 text-white/75">Here&apos;s your personal promo code. It&apos;s linked to this booking.</p>
-                <div className="mt-5 max-w-md">
-                  <PromoCode code={code} />
-                </div>
-                <p className="mt-4 text-sm text-white/60">There&apos;s nothing to enter later: we take it off your proposal, and you&apos;ll see it there before you accept.</p>
-              </>
-            ) : (
-              <p className="mt-3 text-white/75">Tap one of the calendar buttons above and your code appears here.</p>
-            )}
-          </div>
-        </section>
-      )}
     </>
   );
 }

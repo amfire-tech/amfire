@@ -20,7 +20,6 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
   return (
     <>
       <section className="relative isolate overflow-hidden">
-        <div aria-hidden className="bg-brand absolute -top-40 -right-40 -z-10 size-[28rem] rounded-full opacity-[0.10] blur-3xl" />
         <Container className="pt-10 pb-10 sm:pt-16">
           <Link href="/work" className="text-sm text-muted hover:text-fg">
             ← All work
@@ -111,11 +110,10 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
             </a>
           </div>
           <div className="relative overflow-hidden rounded-card bg-ink p-6 text-white">
-            <div aria-hidden className="bg-brand absolute -top-16 -right-16 size-40 rounded-full opacity-30 blur-2xl" />
             <p className="relative font-semibold">Want something like this?</p>
             <p className="relative mt-1 text-sm text-white/70">Tell us your problem — you talk to the people who built {study.client}.</p>
             <ButtonLink href={`/start?goal=${SERVICE_DETAILS[study.path].goal}`} className="relative mt-5 w-full">
-              Book a free demo <Arrow />
+              Start a conversation <Arrow />
             </ButtonLink>
           </div>
         </aside>

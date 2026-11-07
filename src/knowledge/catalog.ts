@@ -110,14 +110,14 @@ export function labelFor<T extends { id: string; label: string }>(list: readonly
 // --- The free demo -----------------------------------------------------------------
 
 export const FREE_DEMO = {
-  cta: "Book a free demo",
-  title: "Book a free demo",
+  cta: "Start a conversation",
+  title: "Start a conversation",
   summary:
-    "A 30-minute call where we understand your business, show you what's possible and suggest where to start. Free, with no obligation.",
+    "A 30-minute conversation with the founder about how your company runs today. If we are not the right fit, we will tell you.",
   points: [
-    "We listen first — your business, your problem, your budget",
-    "We show working examples relevant to you",
-    "You get an honest recommendation, even if it's “you don't need us yet”",
+    "We listen first: your company, your teams, where work waits",
+    "We sketch how we would map and measure it",
+    "You get a straight answer, even if it is “not yet”",
   ],
 };
 

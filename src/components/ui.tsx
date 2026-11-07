@@ -29,8 +29,9 @@ type Size = "sm" | "md" | "lg";
 
 const variants: Record<Variant, string> = {
   // Ink text on the gradient keeps contrast above WCAG AA across the whole gradient, in both themes.
-  primary: "bg-brand text-ink shadow-[0_8px_24px_-12px_rgba(255,69,58,0.7)] hover:brightness-105 active:brightness-95",
-  secondary: "bg-surface text-fg ring-1 ring-inset ring-fg/20 hover:ring-fg/40 hover:bg-subtle",
+  // Solid ink; turns paper-white inside always-dark sections (see .bg-ink .btn-primary in globals.css).
+  primary: "btn-primary bg-ink text-white hover:bg-ink/85 active:bg-ink/90",
+  secondary: "bg-transparent text-fg ring-1 ring-inset ring-fg/20 hover:ring-fg/45",
   ghost: "text-fg hover:bg-subtle",
   danger: "bg-surface text-danger ring-1 ring-inset ring-danger/40 hover:bg-danger/10",
   inverse: "bg-white text-ink hover:bg-white/90",
@@ -38,12 +39,12 @@ const variants: Record<Variant, string> = {
 const sizes: Record<Size, string> = {
   sm: "h-9 px-3.5 text-sm",
   md: "h-11 px-5 text-sm",
-  lg: "h-13 px-7 text-base",
+  lg: "h-12 px-6 text-[15px]",
 };
 
 export function buttonClass(variant: Variant = "primary", size: Size = "md", className?: string) {
   return cx(
-    "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50",
+    "inline-flex items-center justify-center gap-2 rounded-md font-medium whitespace-nowrap transition disabled:cursor-not-allowed disabled:opacity-50",
     variants[variant],
     sizes[size],
     className,
@@ -98,10 +99,7 @@ export function SwipeRow({ children, className }: { children: ReactNode; classNa
 
 export function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <p className={cx("inline-flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-muted uppercase", className)}>
-      <span aria-hidden className="bg-brand h-[3px] w-6 rounded-full" />
-      {children}
-    </p>
+    <p className={cx("text-[13px] font-medium tracking-[0.12em] text-muted uppercase", className)}>{children}</p>
   );
 }
 
@@ -119,8 +117,8 @@ export function SectionHeading({
   return (
     <div className={cx("max-w-3xl", className)}>
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight text-balance sm:text-4xl">{title}</h2>
-      {description && <p className="mt-4 text-lg text-muted">{description}</p>}
+      <h2 className="mt-4 text-3xl leading-[1.08] font-medium tracking-[-0.025em] text-balance sm:text-[2.6rem]">{title}</h2>
+      {description && <p className="mt-5 text-lg leading-relaxed text-muted">{description}</p>}
     </div>
   );
 }

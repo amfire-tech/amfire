@@ -1,15 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { Poppins } from "next/font/google";
+import { Geist, Geist_Mono, Newsreader } from "next/font/google";
 import { site } from "@/config/site";
 import "./globals.css";
 
-// One typeface across the platform — the same family as the wordmark.
-const poppins = Poppins({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
+// Geist for everything you read, Newsreader italic for client quotes and essay
+// titles, Geist Mono for figures. The wordmark is an image, so it keeps its own face.
+const geist = Geist({ variable: "--font-geist", subsets: ["latin"], display: "swap" });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
+const newsreader = Newsreader({ variable: "--font-newsreader", subsets: ["latin"], style: ["italic"], weight: ["400"], display: "swap" });
 
 export const metadata: Metadata = {
   title: { default: `${site.name} — ${site.tagline}`, template: `%s · ${site.name}` },
@@ -24,7 +22,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#fafaf7",
 };
 
 // Applies the visitor's price currency before first paint: their choice from the currency switch,
@@ -34,7 +32,7 @@ const currencyScript = `(function(){var d=document.documentElement,m=document.co
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en-IN" className={`${poppins.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en-IN" className={`${geist.variable} ${geistMono.variable} ${newsreader.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: currencyScript }} />
       </head>

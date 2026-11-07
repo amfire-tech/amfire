@@ -4,13 +4,11 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { AutomateDemo } from "@/components/demos/automate-demo";
 import { BuildDemo } from "@/components/demos/build-demo";
-import { HireVsAmfire } from "@/components/demos/hire-vs-amfire";
 import { OperateDemo } from "@/components/demos/operate-demo";
 import { SavingsCalculator } from "@/components/demos/savings-calculator";
-import { ForCurrency } from "@/components/currency";
 import { ExampleCard } from "@/components/example-card";
 import { JsonLd } from "@/components/json-ld";
-import { PricingSection } from "@/components/pricing-section";
+import { FreeDemoSection } from "@/components/free-demo";
 import { ServiceStory } from "@/components/service-story";
 import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading, SwipeRow } from "@/components/ui";
 import { serviceJsonLd } from "@/config/structured-data";
@@ -110,7 +108,6 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
       <section>
         <Container className="py-12 sm:py-16">
           <div className="relative overflow-hidden rounded-[1.5rem] p-6 ring-2 ring-flame sm:p-10">
-            <div aria-hidden className="bg-brand absolute -top-24 -right-24 size-64 rounded-full opacity-15 blur-3xl" />
             <div className="relative grid gap-6 lg:grid-cols-[1.4fr_auto] lg:items-center">
               <div>
                 <p className="text-brand text-xs font-bold tracking-[0.2em] uppercase">Free</p>
@@ -143,27 +140,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
         </Container>
       </section>
 
-      {/* Operate: hiring comparison · Automate: manual work cost */}
-      {path === "operate" && (
-        <section>
-          <Container className="py-14 sm:py-20">
-            <SectionHeading
-              eyebrow="Hire a team or partner with amfire?"
-              title="Compare the cost of an in-house tech team"
-              description={
-                <>
-                  <ForCurrency currency="INR">A fresher costs around ₹25,000 a month, an experienced person ₹40,000–45,000</ForCurrency>
-                  <ForCurrency currency="USD">A junior hire costs around $4,000 a month, an experienced one $6,000–8,000</ForCurrency> — and
-                  most businesses need two or three. Here&apos;s how that compares with amfire.
-                </>
-              }
-            />
-            <div className="mt-10">
-              <HireVsAmfire />
-            </div>
-          </Container>
-        </section>
-      )}
+      {/* Automate: manual work cost */}
       {path === "automate" && (
         <section>
           <Container className="py-14 sm:py-20">
@@ -226,7 +203,7 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
         <Container className="grid gap-10 py-14 sm:py-20 lg:grid-cols-[0.8fr_1.2fr] lg:gap-12">
           <div>
             <h2 className="text-3xl font-semibold tracking-tight">Questions owners ask</h2>
-            <p className="mt-3 text-muted">Anything else? Ask us during your free demo.</p>
+            <p className="mt-3 text-muted">Anything else? Ask us when we talk.</p>
             <div className="mt-8 grid gap-3">
               {others.map((p) => (
                 <Link key={p} href={`/services/${p}`} className="group rounded-2xl bg-surface p-5 ring-1 ring-line hover:ring-fg/30">
@@ -250,8 +227,8 @@ export default async function ServicePage({ params }: PageProps<"/services/[path
         </Container>
       </section>
 
-      {/* Pricing — always last */}
-      <PricingSection only={path} />
+      {/* Prices are agreed in writing on a call, never shown publicly. */}
+      <FreeDemoSection goal={SERVICE_DETAILS[path].goal} />
     </>
   );
 }

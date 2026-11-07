@@ -2,7 +2,6 @@
 
 import { FOUNDERS } from "@/config/founders";
 import { site } from "@/config/site";
-import { SERVICES, type ServicePathId } from "@/knowledge/catalog";
 
 export const ORGANIZATION_ID = `${site.url}/#organization`;
 
@@ -21,15 +20,14 @@ export function organizationJsonLd() {
     image: absolute("/opengraph-image"),
     email: site.contactEmail,
     telephone: site.contactPhone,
-    areaServed: { "@type": "Country", name: "India" },
-    knowsLanguage: ["en-IN", "hi-IN"],
-    priceRange: "₹₹",
+    // Where we are, not a limit on who we serve: no areaServed, no price range.
+    address: { "@type": "PostalAddress", addressLocality: "Pune", addressRegion: "Maharashtra", addressCountry: "IN" },
+    knowsLanguage: ["en"],
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "sales",
       email: site.contactEmail,
       telephone: site.contactPhone,
-      areaServed: "IN",
       availableLanguage: ["English", "Hindi"],
     },
     ...(site.profiles.length > 0 && { sameAs: site.profiles }),
@@ -42,28 +40,5 @@ export function organizationJsonLd() {
         ...(f.linkedin && { sameAs: [f.linkedin] }),
       })),
     }),
-    hasOfferCatalog: {
-      "@type": "OfferCatalog",
-      name: "Services",
-      itemListElement: (Object.keys(SERVICES) as ServicePathId[]).map((p) => ({
-        "@type": "Offer",
-        itemOffered: { "@type": "Service", name: `${SERVICES[p].name} — ${SERVICES[p].tagline}`, url: absolute(`/services/${p}`) },
-      })),
-    },
-  };
-}
-
-export function serviceJsonLd(path: ServicePathId, name: string) {
-  const service = SERVICES[path];
-  return {
-    "@context": "https://schema.org",
-    "@type": "Service",
-    name,
-    serviceType: service.tagline,
-    description: service.description,
-    url: absolute(`/services/${path}`),
-    provider: { "@id": ORGANIZATION_ID },
-    areaServed: { "@type": "Country", name: "India" },
-    // No prices: they're agreed on a free call, so search results don't show one either.
   };
 }

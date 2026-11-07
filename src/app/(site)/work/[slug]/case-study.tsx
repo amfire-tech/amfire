@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { CaseStudyCard } from "@/components/case-study-card";
 import { Arrow, ButtonLink, CheckList, Chip, Container, Eyebrow, buttonClass } from "@/components/ui";
-import { SERVICES, SERVICE_DETAILS } from "@/knowledge/catalog";
 import { CASE_STUDIES, type CaseStudy } from "@/knowledge/case-studies";
 
 function ExternalIcon() {
@@ -26,7 +25,7 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
           </Link>
           <div className="mt-6">
             <Eyebrow>
-              Case study · {SERVICES[study.path].name} · {study.sector}
+              Case study · {study.sector}
             </Eyebrow>
           </div>
           <h1 className="mt-5 max-w-4xl text-4xl leading-tight font-semibold tracking-tight text-balance sm:text-5xl">{study.title}</h1>
@@ -35,8 +34,8 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
             <a href={study.url} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg")}>
               Visit {host} <ExternalIcon />
             </a>
-            <ButtonLink href={`/start?goal=${SERVICE_DETAILS[study.path].goal}`} size="lg">
-              Build something like this <Arrow />
+            <ButtonLink href="/start" size="lg">
+              Start a conversation <Arrow />
             </ButtonLink>
           </div>
         </Container>
@@ -110,9 +109,9 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
             </a>
           </div>
           <div className="relative overflow-hidden rounded-card bg-ink p-6 text-white">
-            <p className="relative font-semibold">Want something like this?</p>
-            <p className="relative mt-1 text-sm text-white/70">Tell us your problem — you talk to the people who built {study.client}.</p>
-            <ButtonLink href={`/start?goal=${SERVICE_DETAILS[study.path].goal}`} className="relative mt-5 w-full">
+            <p className="relative font-medium">Tell us where work gets stuck.</p>
+            <p className="relative mt-1 text-sm text-white/70">You will talk to the people who built {study.client}.</p>
+            <ButtonLink href="/start" className="relative mt-5 w-full">
               Start a conversation <Arrow />
             </ButtonLink>
           </div>

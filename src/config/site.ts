@@ -2,7 +2,7 @@ export const site = {
   name: "amfire",
   tagline: "Operations engineering",
   description:
-    "amfire learns how work moves through your company, finds where it gets stuck, and builds the systems that keep it moving. Then we stay and run them.",
+    "amfire builds systems around how your company works, so your team keeps moving and you are free to lead its growth.",
   // Shown wherever a visitor or client wants to reach a real person (enquiries
   // and support), and the reply-to address on emails sent to clients.
   // Sign-in for the owner is a separate account (OWNER_EMAIL).

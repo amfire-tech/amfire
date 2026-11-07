@@ -60,7 +60,7 @@ export const GOALS = [
   { id: "white-label", label: "Resell AI to my own clients", hint: "For agencies and coaches — we build under your brand", path: null },
   { id: "lead-response-audit", label: "Test how fast we (or our clients) answer new leads", hint: "Your free Lead Response Audit within 48 hours", path: null },
   { id: "ai-opportunity-map", label: "Find where AI can save us time and money", hint: "Your free AI Opportunity Map within 48 hours", path: null },
-  { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll sit with you and work it out, free", path: null },
+  { id: "not-sure", label: "Not sure — help me find the problem", hint: "We'll work it out with you", path: null },
 ] as const satisfies ReadonlyArray<{ id: string; label: string; hint: string; path: ServicePathId | null }>;
 
 export const BUSINESS_TYPES = [
@@ -113,7 +113,7 @@ export const FREE_DEMO = {
   cta: "Start a conversation",
   title: "Start a conversation",
   summary:
-    "A 30-minute conversation with the founder about how your company runs today. If we are not the right fit, we will tell you.",
+    "A 30-minute conversation with the founders about how your company runs today. If we are not the right fit, we will tell you.",
   points: [
     "We listen first: your company, your teams, where work waits",
     "We sketch how we would map and measure it",

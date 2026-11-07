@@ -4,6 +4,8 @@ import { Arrow, ButtonLink, CheckList, Container, Eyebrow, SectionHeading } from
 import { LEAD_AUDIT } from "@/knowledge/catalog";
 
 export const metadata: Metadata = {
+  // An outreach tool, linked only from /agencies: kept out of search results.
+  robots: { index: false, follow: true },
   title: "Free Lead Response Audit: How Fast Does Your Business Answer?",
   description:
     "We enquire at up to three businesses the way a real customer would and report how fast they answered, what they missed and what it costs. Free, within 48 hours. For owners and agencies.",

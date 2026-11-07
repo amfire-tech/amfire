@@ -18,6 +18,12 @@ export type Founder = {
   video?: { src: string; poster?: string };
 };
 
+/**
+ * The founders' promise, quoted on the homepage and signed by every founder.
+ * Its job is accountability, the one thing the rest of the homepage doesn't say.
+ */
+export const FOUNDERS_PROMISE = "The person you first speak to is the person responsible for the result. We don’t hand clients on.";
+
 export const FOUNDERS: Founder[] = [
   {
     name: "Navanish Pandey",

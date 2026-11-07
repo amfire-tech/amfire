@@ -8,7 +8,12 @@ import { Button, Field, Notice, cx, inputClass } from "@/components/ui";
 import { AGENCY_PARTNER, BUSINESS_TYPES, CALL_TIMES, GOALS, LEAD_AUDIT, OPPORTUNITY_MAP, TEAM_SIZES, URGENCY } from "@/knowledge/catalog";
 import { track } from "@/lib/analytics";
 
-const STEPS = ["Your goal", "Your business", "The problem", "Book your demo"] as const;
+const STEPS = ["Your goal", "Your business", "The problem", "Your details"] as const;
+
+// Goals shown on the public form. The others (white-label, the lead audit, the AI map,
+// website and IT upkeep) stay valid for links that pass them in, and for HQ, but are
+// not offered to a visitor who arrives without one.
+const PUBLIC_GOALS = new Set<string>(["reduce-manual-work", "connect-systems", "customer-portal", "new-product", "modernise", "not-sure"]);
 
 // Fields that belong to each step, used to jump back to the first step with an error.
 const STEP_FIELDS: string[][] = [["goal"], ["businessType", "teamSize", "urgency"], ["problem", "currentTools"], ["name", "email", "phone", "callTime", "company", "consent"]];
@@ -110,7 +115,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
           </h2>
         </legend>
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          {GOALS.map((g) => (
+          {GOALS.filter((g) => PUBLIC_GOALS.has(g.id) || g.id === initialGoal).map((g) => (
             <label
               key={g.id}
               className={cx(
@@ -220,7 +225,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
               : "Where should we reach you?"}
         </h2>
         <p className="mt-2 text-sm text-muted">
-          A 30-minute conversation with the founder about how your company runs. If we are not the right fit, we will say so.
+          A 30-minute conversation with the founders about how your company runs today. If we are not the right fit, we will tell you.
         </p>
         <div className="mt-6 grid gap-5 sm:grid-cols-2">
           <Field label="Your name" htmlFor="name" error={errors.name}>
@@ -288,7 +293,7 @@ export function DiscoveryForm({ initialGoal }: { initialGoal?: string }) {
                 className="mt-0.5 size-4 shrink-0 accent-signal"
               />
               <span>
-                Store my answers and contact details so amfire can review them and contact me about the demo. Answers may be analysed with AI-assisted tools to prepare a
+                Store my answers and contact details so amfire can review them and contact me about my enquiry. Answers may be analysed with AI-assisted tools to prepare a
                 recommendation; a person reviews it before anything is proposed. See our{" "}
                 <Link href="/privacy" target="_blank" className="underline underline-offset-4">
                   privacy policy

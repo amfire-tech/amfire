@@ -8,9 +8,30 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@electric-sql/pglite"],
   // Proposal PDFs (up to 4 MB) are uploaded through a server action.
   experimental: { serverActions: { bodySizeLimit: "5mb" } },
-  // Prices live in one section near the end of the home page.
+  // Retired public pages (7 Nov 2026 premium rebuild). They described the old
+  // Build / Operate / Automate offer for small businesses, so their addresses now
+  // lead to the pages that carry the current message.
   async redirects() {
-    return [{ source: "/pricing", destination: "/#pricing", permanent: false }];
+    const examples = [
+      "whatsapp-orders-into-tally",
+      "gst-reconciliation-for-ca-firm",
+      "collections-for-fmcg-distributor",
+      "dealer-ordering-app",
+      "diagnostic-chain-booking-and-reports",
+      "coaching-institute-fees-and-parents",
+      "online-presence-for-showroom",
+      "d2c-brand-festive-sale",
+      "taking-over-a-legacy-erp",
+      "hospital-systems-support",
+    ];
+    return [
+      { source: "/pricing", destination: "/", permanent: false },
+      { source: "/services", destination: "/how-we-work", permanent: true },
+      { source: "/services/:path", destination: "/how-we-work", permanent: true },
+      { source: "/solutions", destination: "/how-we-work", permanent: true },
+      { source: "/industries", destination: "/work", permanent: true },
+      ...examples.map((slug) => ({ source: `/work/${slug}`, destination: "/work", permanent: true })),
+    ];
   },
   turbopack: {
     rules: {

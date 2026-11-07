@@ -14,7 +14,7 @@ import { contact, site } from "@/config/site";
 export const metadata: Metadata = {
   title: "About the founders",
   description:
-    "amfire is a small team in Pune, led by its founders. We learn how work moves through a company, find where it gets stuck, and build the systems that keep it moving.",
+    "amfire is a small team in Pune, led by its founders. We build systems around how your company works, so your team keeps moving and you are free to lead its growth.",
   alternates: { canonical: "/about" },
 };
 
@@ -67,14 +67,13 @@ export default function AboutPage() {
     <>
       {/* 1 · Why we exist */}
       <section>
-        <Container className="pt-20 pb-20 sm:pt-28 sm:pb-28">
+        <Container className="pt-20 pb-20 sm:pt-28 sm:pb-24">
           <Eyebrow>About amfire</Eyebrow>
           <h1 className="mt-6 max-w-[13em] text-[2.75rem] leading-[1.03] font-medium tracking-[-0.04em] text-balance sm:text-6xl sm:leading-[1.02]">
             You should lead your company, not chase it.
           </h1>
           <p className={`mt-8 max-w-[33rem] text-pretty sm:mt-10 ${LEDE}`}>
-            amfire is a small team based in Pune. We learn how work moves through a company, find where it gets stuck, and build the systems that keep it moving. Then we stay
-            and run them.
+            amfire is a small team based in Pune. We build systems around how your company works, so your team keeps moving and you are free to lead its growth.
           </p>
         </Container>
       </section>

@@ -7,12 +7,10 @@ import { AutomateBrochure } from "@/components/brochure/automate-brochure";
 import { Icon } from "@/components/brochure/icons";
 import { OperateBrochure } from "@/components/brochure/operate-brochure";
 import { PlanBrochure } from "@/components/brochure/plan-brochure";
-import { Money } from "@/components/currency";
 import { CheckList, Container } from "@/components/ui";
 import { getDb } from "@/db";
 import { AUTOMATE, OPERATE, brochureFor, isBrochurePlan } from "@/knowledge/brochures";
 import { SERVICES } from "@/knowledge/catalog";
-import { STARTING_PRICE } from "@/knowledge/pricing";
 import { BROCHURE_COOKIE, monthlyOffer, readAccessCookie } from "@/server/brochures";
 
 export async function generateMetadata({ params }: PageProps<"/brochure/[plan]">): Promise<Metadata> {
@@ -56,10 +54,7 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
           {brochure ? (
             <>
               <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
-                <span className="text-brand">
-                  <Money amounts={STARTING_PRICE[plan]} />.
-                </span>{" "}
-                {brochure.hook}
+                Everything a {name} engagement includes.
               </h1>
               <p className="mt-4 max-w-lg text-white/70">
                 Two shoppers, same budget. Watch what lands in each cart — then decide who you&apos;d rather build with.
@@ -74,10 +69,7 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
           ) : plan === "automate" ? (
             <>
               <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
-                {AUTOMATE.hook}{" "}
-                <span className="text-brand">
-                  From <Money amounts={STARTING_PRICE.automate} />.
-                </span>
+                {AUTOMATE.hook}
               </h1>
               <p className="mt-4 max-w-lg text-white/70">{AUTOMATE.promise}</p>
               <ol className="mt-6 flex max-w-lg items-center gap-1.5">
@@ -97,10 +89,7 @@ export default async function BrochurePage({ params }: PageProps<"/brochure/[pla
           ) : (
             <>
               <h1 className="mt-5 text-4xl leading-[1.1] font-semibold tracking-tight text-balance sm:text-5xl">
-                {OPERATE.hook}{" "}
-                <span className="text-brand">
-                  <Money amounts={STARTING_PRICE.operate} /> a month.
-                </span>
+                {OPERATE.hook}
               </h1>
               <p className="mt-4 max-w-lg text-white/70">{OPERATE.promise}</p>
               <ul className="mt-6 grid max-w-lg grid-cols-3 gap-2">

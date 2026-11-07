@@ -4,7 +4,7 @@ import Link from "next/link";
 import { FlowLine } from "@/components/flow-line";
 import { CONVERSATION_CTA } from "@/components/site-header";
 import { Arrow, ButtonLink, Container, Eyebrow } from "@/components/ui";
-import { FOUNDERS } from "@/config/founders";
+import { FOUNDERS, FOUNDERS_PROMISE } from "@/config/founders";
 import { site } from "@/config/site";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
 
@@ -59,46 +59,45 @@ const LEDE = "text-lg leading-[1.55] text-muted sm:text-xl";
 
 export default function HomePage() {
   const [lead, ...rest] = CASE_STUDIES;
-  const founder = FOUNDERS.find((f) => f.note);
 
   return (
     <>
       {/* 1 · First screen: headline at full width, the drawing as its own band. */}
       <section>
-        <Container className="pt-20 pb-16 sm:pt-28 sm:pb-20">
+        <Container className="pt-20 pb-20 sm:pt-28 sm:pb-24">
           <Eyebrow>{site.tagline}</Eyebrow>
           <h1 className="mt-6 max-w-[13.5em] text-[2.75rem] leading-[1.02] font-medium tracking-[-0.04em] text-balance sm:text-6xl lg:text-[4.75rem] lg:leading-none">
             A company that runs without you chasing it.
           </h1>
-          {/* One left edge: label, headline, line and buttons all start at the same x, read top to bottom. */}
-          <p className={`mt-8 max-w-[33rem] text-pretty sm:mt-10 ${LEDE}`}>
-            We learn how work really moves through your company, find where it gets stuck, and build the systems that keep it moving. Then we stay and run them.
+          {/* One left edge: label, headline, line, buttons and promises all start at the same x, read top to bottom. */}
+          <p className={`mt-8 max-w-[36rem] text-pretty sm:mt-10 ${LEDE}`}>
+            We build systems around how your company works, so your team keeps moving and you are free to lead its growth.
           </p>
-          <div className="mt-10">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
-              <ButtonLink href="/start" size="lg">
-                {CONVERSATION_CTA}
-              </ButtonLink>
-              <Link href="/how-we-work" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
-                How we work <Arrow />
-              </Link>
-            </div>
+          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-8">
+            <ButtonLink href="/start" size="lg">
+              {CONVERSATION_CTA}
+            </ButtonLink>
+            <Link href="/how-we-work" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
+              How we work <Arrow />
+            </Link>
           </div>
-        </Container>
-        <div className="border-y border-line">
-          <Container className="grid grid-cols-1 gap-x-8 gap-y-2 py-5 text-sm text-muted sm:grid-cols-2 lg:grid-cols-4">
+          {/* The promises belong to the hero: a quiet line under the buttons, not a separate bordered band. */}
+          <ul className="mt-14 grid grid-cols-1 gap-x-10 gap-y-2.5 text-sm text-muted sm:mt-16 sm:flex sm:flex-wrap" aria-label="Working with us">
             {SAFETY.map((s) => (
-              <p key={s.title} className="flex items-center gap-2.5">
-                <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-fg/60" />
+              <li key={s.title} className="flex items-center gap-2.5">
+                <span aria-hidden className="size-1 shrink-0 rounded-full bg-fg/50" />
                 {s.title}
-              </p>
+              </li>
             ))}
+          </ul>
+        </Container>
+        {/* The drawing gets its own band, set apart by one hairline. */}
+        <div className="border-t border-line">
+          <Container className="py-20 sm:py-24">
+            <Eyebrow>How work moves through a company</Eyebrow>
+            <FlowLine className="mt-10" />
           </Container>
         </div>
-        <Container className="py-14 sm:py-20">
-          <Eyebrow>How work moves through a company</Eyebrow>
-          <FlowLine className="mt-10" />
-        </Container>
       </section>
 
       {/* 2 · Point of view */}
@@ -192,21 +191,22 @@ export default function HomePage() {
             </Link>
           )}
 
+          {/* Further cases as quiet rows under the same hairline as the lead case, not boxed cards. */}
           {rest.length > 0 && (
-            <ul className={`mt-14 grid gap-px overflow-hidden rounded-md bg-white/10 ring-1 ring-white/10 ${rest.length > 1 ? "sm:grid-cols-2" : ""}`}>
+            <ul className="mt-14 border-t border-white/15">
               {rest.map((c) => (
-                <li key={c.slug} className="bg-ink">
-                  <Link href={`/work/${c.slug}`} className="group flex h-full items-center gap-6 p-6 hover:bg-white/[0.03]">
-                    <div className="relative hidden aspect-square w-24 shrink-0 overflow-hidden rounded-sm sm:block">
-                      <Image src={c.cover} alt="" fill sizes="96px" className="object-cover" />
+                <li key={c.slug} className="border-b border-white/15">
+                  <Link href={`/work/${c.slug}`} className="group flex items-center gap-6 py-7">
+                    <div className="relative hidden aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-sm ring-1 ring-white/10 sm:block">
+                      <Image src={c.cover} alt="" fill sizes="112px" className="object-cover" />
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="text-[13px] font-medium tracking-[0.12em] text-white/55 uppercase">{c.client}</p>
                       <p className="mt-2 text-xl leading-snug tracking-tight">{c.title}</p>
-                      <span className="mt-3 inline-flex items-center gap-1.5 text-sm text-white/70 group-hover:text-white">
-                        Read the case study <Arrow className="size-3.5" />
-                      </span>
                     </div>
+                    <span className="hidden shrink-0 items-center gap-1.5 text-[15px] text-white/70 group-hover:text-white sm:inline-flex">
+                      Read the case study <Arrow className="transition group-hover:translate-x-0.5" />
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -237,17 +237,17 @@ export default function HomePage() {
         </Container>
       </section>
 
-      {/* 6 · The founders' note. Faces live on /about; here the words carry it. */}
-      {founder && (
+      {/* 6 · From the founders: accountability, signed by both. Faces live on /about. */}
+      {FOUNDERS.length > 0 && (
         <section className="border-t border-line bg-subtle">
           <Container className="py-24 sm:py-32">
             <figure className="max-w-4xl">
-              <Eyebrow>You work with the people who build it</Eyebrow>
-              <blockquote className="mt-8 font-serif text-[1.75rem] leading-[1.3] text-pretty italic sm:text-[2.5rem] sm:leading-[1.25]">“{founder.note}”</blockquote>
+              <Eyebrow>From the founders</Eyebrow>
+              <blockquote className="mt-8 font-serif text-[1.75rem] leading-[1.3] text-pretty italic sm:text-[2.5rem] sm:leading-[1.25]">“{FOUNDERS_PROMISE}”</blockquote>
               <figcaption className="mt-10 flex flex-col gap-4 border-t border-fg/15 pt-6 sm:flex-row sm:items-center sm:justify-between">
                 <span>
-                  <span className="font-medium">{founder.name}</span>
-                  <span className="ml-3 text-[15px] text-muted">{founder.role}, amfire</span>
+                  <span className="font-medium">{FOUNDERS.map((f) => f.name).join(" and ")}</span>
+                  <span className="ml-3 text-[15px] text-muted">{FOUNDERS.length > 1 ? "Founders" : "Founder"}, amfire</span>
                 </span>
                 <Link href="/about" className="inline-flex items-center gap-1.5 text-[15px] font-medium underline-offset-[6px] hover:underline">
                   Meet the founders <Arrow />
@@ -276,7 +276,7 @@ export default function HomePage() {
             <div className="max-w-2xl">
               <h2 className="text-[2.5rem] leading-[1.05] font-medium tracking-[-0.035em] text-balance sm:text-[3.5rem]">Tell us where work gets stuck.</h2>
               <p className="mt-6 max-w-xl text-lg leading-[1.55] text-white/65 sm:text-xl">
-                A 30-minute conversation with the founder about how your company runs today. If we are not the right fit, we will tell you.
+                A 30-minute conversation with the founders about how your company runs today. If we are not the right fit, we will tell you.
               </p>
             </div>
             <ButtonLink href="/start" size="lg" className="shrink-0">

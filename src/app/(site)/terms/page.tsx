@@ -13,7 +13,7 @@ export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of service"
-      updated="6 November 2026"
+      updated="7 November 2026"
       intro={
         <p>
           These terms apply when you use this website and when {site.legalName} (&ldquo;amfire&rdquo;, &ldquo;we&rdquo;), based in {site.location}, works for you. For
@@ -23,9 +23,9 @@ export default function TermsPage() {
       }
     >
       <section>
-        <h2>1. Free calls, audits and maps</h2>
+        <h2>1. Free conversations and audits</h2>
         <p>
-          Free demos, the AI Opportunity Map and the Lead Response Audit are free and carry no obligation. They are our honest opinion based on what you tell us and
+          First conversations and the Lead Response Audit are free and carry no obligation. They are our honest opinion based on what you tell us and
           what we observe; they are not a guarantee of results.
         </p>
       </section>
@@ -36,10 +36,6 @@ export default function TermsPage() {
           <li>Nothing is agreed until you accept a written proposal. Its price is fixed for the scope it describes.</li>
           <li>Work outside that scope is quoted separately, and we don&apos;t start it until you approve it in writing.</li>
           <li>Prices exclude taxes, which are added where the law requires.</li>
-          <li>
-            The free-demo offer gives one discount per business (₹5,000 in India, or US$150 elsewhere), taken off the final milestone invoice of your first
-            proposal. It can&apos;t be exchanged for cash or combined with partner pricing.
-          </li>
         </ul>
       </section>
 
@@ -47,7 +43,7 @@ export default function TermsPage() {
         <h2>3. Paying</h2>
         <ul>
           <li>Projects are paid milestone by milestone. Each milestone is invoiced only after you approve the work.</li>
-          <li>Monthly plans (such as Operate or Care) are billed monthly in advance, and either side can end them with 30 days&apos; written notice.</li>
+          <li>Monthly plans are billed monthly in advance, and either side can end them with 30 days&apos; written notice.</li>
           <li>Invoices are due within 7 days unless the proposal says otherwise. We may pause work on overdue accounts after a written reminder.</li>
         </ul>
       </section>

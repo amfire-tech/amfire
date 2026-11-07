@@ -14,7 +14,7 @@ const STAGES = [
   },
   {
     title: "Recommendation",
-    body: "We suggest a starting point — Build, Operate or Automate — and list the assumptions behind it, so you can correct anything we have misunderstood.",
+    body: "We suggest where to start, usually the one problem that costs you most, and list the assumptions behind it, so you can correct anything we have misunderstood.",
   },
   {
     title: "Scope and price",
@@ -36,7 +36,7 @@ const STAGES = [
 
 const PROMISES = [
   { title: "Real progress only", body: "Progress comes from real milestones and tasks — never estimates dressed up as status." },
-  { title: "AI that assists, people who decide", body: "We use AI to prepare work faster. Recommendations, prices and commitments are reviewed by a person." },
+  { title: "People make the decisions", body: "We use modern tools, AI included, to prepare work faster. Recommendations, prices and commitments are reviewed by a person." },
   { title: "Your data stays yours", body: "Each client's information is kept separate and only shared with the tools needed to do the work." },
 ];
 
@@ -53,7 +53,7 @@ export default function HowWeWorkPage() {
         <ol className="relative grid gap-10 border-l border-line pl-8 sm:pl-10">
           {STAGES.map((s, i) => (
             <li key={s.title} className="relative">
-              <span className="bg-brand absolute top-1 -left-[41px] grid size-5 place-items-center rounded-full ring-4 ring-page sm:-left-[49px]" aria-hidden />
+              <span className="absolute top-1 bg-fg -left-[41px] grid size-5 place-items-center rounded-full ring-4 ring-page sm:-left-[49px]" aria-hidden />
               <p className="text-sm font-semibold text-muted">Step {i + 1}</p>
               <h2 className="mt-1 text-xl font-semibold">{s.title}</h2>
               <p className="mt-2 max-w-2xl text-fg/75">{s.body}</p>

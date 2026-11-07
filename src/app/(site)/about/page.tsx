@@ -38,7 +38,7 @@ function FounderCard({ founder }: { founder: Founder }) {
   return (
     <article>
       {src && (
-        <div className="relative aspect-[3/4] overflow-hidden rounded-md bg-subtle">
+        <div className="relative aspect-[5/4] overflow-hidden rounded-md bg-subtle">
           <Image src={src} alt={founder.name} fill sizes="(min-width: 640px) 560px, 100vw" className="object-cover grayscale" />
         </div>
       )}

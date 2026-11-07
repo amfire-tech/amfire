@@ -27,8 +27,8 @@ const THREE_HIRES = { INR: 3 * HIRING.salary.INR.fresher * 100, USD: 3 * HIRING.
 
 const PATHS = Object.keys(SERVICES) as ServicePathId[];
 
-// Search engines and link previews read these; lead with what people search for, not the tagline.
-const TITLE = "amfire — Custom Software, Business Automation & IT Partner in India";
+// The browser tab and search results show this title.
+const TITLE = "amfire - Streamlined workflow";
 const DESCRIPTION =
   "Custom software, WhatsApp-to-Tally and GST automation, and a managed website, SEO and IT team for one monthly fee — for Indian businesses. Book a free 30-minute demo.";
 
@@ -56,7 +56,7 @@ export default function HomePage() {
       {/* Hero */}
       <section className="relative isolate overflow-hidden">
         <div aria-hidden className="bg-brand absolute -top-40 -left-40 -z-10 size-[28rem] rounded-full opacity-[0.12] blur-3xl" />
-        <Container className="grid items-center gap-10 pt-10 pb-12 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:gap-12 lg:pt-20">
+        <Container className="grid items-center gap-10 pt-10 pb-12 sm:pt-20 lg:grid-cols-[1.05fr_1fr] lg:items-start lg:gap-12 lg:pt-16">
           <div>
             {/* Visitors outside India (shown prices in dollars) get the international pitch; no flash, it's the same currency switch. */}
             <Eyebrow>

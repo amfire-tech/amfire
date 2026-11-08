@@ -76,6 +76,12 @@ export type SignalType = {
   expires?: string;
   angle: string;
   where: string;
+  /**
+   * A standing fact rather than an event (e.g. "files ₹10 Cr+"). It still adds
+   * to the score, but never becomes the reason we give while a fresh dated
+   * event exists: "they opened a plant in December" beats "they're big".
+   */
+  evergreen?: boolean;
 };
 
 export const SIGNAL_TYPES: readonly SignalType[] = [
@@ -308,6 +314,7 @@ export const SIGNAL_TYPES: readonly SignalType[] = [
     segments: ["manufacturer"],
     prior: 0.15,
     halfLifeDays: null,
+    evergreen: true,
     angle: "At this size most of the plant's promises still live in the managing director's head.",
     where:
       "The evergreen reason: every Indian-owned manufacturer with filed revenue of ₹10 Cr+. Source: the MCA revenue band on the company's Tofler page. Date = the end of the financial year filed (FY2024-25 → 2025-03-31).",

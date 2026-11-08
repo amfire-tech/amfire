@@ -43,6 +43,14 @@ export function signalPull(s: SignalLike, weight: number, now: Date) {
   return clamp(weight) * clamp(s.confidence) * decay(s.observedAt, now, type ? type.halfLifeDays : 30);
 }
 
+/** An event still worth leading with: not an evergreen fact, and less than three half-lives old. */
+export function isFreshEvent(s: SignalLike, now: Date) {
+  const type = signalType(s.type);
+  if (!type || type.evergreen || s.type === "legacy_note") return false;
+  if (s.expiresAt && s.expiresAt.getTime() < now.getTime()) return false;
+  return decay(s.observedAt, now, type.halfLifeDays) >= 1 / 8;
+}
+
 /** One sentence: what happened, then why it matters to them. */
 export function reasonFor(s: Pick<SignalLike, "type" | "title">) {
   const title = s.title.trim().replace(/[.\s]+$/, "");
@@ -180,12 +188,15 @@ export function scoreProspect(input: ScoreInput) {
     ...unknown.slice(0, 3).map((u) => `fit fact: ${u.toLowerCase()}`),
   ];
   const score = combine(parts);
-  const top = pulls[0]?.s;
+  // The reason we give: the strongest fresh event, else the strongest signal.
+  // It goes first in `top`, so the touch that uses it credits it in learning.
+  const lead = pulls.find((x) => isFreshEvent(x.s, input.now)) ?? pulls[0];
+  const ordered = lead ? [lead, ...pulls.filter((x) => x !== lead)] : [];
   return {
     score,
     tier: tierFor(score),
-    parts: { ...parts, timingLabel: label, top: pulls.slice(0, 3).map((x) => ({ signalId: x.s.id, type: x.s.type, contribution: round(x.pull) })), missing },
-    reason: top ? reasonFor(top) : null,
+    parts: { ...parts, timingLabel: label, top: ordered.slice(0, 3).map((x) => ({ signalId: x.s.id, type: x.s.type, contribution: round(x.pull) })), missing },
+    reason: lead ? reasonFor(lead.s) : null,
   };
 }
 

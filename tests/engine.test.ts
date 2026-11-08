@@ -377,6 +377,20 @@ describe("manufacturers", () => {
     for (const v of email.variants) assert.doesNotMatch(v.text, /AI|automation|₹|price/i); // never in a first touch
   });
 
+  test("a fresh dated event leads the reason over the evergreen size fact; a stale one doesn't", () => {
+    const at = new Date("2026-11-08T06:00:00Z");
+    const evergreen = { id: "e", type: "growing_owner_run_plant", title: "Filed revenue ₹300–400 Cr for FY2023-24 (MCA)", observedAt: new Date("2024-03-31"), expiresAt: null, confidence: 0.9 };
+    const plant = { id: "p", type: "plant_expansion", title: "Commissioned a new plant at Shirwal (23 Dec 2025)", observedAt: new Date("2025-12-23"), expiresAt: null, confidence: 0.95 };
+    const oldCharge = { id: "c", type: "new_bank_charge", title: "Axis Bank charge registered 22 Jul 2025 (MCA)", observedAt: new Date("2025-07-22"), expiresAt: null, confidence: 0.9 };
+    const base = { segment: "manufacturer" as const, facts: { revenueLowCr: 300 }, prospect: noOne, contacts: [], weights: new Map<string, number>(), now: at };
+    const withPlant = scoreProspect({ ...base, signals: [evergreen, plant] });
+    assert.match(withPlant.reason!, /Shirwal/);
+    assert.equal(withPlant.parts.top[0].signalId, "p"); // the touch credits the reason it used
+    const withOldCharge = scoreProspect({ ...base, signals: [evergreen, oldCharge] });
+    assert.match(withOldCharge.reason!, /Filed revenue/); // 16 months is past three half-lives
+    assert.equal(withPlant.score, scoreProspect({ ...base, signals: [plant, evergreen] }).score); // the score doesn't change
+  });
+
   test("plants fall into their industrial belt, the village beating the town", () => {
     assert.equal(beltOf("Chakan (Nighoje)"), "chakan");
     assert.equal(beltOf("Bhosari / Kuruli"), "bhosari");

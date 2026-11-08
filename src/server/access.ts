@@ -14,6 +14,12 @@ export type Actor = {
   clientOrgIds: string[];
   /** Signed in with a one-time password and hasn't chosen their own yet. */
   mustChangePassword?: boolean;
+  /**
+   * Set when the caller is the revenue team's software, not a person: the
+   * laptop runner's key, or one agent run's key for one task. Either way the
+   * actor is staff, never the owner (src/server/team-tasks.ts).
+   */
+  agent?: { kind: "runner" | "run"; tokenId: string; taskId: string | null };
 };
 
 export class AccessDenied extends Error {

@@ -30,6 +30,7 @@ import {
 } from "@/knowledge/outreach";
 import { AccessDenied, loadActor, type Actor } from "./access";
 import { trackedAssetUrl } from "./asset-links";
+import { taskPacket, toolAllowed } from "./team-tasks";
 import { AuditItem, upsertDemo } from "./demos";
 import { EmailContentSchema, EmailDraftInput, saveEmailDraft } from "./outreach-emails";
 import {
@@ -496,6 +497,12 @@ export const TOOLS: Tool[] = [
     },
   ),
   tool(
+    "get_task_packet",
+    "For an agent run of the revenue team: the one task this run's key was made for (its type and payload, and for a message pack the accounts). Read it first. Return your result to the runner as the structured output it asks for; this key can only read.",
+    z.object({}),
+    async (db, actor) => taskPacket(db, actor),
+  ),
+  tool(
     "list_notes",
     "Earlier reviews, research notes and playbook changes, newest first.",
     z.object({ kind: z.enum(["review", "research", "playbook", "content"]).optional(), limit: z.number().int().min(1).max(50).optional() }),
@@ -538,13 +545,16 @@ export async function handleMcpMessage(db: DB, msg: JsonRpcMessage, actor?: Acto
     case "ping":
       return ok(msg.id, {});
     case "tools/list":
+      // An agent run sees only the read-only tools it may call (team-tasks.ts).
       return ok(msg.id, {
-        tools: TOOLS.map((t) => ({ name: t.name, description: t.description, inputSchema: z.toJSONSchema(t.input, { io: "input", unrepresentable: "any" }) })),
+        tools: TOOLS.filter((t) => toolAllowed(actor, t.name)).map((t) => ({ name: t.name, description: t.description, inputSchema: z.toJSONSchema(t.input, { io: "input", unrepresentable: "any" }) })),
       });
     case "tools/call": {
       const name = String(msg.params?.name ?? "");
       const found = TOOLS.find((t) => t.name === name);
       if (!found) return fail(msg.id, -32602, `Unknown tool: ${name}`);
+      // Checked here, not only in the agent's own settings: a run key can't write.
+      if (!toolAllowed(actor, name)) return ok(msg.id, { content: [{ type: "text", text: `This key can't use ${name}. Agent runs only read; return your result to the runner instead.` }], isError: true });
       try {
         const args = found.input.parse(msg.params?.arguments ?? {});
         const result = await found.run(db, actor ?? (await connectorActor(db)), args as never);

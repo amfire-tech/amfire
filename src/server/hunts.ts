@@ -6,7 +6,7 @@
 // personal key, researches, and reports back.
 
 import { createHash, randomBytes } from "node:crypto";
-import { and, asc, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, ne, or } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
 import { connectorTokens, huntRequests, memberships, organizations, users, type HuntRequest } from "@/db/schema";
@@ -53,7 +53,7 @@ export async function listConnectorTokens(db: DB, actor: Actor | null) {
     .select({ token: connectorTokens, user: { id: users.id, name: users.name } })
     .from(connectorTokens)
     .innerJoin(users, eq(users.id, connectorTokens.userId))
-    .where(and(isNull(connectorTokens.revokedAt), actor.internalRole === "owner" ? undefined : eq(connectorTokens.userId, actor.userId)))
+    .where(and(isNull(connectorTokens.revokedAt), ne(connectorTokens.kind, "run"), actor.internalRole === "owner" ? undefined : eq(connectorTokens.userId, actor.userId)))
     .orderBy(desc(connectorTokens.createdAt));
 }
 
@@ -69,7 +69,11 @@ export async function revokeConnectorToken(db: DB, actor: Actor | null, tokenId:
   return row;
 }
 
-/** The HQ person a personal key belongs to, if it's live and they're still staff. */
+/**
+ * Who a key acts as, if it's live and its person is still staff. A personal
+ * key acts as its person. The runner's key and a run key act as staff, never
+ * as the owner, and carry what they are (see team-tasks.ts).
+ */
 export async function actorForConnectorKey(db: DB, key: string, now = new Date()): Promise<Actor | null> {
   if (!key.startsWith(KEY_PREFIX) || key.length < 40) return null;
   const [row] = await db
@@ -78,8 +82,12 @@ export async function actorForConnectorKey(db: DB, key: string, now = new Date()
     .innerJoin(users, eq(users.id, connectorTokens.userId))
     .where(and(eq(connectorTokens.tokenHash, hashKey(key)), isNull(connectorTokens.revokedAt)));
   if (!row) return null;
-  const actor = await loadActor(db, row.user);
-  if (!actor.internalRole) return null;
+  if (row.token.expiresAt && row.token.expiresAt.getTime() <= now.getTime()) return null;
+  const person = await loadActor(db, row.user);
+  if (!person.internalRole) return null;
+  const kind = row.token.kind;
+  if (kind !== "personal" && kind !== "runner" && kind !== "run") return null;
+  const actor: Actor = kind === "personal" ? person : { ...person, internalRole: "staff", agent: { kind, tokenId: row.token.id, taskId: row.token.taskId } };
   // Written at most every few minutes; it shows whether their Claude is running.
   if (!row.token.lastUsedAt || now.getTime() - row.token.lastUsedAt.getTime() > 5 * 60 * 1000) {
     await db.update(connectorTokens).set({ lastUsedAt: now }).where(eq(connectorTokens.id, row.token.id));
@@ -99,7 +107,10 @@ export async function listRunners(db: DB, actor: Actor | null, now = new Date())
     .innerJoin(organizations, eq(organizations.id, memberships.orgId))
     .where(and(eq(organizations.kind, "internal"), inArray(memberships.role, ["owner", "staff"])))
     .orderBy(asc(users.name));
-  const keys = await db.select({ userId: connectorTokens.userId, lastUsedAt: connectorTokens.lastUsedAt }).from(connectorTokens).where(isNull(connectorTokens.revokedAt));
+  const keys = await db
+    .select({ userId: connectorTokens.userId, lastUsedAt: connectorTokens.lastUsedAt })
+    .from(connectorTokens)
+    .where(and(isNull(connectorTokens.revokedAt), eq(connectorTokens.kind, "personal")));
   return people.map((p) => {
     const mine = keys.filter((k) => k.userId === p.id);
     const lastSeen = mine.map((k) => k.lastUsedAt?.getTime() ?? 0).reduce((a, b) => Math.max(a, b), 0);
@@ -199,6 +210,7 @@ export async function listHunts(db: DB, actor: Actor | null, opts: { limit?: num
   const rows = await db
     .select()
     .from(huntRequests)
+    .where(eq(huntRequests.type, "hunt"))
     .orderBy(desc(huntRequests.createdAt))
     .limit(Math.min(opts.limit ?? 15, 100));
   const ids = [...new Set(rows.flatMap((r) => [r.assignedTo, r.requestedBy, r.claimedBy]).filter((v): v is string => !!v))];
@@ -237,11 +249,11 @@ export async function claimHunt(db: DB, actor: Actor | null, now = new Date()) {
   await db
     .update(huntRequests)
     .set({ status: "queued", claimedBy: null, claimedAt: null, error: "The last run didn't report back, so it was queued again." })
-    .where(and(eq(huntRequests.status, "running"), lt(huntRequests.claimedAt, new Date(now.getTime() - STALE_AFTER))));
+    .where(and(eq(huntRequests.type, "hunt"), eq(huntRequests.status, "running"), lt(huntRequests.claimedAt, new Date(now.getTime() - STALE_AFTER))));
   const candidates = await db
     .select()
     .from(huntRequests)
-    .where(and(eq(huntRequests.status, "queued"), or(eq(huntRequests.assignedTo, actor.userId), isNull(huntRequests.assignedTo))))
+    .where(and(eq(huntRequests.type, "hunt"), eq(huntRequests.status, "queued"), or(eq(huntRequests.assignedTo, actor.userId), isNull(huntRequests.assignedTo))))
     .orderBy(asc(huntRequests.createdAt))
     .limit(10);
   // Their own requests before anyone's.
@@ -281,7 +293,7 @@ export async function finishHunt(db: DB, actor: Actor | null, input: z.input<typ
         ? { status: "failed", error: data.error, finishedAt: now }
         : { status: "done", error: null, finishedAt: now, result: { added: data.added, updated: data.updated, warm: data.warm, summary: data.summary } },
     )
-    .where(and(eq(huntRequests.id, data.huntId), eq(huntRequests.status, "running"), eq(huntRequests.claimedBy, actor.userId)))
+    .where(and(eq(huntRequests.id, data.huntId), eq(huntRequests.type, "hunt"), eq(huntRequests.status, "running"), eq(huntRequests.claimedBy, actor.userId)))
     .returning();
   if (!row) throw new HuntError("No running hunt with that id was claimed by you.");
   await audit(db, { actorId: actor.userId, action: failed ? "hunt.failed" : "hunt.done", subjectType: "hunt", subjectId: row.id, data: row.result ?? { error: row.error } });

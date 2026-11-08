@@ -921,6 +921,19 @@ export const connectorTokens = appSchema.table("connector_tokens", {
   hint: text("hint").notNull(),
   lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  /**
+   * "personal" (acts as its person, for their own Claude), "runner" (the
+   * laptop runner's control key: /api/team only) or "run" (one agent run:
+   * read-only tools for one task, expires with it). Runner and run keys can
+   * never act as the owner (src/server/team-tasks.ts).
+   */
+  kind: text("kind").notNull().default("personal"),
+  /** For a run key: the task it was minted for. */
+  taskId: uuid("task_id"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  /** The runner's last check-in and what it said about itself (version, host, capacity, usage). */
+  heartbeatAt: timestamp("heartbeat_at", { withTimezone: true }),
+  runnerInfo: jsonb("runner_info").$type<Record<string, unknown>>(),
   createdAt: createdAt(),
 });
 
@@ -951,9 +964,32 @@ export const huntRequests = appSchema.table(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
     result: jsonb("result").$type<HuntResult>(),
     error: text("error"),
+    // --- The revenue team's task queue (src/server/team-tasks.ts) ---
+    /** "hunt" (a person's Claude, through claim_hunt) or a runner task type: TASK_TYPES. */
+    type: text("type").notNull().default("hunt"),
+    /** The task's input, checked against its type's schema. */
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+    /** Higher runs first: a chat question before a research batch. */
+    priority: integer("priority").notNull().default(0),
+    /** A running task whose lease passes this goes back in the queue. */
+    leaseExpiresAt: timestamp("lease_expires_at", { withTimezone: true }),
+    /** Bumped on every claim; a result carrying an older fence is refused (a laptop woke from sleep). */
+    fence: integer("fence").notNull().default(0),
+    attempts: integer("attempts").notNull().default(0),
+    maxAttempts: integer("max_attempts").notNull().default(3),
+    /** A retried task waits until then. */
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+    /** The task that asked for this one (a handoff between roles). */
+    parentId: uuid("parent_id"),
+    /** The same request twice makes one task. */
+    idempotencyKey: text("idempotency_key").unique(),
+    /** The validated result the runner submitted. */
+    output: jsonb("output").$type<Record<string, unknown>>(),
+    /** What the run is doing, newest last, capped: [{ at, text }]. */
+    progress: jsonb("progress").$type<{ at: string; text: string }[]>().notNull().default([]),
     createdAt: createdAt(),
   },
-  (t) => [index("hunt_requests_status_idx").on(t.status, t.createdAt)],
+  (t) => [index("hunt_requests_status_idx").on(t.status, t.createdAt), index("hunt_requests_queue_idx").on(t.status, t.type, t.priority)],
 );
 
 /** One learning run: how many prospects it rescored and what changed, so the owner can see the engine learn. */

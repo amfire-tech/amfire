@@ -3,21 +3,21 @@
 import { useActionState, useState } from "react";
 import { SubmitButton } from "@/components/forms";
 import { Field, Notice, buttonClass, inputClass } from "@/components/ui";
-import { createKeyAction, type KeyState } from "../../engine-actions";
+import { createKeyAction, createRunnerKeyAction, type KeyState } from "../../engine-actions";
 
-/** Creates a personal connector key and shows it once, with a copy button. */
-export function KeyForm() {
-  const [state, action] = useActionState<KeyState, FormData>(createKeyAction, undefined);
+/** Creates a personal (or laptop runner) key and shows it once, with a copy button. */
+export function KeyForm({ kind = "personal" }: { kind?: "personal" | "runner" }) {
+  const [state, action] = useActionState<KeyState, FormData>(kind === "runner" ? createRunnerKeyAction : createKeyAction, undefined);
   const [copied, setCopied] = useState(false);
   return (
     <div className="space-y-3">
       <form action={action} className="flex flex-wrap items-end gap-2">
-        <Field label="Where you'll use it" htmlFor="key-label">
-          <input id="key-label" name="label" defaultValue="Cloud routine" maxLength={60} className={`${inputClass} sm:!w-56`} />
+        <Field label="Where you'll use it" htmlFor={`key-label-${kind}`}>
+          <input id={`key-label-${kind}`} name="label" defaultValue={kind === "runner" ? "Laptop runner" : "Cloud routine"} maxLength={60} className={`${inputClass} sm:!w-56`} />
         </Field>
         <div className="pb-0.5">
           <SubmitButton size="sm" pendingLabel="Creating…">
-            Create my key
+            {kind === "runner" ? "Create runner key" : "Create my key"}
           </SubmitButton>
         </div>
       </form>

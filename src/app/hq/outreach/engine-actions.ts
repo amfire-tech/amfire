@@ -12,6 +12,7 @@ import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
 import { addContact, addSignal, recordFeedback, removeContact, removeSignal, runLearning, setFacts, startPlay, stopPlay } from "@/server/engine";
 import { addTeammate, cancelHunt, createConnectorToken, requestHunt, revokeConnectorToken } from "@/server/hunts";
+import { createRunnerKey } from "@/server/team-tasks";
 import { logTouch, parseIstLocal } from "@/server/outreach";
 
 async function ctx() {
@@ -196,6 +197,18 @@ export async function createKeyAction(_prev: KeyState, formData: FormData): Prom
   const { db, actor } = await ctx();
   try {
     const { key } = await createConnectorToken(db, actor, text(formData, "label") ?? "");
+    revalidatePath("/hq/outreach/engine/claude");
+    return { key };
+  } catch (err) {
+    return { error: toActionError(err)?.error ?? "Couldn't create the key." };
+  }
+}
+
+/** A new laptop runner key (works only for /api/team), returned once to show on screen. */
+export async function createRunnerKeyAction(_prev: KeyState, formData: FormData): Promise<KeyState> {
+  const { db, actor } = await ctx();
+  try {
+    const { key } = await createRunnerKey(db, actor, text(formData, "label") ?? "Laptop runner");
     revalidatePath("/hq/outreach/engine/claude");
     return { key };
   } catch (err) {

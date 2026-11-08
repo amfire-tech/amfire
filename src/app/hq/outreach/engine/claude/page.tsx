@@ -5,6 +5,7 @@ import { Button, Card, CardTitle, Chip, EmptyState, Field, PageHeader, inputClas
 import { getDb } from "@/db";
 import { requireStaffActor } from "@/lib/session";
 import { listConnectorTokens, listRunners } from "@/server/hunts";
+import { listTeamRunners } from "@/server/team-tasks";
 import { addTeammateAction, revokeKeyAction } from "../../engine-actions";
 import { KeyForm } from "./key-form";
 
@@ -16,7 +17,7 @@ const CRON = "30 3-15 * * *";
 export default async function ClaudeRunnerPage() {
   const actor = await requireStaffActor();
   const db = await getDb();
-  const [keys, runners] = await Promise.all([listConnectorTokens(db, actor), listRunners(db, actor)]);
+  const [keys, runners, teamRunners] = await Promise.all([listConnectorTokens(db, actor), listRunners(db, actor), listTeamRunners(db, actor)]);
   const owner = actor.internalRole === "owner";
 
   return (
@@ -44,6 +45,7 @@ export default async function ClaudeRunnerPage() {
                   <span className="text-muted">
                     {" "}
                     · {owner && user.id !== actor.userId ? `${user.name} · ` : ""}
+                    {k.kind === "runner" ? "laptop runner · " : ""}
                     <code className="text-xs">{k.hint}…</code> · created {timeAgo(k.createdAt)} · {k.lastUsedAt ? `last used ${timeAgo(k.lastUsedAt)}` : "not used yet"}
                   </span>
                 </span>
@@ -97,6 +99,27 @@ export default async function ClaudeRunnerPage() {
           </ol>
         </Card>
       </div>
+
+      <Card>
+        <CardTitle>Laptop runner (the revenue team)</CardTitle>
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          The runner on your laptop takes the revenue team’s tasks from HQ and runs your Claude Code on each one. Its key only claims and reports tasks: it can’t read or change the desk, and never acts as the owner. Each run it starts gets its own short-lived, read-only key.
+        </p>
+        <KeyForm kind="runner" />
+        <p className="mt-3 text-sm text-muted">
+          Save it on the laptop as <code className="text-xs">AMFIRE_RUNNER_KEY</code>, then start the team with <code className="text-xs">npm run team</code>.
+        </p>
+        {teamRunners.length > 0 && (
+          <ul className="mt-4 divide-y divide-line text-sm">
+            {teamRunners.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
+                <span className="font-medium">{r.label}</span>
+                <span className={r.online ? "text-success" : "text-muted"}>{r.online ? "Online now" : r.heartbeatAt ? `Last online ${timeAgo(r.heartbeatAt)}` : "Hasn’t started yet"}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
 
       <Card>
         <CardTitle aside={<span className="text-sm text-muted">{runners.length}</span>}>The team’s Claude</CardTitle>

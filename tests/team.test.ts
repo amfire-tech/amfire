@@ -25,9 +25,11 @@ import {
   listTeamRunners,
   renewLease,
   reportProgress,
+  ResultError,
   runnerHeartbeat,
   TaskError,
 } from "@/server/team-tasks";
+import { outreachEmails, outreachNotes, prospects } from "@/db/schema";
 
 const MINUTE = 60 * 1000;
 const t0 = new Date("2026-11-09T04:30:00Z");
@@ -49,6 +51,19 @@ const callTool = async (actor: Actor, name: string, args: Record<string, unknown
   return { text: res.result.content[0].text, isError: !!res.result.isError };
 };
 const pack = (key: string) => ({ type: "message_pack" as const, payload: { prospectIds: [prospectId] }, idempotencyKey: key });
+/** A well-formed pack result for the test prospect. */
+const packResult = (opening = "I run amfire, a Pune company that studies how work moves through growing plants.") => ({
+  packs: [
+    {
+      prospectId,
+      brief: "Forgings for tractors. Why now: new plant at Chakan.",
+      opener: "Sharma sir, with the new Chakan line running, what slows down first: planning or dispatch?",
+      email: { toEmail: "info@forgings.example.in", subject: "A short plant study for Example Forgings", headline: "Where does an order *wait*?", greeting: "Dear Mr Sharma,", opening, closing: "Would 20 minutes next week work?" },
+      outline: "# A short plant study for Example Forgings",
+    },
+  ],
+  summary: "Packed one account.",
+});
 
 before(async () => {
   db = await openPglite();
@@ -109,7 +124,7 @@ describe("the queue", () => {
 
     // Done: the result is stored and the run key stops working at once.
     await reportProgress(db, runner, { taskId: claim.task.id, fence: 1, lines: ["Reading tofler.in/example"] }, at(1));
-    const done = await completeTask(db, runner, { taskId: claim.task.id, fence: 1, output: { packs: 1 } }, at(2));
+    const done = await completeTask(db, runner, { taskId: claim.task.id, fence: 1, output: packResult() }, at(2));
     assert.equal(done.status, "done");
     assert.equal(done.progress.length, 1);
     assert.equal(await actorForConnectorKey(db, claim.runKey, at(2)), null);
@@ -127,9 +142,10 @@ describe("the queue", () => {
     assert.equal(second.fence, first.fence + 1);
     assert.equal(second.task.attempts, 2);
     assert.equal(await actorForConnectorKey(db, first.runKey, at(30)), null); // the old run's key is dead
-    await assert.rejects(completeTask(db, runner, { taskId: task.id, fence: first.fence, output: { late: true } }, at(31)), TaskError);
-    const done = await completeTask(db, runner, { taskId: task.id, fence: second.fence, output: { packs: 1 } }, at(32));
-    assert.deepEqual(done.output, { packs: 1 });
+    await assert.rejects(completeTask(db, runner, { taskId: task.id, fence: first.fence, output: packResult() }, at(31)), TaskError);
+    await assert.rejects(completeTask(db, runner, { taskId: task.id, fence: second.fence, output: { packs: 1 } }, at(32)), ResultError); // wrong shape: retried, not applied
+    const done = await completeTask(db, runner, { taskId: task.id, fence: second.fence, output: packResult() }, at(33));
+    assert.equal((done.output as { applied: { packed: number } }).applied.packed, 1);
   });
 
   test("failures back off and retry; a usage limit doesn't use up an attempt; the last failure sticks", async () => {
@@ -160,5 +176,43 @@ describe("the queue", () => {
     const second = (await claimTask(db, runner, {}, at(101)))!;
     assert.equal(second.task.id, low.task.id);
     assert.equal(await claimHunt(db, owner, at(102)), null);
+    for (const c of [first, second]) await completeTask(db, runner, { taskId: c.task.id, fence: c.fence, output: packResult() }, at(103));
+  });
+});
+
+describe("applying results", () => {
+  test("a pack saves the brief, opener, email draft and outline; an email that breaks the copy rules is held back", async () => {
+    const { task } = await createTask(db, owner, pack("apply-1"));
+    const c = (await claimTask(db, runner, {}, at(200)))!;
+    assert.equal(c.task.id, task.id);
+    const done = await completeTask(db, runner, { taskId: task.id, fence: c.fence, output: packResult("We set up AI automation for plants, at a special price.") }, at(201));
+    const applied = (done.output as { applied: { packed: number; held: { what: string; problems: string[] }[] } }).applied;
+    assert.equal(applied.packed, 1);
+    assert.equal(applied.held[0].what, "email");
+    assert.ok(applied.held[0].problems.length >= 2);
+    const [p] = await db.select().from(prospects).where(eq(prospects.id, prospectId));
+    assert.match(p.brief!, /new plant at Chakan/);
+    assert.match(p.opener!, /Sharma sir/);
+    assert.equal((await db.select().from(outreachEmails).where(eq(outreachEmails.prospectId, prospectId))).length, 1); // only the clean pack's email
+    const notes = await db.select().from(outreachNotes).where(eq(outreachNotes.title, "Plant study outline: Example Forgings Pvt Ltd"));
+    assert.ok(notes.length >= 2);
+  });
+
+  test("a research batch goes through the engine: deduped by CIN and scored", async () => {
+    const { task } = await createTask(db, owner, { type: "research_batch", payload: { segment: "manufacturer", place: { area: "Ranjangaon" }, count: 2 } });
+    const c = (await claimTask(db, runner, {}, at(300)))!;
+    assert.equal(c.task.id, task.id);
+    const target = {
+      prospect: { name: "Ranjangaon Castings Pvt Ltd", cin: "U27100PN2010PTC135000", area: "Ranjangaon", sourceUrl: "https://www.tofler.in/x/company/U27100PN2010PTC135000" },
+      facts: { revenueLowCr: 50, revenueBand: "₹50–75 Cr", ownership: "indian_family" as const },
+      contacts: [{ name: "Asha Kulkarni", title: "Managing Director", role: "decision_maker" as const, sourceUrl: "https://www.tofler.in/x/company/U27100PN2010PTC135000" }],
+      signals: [{ type: "new_bank_charge", title: "New SBI charge registered 2 Oct 2026 (MCA)", observedAt: "2026-10-02", sourceUrl: "https://www.tofler.in/x/company/U27100PN2010PTC135000", confidence: 0.9 }],
+    };
+    const done = await completeTask(db, runner, { taskId: task.id, fence: c.fence, output: { targets: [target, target], rejected: [{ name: "Foreign Sub Pvt Ltd", reason: "German parent" }], summary: "Two found, one rejected." } }, at(301));
+    assert.equal(done.result?.added, 1); // the second copy matched the first by CIN
+    const [p] = await db.select().from(prospects).where(eq(prospects.cin, "U27100PN2010PTC135000"));
+    assert.equal(p.kind, "manufacturer");
+    assert.equal(p.source, "claude");
+    assert.match(p.reason ?? "", /SBI charge/);
   });
 });

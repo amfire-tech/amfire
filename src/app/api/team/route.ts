@@ -6,7 +6,7 @@
 //   { action: "claim", types? }                   → { task, fence, runKey } | { task: null }
 //   { action: "renew", taskId, fence }
 //   { action: "progress", taskId, fence, lines }
-//   { action: "complete", taskId, fence, output, summary? }
+//   { action: "complete", taskId, fence, output }   (422 when output doesn't match the task type's shape)
 //   { action: "fail", taskId, fence, error, retryable?, retryAfterMs?, usageLimit? }
 //
 // 409 means this run no longer holds the task (its lease ran out): drop the result.
@@ -16,7 +16,7 @@ import * as z from "zod";
 import { getDb } from "@/db";
 import { AccessDenied } from "@/server/access";
 import { actorForConnectorKey } from "@/server/hunts";
-import { claimTask, completeTask, failTask, renewLease, reportProgress, runnerHeartbeat, TaskError } from "@/server/team-tasks";
+import { claimTask, completeTask, failTask, renewLease, reportProgress, ResultError, runnerHeartbeat, TaskError } from "@/server/team-tasks";
 
 export const maxDuration = 60;
 
@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
     const result = await run(db, actor, input as never);
     return Response.json(action === "claim" && !result ? { task: null } : result);
   } catch (err) {
+    if (err instanceof ResultError) return Response.json({ error: err.message }, { status: 422 });
     if (err instanceof TaskError) return Response.json({ error: err.message }, { status: 409 });
     if (err instanceof z.ZodError) return Response.json({ error: err.issues.map((i) => `${i.path.join(".") || "input"}: ${i.message}`).join("; ") }, { status: 400 });
     if (err instanceof AccessDenied) return Response.json({ error: err.message }, { status: 403 });

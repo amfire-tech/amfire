@@ -20,9 +20,13 @@ import * as z from "zod";
 import type { DB } from "@/db";
 import { connectorTokens, huntRequests, prospects, type HuntRequest } from "@/db/schema";
 import { SEGMENT_IDS } from "@/knowledge/engine";
+import { copyProblems, TASK_RESULTS, type MessagePackResult, type ResearchBatchResult } from "@/knowledge/team";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
+import { upsertTargets } from "./engine";
 import { HuntError } from "./hunts";
+import { saveEmailDraft } from "./outreach-emails";
+import { addOutreachNote, updateProspect } from "./outreach";
 
 const MINUTE = 60 * 1000;
 /** How long a claim lasts without a renewal. The runner renews every few minutes while working. */
@@ -32,10 +36,19 @@ const RUN_KEY_GRACE_MS = 10 * MINUTE;
 /** Progress lines kept per task. */
 const PROGRESS_CAP = 200;
 
+/** The run no longer holds the task, or it doesn't exist: the runner drops its result (HTTP 409). */
 export class TaskError extends HuntError {
   constructor(message: string) {
     super(message);
     this.name = "TaskError";
+  }
+}
+
+/** The result doesn't match its task type's shape: the runner retries the run once (HTTP 422). */
+export class ResultError extends HuntError {
+  constructor(message: string) {
+    super(message);
+    this.name = "ResultError";
   }
 }
 
@@ -299,22 +312,130 @@ export async function reportProgress(db: DB, actor: Actor | null, input: z.input
   return { kept: progress.length };
 }
 
-export const CompleteInput = Fenced.extend({ output: z.record(z.string(), z.unknown()), summary: z.string().trim().max(2000).optional() });
+export const CompleteInput = Fenced.extend({ output: z.record(z.string(), z.unknown()) });
 
-/** The run's result. Refused when the fence is stale, so a task never completes twice. */
+/**
+ * The run's result: checked against its type's shape, then applied by HQ in
+ * one transaction with the task marked done. Refused when the fence is stale,
+ * so a task never completes (or applies) twice.
+ */
 export async function completeTask(db: DB, actor: Actor | null, input: z.input<typeof CompleteInput>, now = new Date()) {
   assertRunner(actor);
-  const { taskId, fence, output, summary } = CompleteInput.parse(input);
-  await heldTask(db, actor, taskId, fence);
-  const [task] = await db
-    .update(huntRequests)
-    .set({ status: "done", output, error: null, finishedAt: now, leaseExpiresAt: null, ...(summary ? { result: { added: 0, updated: 0, warm: 0, summary } } : {}) })
-    .where(and(eq(huntRequests.id, taskId), eq(huntRequests.fence, fence), eq(huntRequests.status, "running")))
-    .returning();
-  if (!task) throw new TaskError("This run no longer holds the task. Drop the result.");
+  const { taskId, fence, output } = CompleteInput.parse(input);
+  const held = await heldTask(db, actor, taskId, fence);
+  const schema = TASK_RESULTS[held.type as TaskType];
+  if (!schema) throw new ResultError(`Unknown task type ${held.type}.`);
+  const parsed = schema.safeParse(output);
+  if (!parsed.success) throw new ResultError(parsed.error.issues.slice(0, 8).map((i) => `${i.path.join(".") || "result"}: ${i.message}`).join("; "));
+
+  const task = await db.transaction(async (tx) => {
+    const applied =
+      held.type === "research_batch"
+        ? await applyResearch(tx, actor, held, parsed.data as ResearchBatchResult)
+        : await applyPacks(tx, actor, held, parsed.data as MessagePackResult);
+    const [done] = await tx
+      .update(huntRequests)
+      .set({ status: "done", output: { result: parsed.data, applied: applied.report }, result: applied.summary, error: null, finishedAt: now, leaseExpiresAt: null })
+      .where(and(eq(huntRequests.id, taskId), eq(huntRequests.fence, fence), eq(huntRequests.status, "running")))
+      .returning();
+    // Throwing here rolls back everything applied above.
+    if (!done) throw new TaskError("This run no longer holds the task. Drop the result.");
+    return done;
+  });
   await revokeRunKeys(db, taskId, now);
   await audit(db, { actorId: actor.userId, action: "task.done", subjectType: "task", subjectId: taskId, data: { type: task.type } });
   return task;
+}
+
+// --- Applying results ------------------------------------------------------------------------
+
+/** New targets go through the signal engine like any research: deduped (CIN first), scored. */
+async function applyResearch(db: DB, actor: RunnerActor, task: HuntRequest, result: ResearchBatchResult) {
+  const { segment, place } = TASK_PAYLOADS.research_batch.parse(task.payload);
+  const inputs = result.targets.map((t) => ({
+    prospect: { ...t.prospect, kind: segment, city: place.city ?? "Pune" },
+    facts: t.facts,
+    contacts: t.contacts,
+    signals: t.signals,
+  }));
+  const rows = inputs.length ? await upsertTargets(db, actor, inputs, { source: "claude" }) : [];
+  const added = rows.filter((r) => r.created).length;
+  const warm = rows.filter((r) => (r.score ?? 0) >= 60).length;
+  return {
+    summary: { added, updated: rows.length - added, warm, summary: result.summary },
+    report: { targets: rows.map((r) => ({ id: r.id, name: r.name, created: r.created, score: r.score })), rejected: result.rejected },
+  };
+}
+
+const PACK_EMAIL = {
+  preheader: "One hour of your plant head's time. The written study is yours to keep.",
+  image: null,
+  button: null,
+  findingsTitle: "",
+  findings: [],
+  showMethod: false,
+  replyLabel: "Yes, a short call works",
+  ps: "",
+  signRole: "Co-founder, amfire, Pune",
+  footer: "Not relevant? Reply \u201cno\u201d and I won\u2019t write again.",
+};
+
+/**
+ * Each pack: the brief and opener on the prospect, the email as a draft the
+ * founder tests and sends, the outline as a note. Only the task's own
+ * accounts; an opener or email that breaks the copy rules is held back.
+ */
+async function applyPacks(db: DB, actor: RunnerActor, task: HuntRequest, result: MessagePackResult) {
+  const allowed = new Set(TASK_PAYLOADS.message_pack.parse(task.payload).prospectIds);
+  const rows = await db.select().from(prospects).where(inArray(prospects.id, [...allowed]));
+  const skipped: { prospectId: string; reason: string }[] = [];
+  const held: { prospectId: string; what: string; problems: string[] }[] = [];
+  let packed = 0;
+  for (const pack of result.packs) {
+    const p = rows.find((r) => r.id === pack.prospectId);
+    if (!p) {
+      skipped.push({ prospectId: pack.prospectId, reason: "not one of this task's accounts" });
+      continue;
+    }
+    const openerProblems = copyProblems(pack.opener);
+    if (openerProblems.length) held.push({ prospectId: p.id, what: "opener", problems: openerProblems });
+    await updateProspect(db, actor, p.id, { brief: pack.brief, ...(openerProblems.length ? {} : { opener: pack.opener }) });
+    if (pack.email) {
+      const e = pack.email;
+      const problems = copyProblems([e.subject, e.headline, e.opening, e.closing].join("\n"));
+      if (problems.length) {
+        held.push({ prospectId: p.id, what: "email", problems });
+      } else {
+        const who = p.contactName ?? p.name;
+        await saveEmailDraft(
+          db,
+          actor,
+          {
+            prospectId: p.id,
+            toEmail: e.toEmail ?? "",
+            subject: e.subject,
+            content: {
+              ...PACK_EMAIL,
+              eyebrow: `For ${who}, ${p.name}`.slice(0, 120),
+              headline: e.headline,
+              greeting: e.greeting,
+              opening: e.opening,
+              closing: e.closing,
+              replyBody: `Hello, this is ${who} from ${p.name}. A short call about the plant study works for me.`.slice(0, 300),
+              signName: actor.name,
+            },
+          },
+          { draftedBy: "claude" },
+        );
+      }
+    }
+    await addOutreachNote(db, actor, { kind: "content", title: `Plant study outline: ${p.name}`, body: pack.outline });
+    packed++;
+  }
+  return {
+    summary: { added: 0, updated: packed, warm: 0, summary: result.summary },
+    report: { packed, skipped, held },
+  };
 }
 
 export const FailInput = Fenced.extend({

@@ -26,8 +26,7 @@ const nextConfig: NextConfig = {
     ];
     return [
       { source: "/pricing", destination: "/", permanent: false },
-      { source: "/services", destination: "/how-we-work", permanent: true },
-      { source: "/services/:path", destination: "/how-we-work", permanent: true },
+      { source: "/services/:path", destination: "/services", permanent: true },
       { source: "/solutions", destination: "/how-we-work", permanent: true },
       { source: "/industries", destination: "/work", permanent: true },
       ...examples.map((slug) => ({ source: `/work/${slug}`, destination: "/work", permanent: true })),

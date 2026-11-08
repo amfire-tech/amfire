@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CaseStudyCard } from "@/components/case-study-card";
-import { Arrow, ButtonLink, CheckList, Chip, Container, Eyebrow, buttonClass } from "@/components/ui";
+import { CheckList, ConversationButton, Chip, Container, Eyebrow, buttonClass } from "@/components/ui";
 import { CASE_STUDIES, type CaseStudy } from "@/knowledge/case-studies";
 
 function ExternalIcon() {
@@ -34,9 +34,7 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
             <a href={study.url} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "lg")}>
               Visit {host} <ExternalIcon />
             </a>
-            <ButtonLink href="/start" size="lg">
-              Start a conversation <Arrow />
-            </ButtonLink>
+            <ConversationButton size="lg" />
           </div>
         </Container>
         <Container>
@@ -111,9 +109,7 @@ export function CaseStudyView({ study }: { study: CaseStudy }) {
           <div className="relative overflow-hidden rounded-card bg-ink p-6 text-white">
             <p className="relative font-medium">Tell us where work gets stuck.</p>
             <p className="relative mt-1 text-sm text-white/70">You will talk to the people who built {study.client}.</p>
-            <ButtonLink href="/start" className="relative mt-5 w-full">
-              Start a conversation <Arrow />
-            </ButtonLink>
+            <ConversationButton className="relative mt-5 w-full" />
           </div>
         </aside>
       </Container>

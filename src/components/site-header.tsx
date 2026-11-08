@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ButtonLink, Logo, cx } from "./ui";
+import { CONVERSATION_LABEL, ConversationButton, Logo, cx } from "./ui";
 
-// Few doors, each worth opening. Approach and Insights join once those pages exist.
+// Few doors, each worth opening. How we work lives in the footer (founder, 8 Nov 2026).
 const LINKS = [
-  { href: "/how-we-work", label: "How we work" },
+  { href: "/services", label: "Services" },
   { href: "/work", label: "Work" },
   { href: "/about", label: "About" },
 ];
 
-export const CONVERSATION_CTA = "Start a conversation";
+export const CONVERSATION_CTA = CONVERSATION_LABEL;
 
 export function SiteHeader() {
   const pathname = usePathname();
@@ -64,10 +64,16 @@ export function SiteHeader() {
               </Link>
             ))}
           </nav>
-          <ButtonLink href="/start" size="sm">
-            <span className="sm:hidden">Talk to us</span>
-            <span className="max-sm:hidden">{CONVERSATION_CTA}</span>
-          </ButtonLink>
+          <ConversationButton
+            size="sm"
+            arrow={false}
+            label={
+              <>
+                <span className="sm:hidden">Talk to us</span>
+                <span className="max-sm:hidden">{CONVERSATION_CTA}</span>
+              </>
+            }
+          />
           <button
             type="button"
             className="grid size-10 place-items-center rounded-md ring-1 ring-line md:hidden"
@@ -97,9 +103,7 @@ export function SiteHeader() {
           <Link href="/login" className="block py-4 text-sm text-muted">
             Client sign-in
           </Link>
-          <ButtonLink href="/start" size="lg" className="mt-2 w-full">
-            {CONVERSATION_CTA}
-          </ButtonLink>
+          <ConversationButton size="lg" className="mt-2 w-full" />
         </nav>
       )}
     </header>

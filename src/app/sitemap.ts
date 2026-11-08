@@ -3,7 +3,7 @@ import { site } from "@/config/site";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
 
 /**
- * Public pages that carry the current message. Retired pages (services, solutions,
+ * Public pages that carry the current message. Retired pages (solutions,
  * industries, the illustrative examples) redirect and stay out; so do the /audit
  * outreach tool, workspaces and sign-in.
  */
@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   return [
     page("", 1, "weekly"),
+    page("/services", 0.9),
     page("/how-we-work", 0.9),
     page("/work", 0.9),
     ...CASE_STUDIES.map((c) => page(`/work/${c.slug}`, 0.8)),

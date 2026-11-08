@@ -9,6 +9,7 @@ import { contact, site } from "@/config/site";
 import { organizationJsonLd } from "@/config/structured-data";
 
 const COMPANY = [
+  { href: "/services", label: "Services" },
   { href: "/how-we-work", label: "How we work" },
   { href: "/work", label: "Work" },
   { href: "/about", label: "About" },

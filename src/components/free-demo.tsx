@@ -1,6 +1,6 @@
 import { FREE_DEMO } from "@/knowledge/catalog";
 import { EmberField } from "./ember-field";
-import { Arrow, ButtonLink, Container } from "./ui";
+import { Container, ConversationButton } from "./ui";
 
 /**
  * The one closing invitation used on every page. Centred, like the homepage cover, so
@@ -16,9 +16,7 @@ export function FreeDemoSection({ goal, title, body, cta }: { goal?: string; tit
           {title ?? "Tell us where work gets stuck."}
         </h2>
         <p className="mt-6 max-w-xl text-lg leading-[1.55] text-balance text-white/65 sm:text-xl">{body ?? FREE_DEMO.summary}</p>
-        <ButtonLink href={goal ? `/start?goal=${goal}` : "/start"} size="lg" className="mt-10 w-full sm:w-auto">
-          {cta ?? FREE_DEMO.cta} <Arrow />
-        </ButtonLink>
+        <ConversationButton href={goal ? `/start?goal=${goal}` : "/start"} size="lg" label={cta ?? FREE_DEMO.cta} className="mt-10 w-full sm:w-auto" />
       </Container>
     </section>
   );

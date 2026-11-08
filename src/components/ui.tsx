@@ -424,3 +424,46 @@ export function timeAgo(d: Date | string) {
   const days = Math.round(h / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
 }
+
+// --- The conversation button ------------------------------------------------
+
+/** The one call to action, worded the same everywhere. */
+export const CONVERSATION_LABEL = "Start a conversation";
+
+/**
+ * "Start a conversation", with the site's one button effect (styles: `.cta` in globals.css).
+ * On hover the label rolls up and a fresh copy rises into place, the arrow leaves to the
+ * right and returns from the left, and the button lifts a pixel; on press it settles.
+ * Monochrome on purpose: orange stays reserved for stuck points.
+ */
+export function ConversationButton({
+  label = CONVERSATION_LABEL,
+  arrow = true,
+  className,
+  href = "/start",
+  ...props
+}: Omit<ComponentProps<typeof ButtonLink>, "href" | "children"> & { href?: ComponentProps<typeof Link>["href"]; label?: ReactNode; arrow?: boolean }) {
+  return (
+    <ButtonLink href={href} className={cx("cta", className)} {...props}>
+      <RollingLabel>{label}</RollingLabel>
+      {arrow && (
+        <span aria-hidden className="cta-arrow">
+          <Arrow />
+          <Arrow />
+        </span>
+      )}
+    </ButtonLink>
+  );
+}
+
+/** A label that rolls to a copy of itself on hover of the nearest `.cta`. The copy is hidden from screen readers. */
+export function RollingLabel({ children }: { children: ReactNode }) {
+  return (
+    <span className="cta-roll">
+      <span className="cta-roll-a">{children}</span>
+      <span aria-hidden className="cta-roll-b">
+        {children}
+      </span>
+    </span>
+  );
+}

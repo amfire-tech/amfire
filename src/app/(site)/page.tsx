@@ -4,8 +4,7 @@ import Link from "next/link";
 import { EmberField } from "@/components/ember-field";
 import { FlowLine } from "@/components/flow-line";
 import { FreeDemoSection } from "@/components/free-demo";
-import { CONVERSATION_CTA } from "@/components/site-header";
-import { Arrow, ButtonLink, Container, Eyebrow } from "@/components/ui";
+import { Arrow, Container, ConversationButton, Eyebrow } from "@/components/ui";
 import { FOUNDERS, FOUNDERS_PROMISE } from "@/config/founders";
 import { site } from "@/config/site";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
@@ -78,9 +77,7 @@ export default function HomePage() {
               We build systems around how your company works, so your team keeps moving and you are free to lead its growth.
             </p>
             <div className="mt-[clamp(1.5rem,4vh,2.5rem)] flex w-full flex-col items-center gap-3 sm:w-auto sm:flex-row sm:gap-8">
-              <ButtonLink href="/start" size="lg" className="w-full sm:w-auto">
-                {CONVERSATION_CTA}
-              </ButtonLink>
+              <ConversationButton size="lg" className="w-full sm:w-auto" />
               <Link href="/how-we-work" className="inline-flex items-center gap-1.5 py-2 text-[15px] font-medium underline-offset-[6px] hover:underline">
                 How we work <Arrow />
               </Link>

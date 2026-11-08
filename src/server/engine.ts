@@ -11,6 +11,8 @@ import * as z from "zod";
 import type { DB } from "@/db";
 import { buyingSignals, engineFeedback, engineRuns, engineStats, leads, prospectContacts, prospects, touches, type Prospect } from "@/db/schema";
 import {
+  AREA_CENTRES,
+  BELTS,
   CONTACT_ROLE_IDS,
   FEEDBACK_KIND_IDS,
   FIT_RULES,
@@ -20,16 +22,19 @@ import {
   SIGNAL_TYPE_IDS,
   WARM_SCORE,
   areaCentre,
+  beltOf,
   defaultPlay,
   playFor,
   segmentFor,
   segmentOf,
   signalType,
   signalTypesFor,
+  type BeltId,
   type SegmentId,
 } from "@/knowledge/engine";
 import { type ProspectStatus } from "@/knowledge/outreach";
 import { assertStaff, type Actor } from "./access";
+import { trackedAssetUrl } from "./asset-links";
 import { audit } from "./audit";
 import { whatsappLink } from "./brain";
 import {
@@ -39,6 +44,7 @@ import {
   haversineKm,
   insightsFrom,
   learn,
+  nearestNeighbourRoute,
   parseMapsCoords,
   pickVariant,
   scoreProspect,
@@ -188,8 +194,12 @@ export const TargetInput = z.object({
 });
 export type TargetInput = z.input<typeof TargetInput>;
 
-/** The prospect already on the desk with the same phone, website, or name in the same area. */
-async function findExisting(db: DB, input: { name: string; phone?: string | null; website?: string | null; area?: string | null }) {
+/** The prospect already on the desk with the same CIN, phone, website, or name in the same area. */
+async function findExisting(db: DB, input: { name: string; cin?: string | null; phone?: string | null; website?: string | null; area?: string | null }) {
+  if (input.cin) {
+    const [byCin] = await db.select({ id: prospects.id }).from(prospects).where(eq(prospects.cin, input.cin));
+    if (byCin) return byCin;
+  }
   const phone = phoneKey(input.phone);
   const key = nameKey(input.name, input.area);
   const all = await db.select({ id: prospects.id, name: prospects.name, area: prospects.area, phone: prospects.phone, website: prospects.website }).from(prospects);
@@ -486,6 +496,7 @@ const SUBJECTS: Record<SegmentId, string> = {
   school: "CT & AI readiness note for {org}",
   ca_firm: "Peer review readiness check for {org}",
   business: "A demo for {org}",
+  manufacturer: "A short plant study for {org}",
 };
 
 /** What the owner does next for one prospect on a play: the step, the person, the drafted message and a one-tap link. */
@@ -496,7 +507,8 @@ export function draftNextStep(p: Prospect, contacts: ContactRow[], variantStats:
   const variant = pickVariant(play, p.playStep, variantStats, p.id)!;
   const segment = segmentOf(p.kind);
   const who = contactFor(step.channel, contacts, p);
-  const values = { contact: who.name, org: p.name, owner: ownerName, segment, reason: p.reason, asset: p.assetUrl, area: p.area };
+  // The tracked link, so an open alerts the owner (src/server/asset-links.ts).
+  const values = { contact: who.name, org: p.name, owner: ownerName, segment, reason: p.reason, asset: trackedAssetUrl(p), area: p.area };
   const message = draftText(variant.text, values);
   const subject = draftText(SUBJECTS[segment], values);
   const href =
@@ -571,6 +583,64 @@ export async function getEngineQueue(db: DB, actor: Actor | null, input: PlaceFi
   }
   due.sort((a, b) => (a.next.due?.getTime() ?? 0) - (b.next.due?.getTime() ?? 0) || b.prospect.score - a.prospect.score);
   return { due, ready: ready.slice(0, 50), warming: warming.slice(0, 30), considered: rows.length };
+}
+
+// --- Visit days --------------------------------------------------------------------
+
+/** About as many plants as one day out can cover, with a few minutes at each gate. */
+export const VISITS_PER_DAY = 12;
+
+/**
+ * One belt's visit day: the active prospects there (manufacturers unless told
+ * otherwise), those whose play says "visit" today first, then the highest
+ * scores, up to `max`, in nearest-neighbour order from the belt's main town.
+ * Also counts every belt, for the tabs.
+ */
+export async function getVisitRoute(db: DB, actor: Actor | null, input: { belt: BeltId; segment?: SegmentId; max?: number; now?: Date }) {
+  assertStaff(actor);
+  const belt = BELTS.find((b) => b.id === input.belt);
+  if (!belt) throw new EngineError("Choose a belt.");
+  const segment = input.segment ?? "manufacturer";
+  const now = input.now ?? new Date();
+  const endOfToday = new Date(istDayStart(now).getTime() + DAY);
+  const max = Math.min(Math.max(input.max ?? VISITS_PER_DAY, 1), 40);
+
+  const active = (await db.select().from(prospects).where(and(inArray(prospects.status, ACTIVE), eq(prospects.doNotContact, false))).orderBy(desc(prospects.score))).filter(
+    (p) => segmentOf(p.kind) === segment,
+  );
+  const counts = Object.fromEntries(BELTS.map((b) => [b.id, 0])) as Record<BeltId, number>;
+  let elsewhere = 0;
+  for (const p of active) {
+    const b = beltOf(p.area);
+    if (b) counts[b]++;
+    else elsewhere++;
+  }
+
+  const here = active.filter((p) => beltOf(p.area) === belt.id);
+  const contacts = here.length ? await db.select().from(prospectContacts).where(inArray(prospectContacts.prospectId, here.map((p) => p.id))) : [];
+  const stats = await variantStats(db);
+  const owner = actor.name.split(" ")[0] || actor.name;
+  const candidates = here.flatMap((p) => {
+    const where = coordsOf(p);
+    if (!where) return [];
+    const mine = contacts.filter((c) => c.prospectId === p.id);
+    const next = p.play && !p.playEndedReason ? draftNextStep(p, mine, stats, owner) : null;
+    const visitDue = next?.channel === "visit" && !!next.due && next.due.getTime() < endOfToday.getTime();
+    const decider = mine.find((c) => c.role === "decision_maker") ?? mine[0] ?? null;
+    return [{ prospect: p, decider, next, visitDue, at: where.at, approximate: where.approximate }];
+  });
+  candidates.sort((a, b) => Number(b.visitDue) - Number(a.visitDue) || b.prospect.score - a.prospect.score);
+  const stops = nearestNeighbourRoute(AREA_CENTRES[belt.start], candidates.slice(0, max));
+  return {
+    belt,
+    segment,
+    stops,
+    totalKm: Math.round(stops.reduce((s, x) => s + x.legKm, 0)),
+    inBelt: here.length,
+    left: Math.max(candidates.length - max, 0),
+    counts,
+    elsewhere,
+  };
 }
 
 // --- One prospect --------------------------------------------------------------------

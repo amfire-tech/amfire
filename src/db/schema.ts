@@ -12,6 +12,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import type { EmailContent } from "@/knowledge/email-theme";
 
 // ---------------------------------------------------------------------------
@@ -693,7 +694,9 @@ export const prospects = appSchema.table(
     city: text("city").notNull().default("Pune"),
     area: text("area"),
     industry: text("industry"),
-    /** "business", "school", "ca_firm" or "network" (someone the owner knows). */
+    /** A company's MCA Corporate Identification Number: the one sure way to tell two companies apart. */
+    cin: text("cin").unique(),
+    /** "business", "school", "ca_firm", "manufacturer" or "network" (someone the owner knows). */
     kind: text("kind").notNull().default("business"),
     /** A = gets a personal demo, B = an audit page, C = a researched call. */
     tier: text("tier").notNull().default("C"),
@@ -734,6 +737,17 @@ export const prospects = appSchema.table(
     scoredAt: timestamp("scored_at", { withTimezone: true }),
     /** The personal asset the play sends: readiness report, check or demo link. */
     assetUrl: text("asset_url"),
+    /**
+     * The asset goes out as {site}/r/{linkToken}, which forwards to assetUrl and
+     * counts real opens (src/server/asset-links.ts), so the desk knows who read it.
+     */
+    linkToken: text("link_token")
+      .notNull()
+      .unique()
+      .default(sql`substr(md5(random()::text || clock_timestamp()::text), 1, 12)`),
+    linkOpens: integer("link_opens").notNull().default(0),
+    linkFirstOpenedAt: timestamp("link_first_opened_at", { withTimezone: true }),
+    linkLastOpenedAt: timestamp("link_last_opened_at", { withTimezone: true }),
     /** The play (sequence of touches) they're on, the next step's index and when it started. */
     play: text("play"),
     playStep: integer("play_step").notNull().default(0),

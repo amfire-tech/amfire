@@ -134,7 +134,7 @@ export async function addTeammate(db: DB, actor: Actor | null, input: z.input<ty
 const AREAS = Object.keys(AREA_CENTRES) as [string, ...string[]];
 
 export const HuntInput = z.object({
-  segment: z.enum(SEGMENT_IDS, { error: "Choose schools, CA firms or businesses." }),
+  segment: z.enum(SEGMENT_IDS, { error: "Choose schools, CA firms, businesses or manufacturers." }),
   city: z.string().trim().max(80).optional(),
   area: z
     .string()

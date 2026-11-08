@@ -11,6 +11,7 @@ import { notifications, outreachEmails, prospectContacts, prospects, type Outrea
 import { site } from "@/config/site";
 import { defaultEmailContent, renderEmailHtml, renderEmailText, type EmailContent, type EmailFrame, type EmailRecipient } from "@/knowledge/email-theme";
 import { assertStaff, type Actor } from "./access";
+import { withTrackedAsset } from "./asset-links";
 import { audit } from "./audit";
 import { getDemoForProspect, demoUrl } from "./demos";
 import { emailConfigured, emailDeliveryStatus, sendEmail } from "./notify";
@@ -63,15 +64,20 @@ function frame(subject: string, recipient: EmailRecipient): EmailFrame {
   return { subject, replyTo: site.contactEmail, phone: site.contactPhone, recipient };
 }
 
-/** Renders an email as it goes to its recipient, tests included, so the WhatsApp button names them. */
-export async function renderOutreachEmail(db: DB, email: Pick<OutreachEmail, "prospectId" | "toEmail" | "subject" | "content">) {
+/**
+ * Renders an email as it goes to its recipient, tests included, so the WhatsApp
+ * button names them. `track` swaps their report link for the tracked one: only
+ * for the real send, so the owner opening a test doesn't count as the prospect.
+ */
+export async function renderOutreachEmail(db: DB, email: Pick<OutreachEmail, "prospectId" | "toEmail" | "subject" | "content">, opts: { track?: boolean } = {}) {
   const [[p], contacts] = await Promise.all([
     db.select().from(prospects).where(eq(prospects.id, email.prospectId)),
     db.select().from(prospectContacts).where(eq(prospectContacts.prospectId, email.prospectId)),
   ]);
   if (!p) throw new OutreachError("Prospect not found.");
   const f = frame(email.subject, { business: businessName(p), name: personFor(p, contacts, email.toEmail), email: email.toEmail?.trim() || null });
-  return { html: renderEmailHtml(email.content, f), text: renderEmailText(email.content, f) };
+  const content = opts.track ? withTrackedAsset(email.content, p) : email.content;
+  return { html: renderEmailHtml(content, f), text: renderEmailText(content, f) };
 }
 
 /** Outreach comes from the inbox replies go to: hello@amfire.in (OUTREACH_FROM_EMAIL overrides). */
@@ -149,7 +155,7 @@ export async function getEmailComposer(db: DB, actor: Actor | null, prospectId: 
           toEmail: recipients[0]?.email ?? "",
           cc: "",
           subject: "",
-          content: defaultEmailContent({ business: businessName(p), contactName: contacts.find((c) => c.email)?.name ?? p.contactName, demoUrl: demo ? demoUrl(demo) : null, ownerName }),
+          content: defaultEmailContent({ business: businessName(p), contactName: contacts.find((c) => c.email)?.name ?? p.contactName, demoUrl: demo ? demoUrl(demo) : p.assetUrl, ownerName }),
           version: 0,
           testedVersion: null,
           testSentTo: null,
@@ -223,7 +229,7 @@ export async function sendEmailToProspect(db: DB, actor: Actor | null, emailId: 
   if (p.doNotContact) throw new OutreachError("This prospect asked not to be contacted.");
   if (!email.toEmail) throw new OutreachError("Add the address to send to.");
   if (email.testedVersion !== email.version) throw new OutreachError("Send yourself a test of this version first.");
-  const { html, text } = await renderOutreachEmail(db, email);
+  const { html, text } = await renderOutreachEmail(db, email, { track: true });
   // Keyed to this version: a second click, or a retry after a step below failed, can't send it twice.
   const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: email.content.signName.split(" ")[0], idempotencyKey: `outreach-${email.id}-v${email.version}` });
   const touch = await logTouch(db, actor, { prospectId: p.id, channel: "email", outcome: "sent", note: `Email sent to ${email.toEmail}: "${email.subject}"` });

@@ -127,6 +127,20 @@
       "when": 1793297350852,
       "tag": "0017_outreach_email_resend_id",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793809716158,
+      "tag": "0018_prospect_link_opens",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794140849677,
+      "tag": "0019_prospect_cin",
+      "breakpoints": true
     }
   ]
 }

@@ -99,6 +99,7 @@ export const PROSPECT_KINDS = [
   { id: "business", label: "Business" },
   { id: "school", label: "School" },
   { id: "ca_firm", label: "CA firm" },
+  { id: "manufacturer", label: "Manufacturer" },
   { id: "network", label: "Someone I know" },
 ] as const;
 export type ProspectKind = (typeof PROSPECT_KINDS)[number]["id"];
@@ -219,9 +220,28 @@ export const FIRM_HOOK = {
     "Namaste {contact}, I'm {owner} from amfire, Pune. Peer review Phase IV applies from 31 December for firms with 3+ partners doing audits. We made a one-page readiness check for {business}. May I send it?",
 } as const;
 
+/**
+ * Manufacturers get a short written plant study first; the paid Operations
+ * Review comes later. No "AI" or "automation" and no price on a first touch.
+ */
+export const MANUFACTURER_HOOK = {
+  name: "Plant study",
+  callScript: [
+    "(Plant number:) Namaste, this is {owner} from amfire, Pune. I've prepared a short note for {contact} about a plant study. Could you put me through to their office, or tell me the best way to get it to them?",
+    "(The MD:) Namaste {contact}, {owner} from amfire, Pune. Two minutes?",
+    "One question I ask every plant MD: if you were away for two weeks, what would slow down first: quotes, the production plan, dispatch or collections?",
+    "(Listen. Write down their words.) That's usually where the next stage of growth is stuck. We prepare a short written plant study that maps it, using one hour of your team's time, and it's yours to keep.",
+    "(Close:) Could I come by the plant for 20 minutes next week, Tuesday or Thursday?",
+  ],
+  whatsapp:
+    "Namaste {contact}, {owner} from amfire here, as we just discussed. Here is the plant study outline for {business}: {demo}\n\nLooking forward to meeting you at the plant.",
+  coldWhatsapp:
+    "Namaste {contact}, I'm {owner} from amfire, Pune. We prepare short written plant studies for growing manufacturers: where an order waits between the quote, the production plan, dispatch and payment. I'd like to do one for {business}. Could I come by for 20 minutes next week?",
+} as const;
+
 /** The script for a prospect's kind. */
 export function hookFor(kind: string) {
-  return kind === "school" ? SCHOOL_HOOK : kind === "ca_firm" ? FIRM_HOOK : kind === "network" ? NETWORK_HOOK : HOOK;
+  return kind === "school" ? SCHOOL_HOOK : kind === "ca_firm" ? FIRM_HOOK : kind === "manufacturer" ? MANUFACTURER_HOOK : kind === "network" ? NETWORK_HOOK : HOOK;
 }
 
 /** "27 Oct, 11:00 am" in India time, whatever the server's time zone. */

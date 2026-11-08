@@ -50,6 +50,9 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
         actions={
           <>
             <ButtonLink href="/hq/outreach/engine">Signal engine</ButtonLink>
+            <ButtonLink href="/hq/outreach/route" variant="secondary">
+              Visit route
+            </ButtonLink>
             <ButtonLink href="/hq/outreach/call" variant="secondary">
               Start calling{board.readyToContact ? ` · ${board.readyToContact} due` : ""}
             </ButtonLink>
@@ -183,7 +186,7 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
                             {p.name}
                           </Link>
                           <div className="text-xs text-muted">
-                            {[p.area, p.industry, `Tier ${p.tier} · ${p.score}`, p.kind === "ca_firm" ? "CA firm" : p.kind === "school" ? "School" : p.kind === "network" ? "Network" : null].filter(Boolean).join(" · ")}
+                            {[p.area, p.industry, `Tier ${p.tier} · ${p.score}`, p.kind === "business" ? null : (PROSPECT_KINDS.find((k) => k.id === p.kind)?.label ?? null)].filter(Boolean).join(" · ")}
                           </div>
                         </td>
                         <td className="max-w-xs text-fg/80">
@@ -191,6 +194,7 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
                         </td>
                         <td>
                           <Chip>{prospectStatusLabel(p.status)}</Chip>
+                          {p.linkOpens > 0 && <Chip className="ml-1 !bg-[#ecfdf3] !text-[#05603a]">Opened {p.linkOpens}×</Chip>}
                           {p.statusReason && <div className="mt-1 text-xs text-muted">{p.statusReason}</div>}
                         </td>
                         <td className="text-sm whitespace-nowrap text-muted">

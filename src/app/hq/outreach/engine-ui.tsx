@@ -341,7 +341,7 @@ export function EnginePanel({ prospect: p, engine }: { prospect: Prospect; engin
             <Field label="Pin code" htmlFor="pincode" optional>
               <input id="pincode" name="pincode" inputMode="numeric" maxLength={6} defaultValue={p.pincode ?? ""} className={inputClass} />
             </Field>
-            <Field label="Their report / check link" htmlFor="assetUrl" optional hint="Sent in the play's messages">
+            <Field label="Their report / check link" htmlFor="assetUrl" optional hint="Sent as a tracked link, so you see when they open it">
               <input id="assetUrl" name="assetUrl" defaultValue={p.assetUrl ?? ""} className={inputClass} />
             </Field>
           </div>

@@ -11,6 +11,7 @@ import {
   areaCentre,
   playFor,
   segmentFor,
+  segmentOf,
   signalType,
   type FactValue,
   type Play,
@@ -217,6 +218,25 @@ export function haversineKm(a: [number, number], b: [number, number]) {
   return 2 * 6371 * Math.asin(Math.sqrt(h));
 }
 
+/**
+ * A visit day's order: from `start`, always drive to the nearest stop not yet
+ * visited. Not the shortest possible route, but close for a dozen plants and
+ * easy to follow. Each stop gets the straight-line km from the one before.
+ */
+export function nearestNeighbourRoute<T extends { at: [number, number] }>(start: [number, number], stops: T[]): (T & { legKm: number })[] {
+  const left = [...stops];
+  const out: (T & { legKm: number })[] = [];
+  let here = start;
+  while (left.length) {
+    let best = 0;
+    for (let i = 1; i < left.length; i++) if (haversineKm(here, left[i].at) < haversineKm(here, left[best].at)) best = i;
+    const [next] = left.splice(best, 1);
+    out.push({ ...next, legKm: Math.round(haversineKm(here, next.at) * 10) / 10 });
+    here = next.at;
+  }
+  return out;
+}
+
 export const KNOWN_AREAS = Object.keys(AREA_CENTRES);
 
 // --- Plays -------------------------------------------------------------------------
@@ -409,7 +429,7 @@ export function learn(input: LearnInput): StatRow[] {
   const segmentOfProspect = new Map<string, SegmentId>();
 
   for (const p of input.prospects) {
-    const segment = (p.kind === "school" || p.kind === "ca_firm" ? p.kind : "business") as SegmentId;
+    const segment = segmentOf(p.kind);
     segmentOfProspect.set(p.id, segment);
     const touches = (byProspect.get(p.id) ?? []).sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
     if (touches.length === 0) continue;

@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { CHANNEL_LABELS, PROSPECT_KINDS, fillTemplate, formatIst, hookFor, objectionLabel, outcomeLabel, prospectStatusLabel, type TouchChannel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
+import { trackedAssetUrl } from "@/server/asset-links";
 import { whatsappLink } from "@/server/brain";
 import { getProspectEngine } from "@/server/engine";
 import { RESPONSE_TEST_CHANNELS, getProspect } from "@/server/outreach";
@@ -33,6 +34,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
   const [found, engine] = await Promise.all([getProspect(db, actor, id), getProspectEngine(db, actor, id)]);
   if (!found || !engine) notFound();
   const { prospect: p, history, lead, demo, responseTests, referral } = found;
+  const trackedLink = trackedAssetUrl(p);
 
   return (
     <div className="space-y-6">
@@ -183,6 +185,19 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
         </div>
 
         <aside className="space-y-6">
+          {trackedLink && trackedLink !== p.assetUrl && (
+            <Card>
+              <CardTitle aside={<span className="text-sm text-muted">{p.linkOpens} {p.linkOpens === 1 ? "open" : "opens"}</span>}>Report link</CardTitle>
+              <div className="space-y-2 text-sm">
+                <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{trackedLink}</code>
+                <p className="text-muted">{p.linkLastOpenedAt ? `Last opened ${formatIst(p.linkLastOpenedAt)}` : "Not opened yet"}</p>
+                <p className="text-xs text-muted">
+                  Send this link, not the raw one: play messages and emails sent from HQ already use it. When they open it, they jump to the top of your list and you get an email. Your own clicks while signed in don’t count.
+                </p>
+              </div>
+            </Card>
+          )}
+
           {(p.kind === "business" || p.kind === "network") && (
             <Card>
               <CardTitle aside={demo && <span className="text-sm text-muted">{demo.views} {demo.views === 1 ? "view" : "views"}</span>}>Demo page</CardTitle>

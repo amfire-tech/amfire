@@ -12,6 +12,9 @@ import { loadActor, type Actor } from "@/server/access";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
 import { TOOLS } from "@/server/connector";
 import { askDemo, fallbackAnswer, getPublicDemo, recordDemoView, upsertDemo } from "@/server/demos";
+import { getAssetLink, recordAssetOpen, trackedAssetUrl, withTrackedAsset } from "@/server/asset-links";
+import { getProspectEngine, startPlay } from "@/server/engine";
+import { site } from "@/config/site";
 import { followTrackedLink } from "@/server/growth";
 import { addProspects, findCallTouch, getProspect, listResponseTests, logTouch, markResponseTestReplied, startResponseTest } from "@/server/outreach";
 import { createPartnerLink, getPartners } from "@/server/partners";
@@ -87,6 +90,51 @@ describe("demo pages", () => {
   });
 });
 
+describe("tracked report links", () => {
+  const PHONE = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36";
+  const REPORT = "https://drive.google.com/file/d/abc123/view";
+
+  test("each prospect's report goes out as its own tracked link, and only real opens alert", async () => {
+    const [p] = (await addProspects(db, owner, [{ name: "Kale & Associates (Baner)", kind: "ca_firm", phone: "9811100011" }])).created;
+    const [other] = (await addProspects(db, owner, [{ name: "Other Firm", kind: "ca_firm", phone: "9811100012" }])).created;
+    assert.match(p.linkToken, /^[0-9a-f]{12}$/);
+    assert.notEqual(p.linkToken, other.linkToken);
+    assert.equal(trackedAssetUrl(p), null, "no report, no link");
+    assert.equal(await getAssetLink(db, p.linkToken), null);
+
+    const [withReport] = await db.update(prospects).set({ assetUrl: REPORT }).where(eq(prospects.id, p.id)).returning();
+    const link = `${site.url}/r/${p.linkToken}`;
+    assert.equal(trackedAssetUrl(withReport), link);
+    assert.equal(trackedAssetUrl({ assetUrl: `${site.url}/demo/x-1`, linkToken: p.linkToken }), `${site.url}/demo/x-1`, "demo pages count their own views");
+    assert.deepEqual(await getAssetLink(db, p.linkToken), { target: REPORT, org: "Kale & Associates" });
+    assert.equal(await getAssetLink(db, "nope!"), null);
+    assert.deepEqual(withTrackedAsset({ a: `See ${REPORT} now`, b: [{ url: REPORT }], n: 2, z: null }, withReport), { a: `See ${link} now`, b: [{ url: link }], n: 2, z: null });
+
+    // The play's message carries the tracked link.
+    await startPlay(db, owner, p.id);
+    assert.ok((await getProspectEngine(db, owner, p.id))?.next?.message.includes(link));
+
+    const now = new Date("2026-11-04T05:00:00Z");
+    const none = { counted: false, alerted: false };
+    assert.deepEqual(await recordAssetOpen(db, p.linkToken, { viewerIsStaff: true, userAgent: PHONE, now }), none);
+    assert.deepEqual(await recordAssetOpen(db, p.linkToken, { userAgent: "WhatsApp/2.23.20.0 A", now }), none);
+    assert.deepEqual(await recordAssetOpen(db, p.linkToken, { userAgent: null, now }), none);
+    assert.deepEqual(await recordAssetOpen(db, other.linkToken, { userAgent: PHONE, now }), none, "no report behind it");
+    assert.deepEqual(await recordAssetOpen(db, p.linkToken, { userAgent: PHONE, now }), { counted: true, alerted: true });
+    assert.deepEqual(await recordAssetOpen(db, p.linkToken, { userAgent: PHONE, now: new Date(now.getTime() + 10 * 60_000) }), { counted: true, alerted: false });
+    const later = new Date(now.getTime() + 3 * HOUR);
+    assert.deepEqual(await recordAssetOpen(db, p.linkToken, { userAgent: PHONE, now: later }), { counted: true, alerted: true });
+
+    const [after] = await db.select().from(prospects).where(eq(prospects.id, p.id));
+    assert.equal(after.linkOpens, 3);
+    assert.equal(after.linkFirstOpenedAt?.getTime(), now.getTime());
+    assert.equal(after.linkLastOpenedAt?.getTime(), later.getTime());
+    assert.equal(after.nextFollowUpAt?.getTime(), later.getTime(), "an open puts them at the top of the list");
+    const notes = (await db.select().from(touches).where(eq(touches.prospectId, p.id))).filter((t) => t.loggedBy === "system");
+    assert.deepEqual(notes.map((t) => t.note?.split(".")[0]).sort(), ["Opened their readiness check again (open 3)", "Opened their readiness check for the first time"]);
+  });
+});
+
 describe("CA partners", () => {
   test("a partner link is created once, credits referred leads, and works out the share", async () => {
     const [ca] = (await addProspects(db, owner, [{ name: "Patil & Co (CA)", kind: "ca_firm", phone: "9811100004" }])).created;
@@ -154,7 +202,9 @@ describe("recorded calls", () => {
 describe("outreach emails", () => {
   test("a draft goes to the client only after a test of that exact version, and sending logs a touch", async () => {
     const [p] = (await addProspects(db, owner, [{ name: "Email Test & Co (Noida)", phone: "9811100009", kind: "ca_firm" }])).created;
-    const content = { ...defaultEmailContent({ business: "Email Test & Co", contactName: "Asha Rao", ownerName: owner.name }), findings: [{ title: "No phone layout.", body: "Text <runs> off." }] };
+    const REPORT_URL = "https://drive.google.com/file/d/emailtest/view";
+    await db.update(prospects).set({ assetUrl: REPORT_URL }).where(eq(prospects.id, p.id));
+    const content = { ...defaultEmailContent({ business: "Email Test & Co", contactName: "Asha Rao", demoUrl: REPORT_URL, ownerName: owner.name }), findings: [{ title: "No phone layout.", body: "Text <runs> off." }] };
     const draft = await saveEmailDraft(db, owner, { prospectId: p.id, toEmail: "partner@example.com", subject: "Hello", content });
     assert.equal(draft.version, 1);
     assert.equal((await saveEmailDraft(db, owner, { prospectId: p.id, toEmail: "partner@example.com", subject: "Hello", content })).version, 1, "an unchanged save keeps the version");
@@ -194,6 +244,9 @@ describe("outreach emails", () => {
       await sendEmailTest(db, owner, draft.id, "me@example.com");
       const done = await sendEmailToProspect(db, owner, draft.id);
       assert.equal(done.status, "sent");
+      // The report link is tracked only in the real send, so the owner opening a test doesn't count.
+      assert.ok(sent.at(-2)?.html.includes(REPORT_URL) && !sent.at(-2)?.html.includes("/r/"));
+      assert.ok(sent.at(-1)?.html.includes(`${site.url}/r/${p.linkToken}`) && !sent.at(-1)?.html.includes(REPORT_URL));
       assert.deepEqual(sent.at(-1)?.to, ["partner@example.com"]);
       const [touch] = await db.select().from(touches).where(eq(touches.prospectId, p.id));
       assert.equal(touch.channel, "email");

@@ -24,7 +24,7 @@ import {
 import { playFor } from "@/knowledge/engine";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
-import { advancePlay } from "./engine-core";
+import { advancePlay, parseMapsCoords } from "./engine-core";
 import { addManualLead, ManualLeadSchema } from "./leads";
 
 export class OutreachError extends Error {
@@ -77,6 +77,9 @@ const url = z
   .optional()
   .nullable();
 
+/** An Indian company's CIN: listing status, industry code, state, year, company type, number. */
+export const CIN = /^[LU]\d{5}[A-Z]{2}\d{4}[A-Z]{3}\d{6}$/;
+
 // Without defaults, so a partial update never resets a field it didn't mention.
 const prospectFields = {
   name: z.string().trim().min(1, "Add the business or person's name.").max(200),
@@ -101,6 +104,13 @@ const prospectFields = {
   city: z.string().trim().min(1).max(80),
   area: optional(120),
   industry: optional(120),
+  cin: z
+    .string()
+    .trim()
+    .transform((v) => v.toUpperCase() || undefined)
+    .pipe(z.union([z.undefined(), z.string().regex(CIN, "A CIN looks like U28939PN2007PTC130375.")]))
+    .optional()
+    .nullable(),
   kind: z.enum(PROSPECT_KIND_IDS),
   tier: z.enum(["A", "B", "C"]),
   score: z.coerce.number().int().min(0).max(100),
@@ -163,8 +173,9 @@ export async function addProspects(db: DB, actor: Actor | null, inputs: Prospect
   const parsed = inputs.map((input) => ProspectInput.parse(input));
 
   const existing = await db
-    .select({ name: prospects.name, area: prospects.area, phone: prospects.phone, website: prospects.website })
+    .select({ name: prospects.name, area: prospects.area, phone: prospects.phone, website: prospects.website, cin: prospects.cin })
     .from(prospects);
+  const cins = new Set(existing.map((p) => p.cin).filter(Boolean));
   const phones = new Set(existing.map((p) => phoneKey(p.phone)).filter(Boolean));
   const sites = existing.map((p) => p.website).filter((w): w is string => !!w);
   const names = new Set(existing.map((p) => nameKey(p.name, p.area)));
@@ -174,6 +185,10 @@ export async function addProspects(db: DB, actor: Actor | null, inputs: Prospect
   for (const p of parsed) {
     const phone = phoneKey(p.phone);
     const key = nameKey(p.name, p.area);
+    if (p.cin && cins.has(p.cin)) {
+      skipped.push({ name: p.name, reason: "same company (CIN) already on the desk" });
+      continue;
+    }
     if (phone && phones.has(phone)) {
       skipped.push({ name: p.name, reason: "same phone number already on the desk" });
       continue;
@@ -200,6 +215,7 @@ export async function addProspects(db: DB, actor: Actor | null, inputs: Prospect
         city: p.city,
         area: p.area ?? null,
         industry: p.industry ?? null,
+        cin: p.cin ?? null,
         kind: p.kind,
         tier: p.tier,
         score: p.score,
@@ -269,6 +285,9 @@ export async function updateProspect(db: DB, actor: Actor | null, prospectId: st
     // null clears a field (e.g. nextFollowUpAt: null); undefined leaves it alone.
     if (value !== undefined) (set as Record<string, unknown>)[key] = value;
   }
+  // A new Maps link with @lat,lng pins the prospect there (distance filters, visit routes).
+  const pin = data.mapsUrl ? parseMapsCoords(data.mapsUrl) : null;
+  if (pin) [set.lat, set.lng] = pin;
   const [row] = await db.update(prospects).set(set).where(eq(prospects.id, prospectId)).returning();
   if (!row) throw new OutreachError("Prospect not found.");
   return row;
@@ -449,7 +468,7 @@ export async function convertToLead(db: DB, actor: Actor | null, prospectId: str
 
   const { lead } = await addManualLead(db, actor, {
     source,
-    sourceNote: `Outreach desk${p.area ? ` · ${p.area}` : ""}${p.kind === "ca_firm" ? " · CA firm" : p.kind === "school" ? " · School" : ""}`,
+    sourceNote: `Outreach desk${p.area ? ` · ${p.area}` : ""}${p.kind === "ca_firm" ? " · CA firm" : p.kind === "school" ? " · School" : p.kind === "manufacturer" ? " · Manufacturer" : ""}`,
     name: p.contactName || `${p.name} (owner)`,
     company: p.name,
     email: email.success ? (email.data ?? "") : "",

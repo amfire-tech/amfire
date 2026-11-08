@@ -10,15 +10,13 @@ import { randomBytes } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import * as z from "zod";
 import type { DB } from "@/db";
-import { agentRuns, demos, prospects, touches, type Demo } from "@/db/schema";
+import { agentRuns, demos, prospects, type Demo } from "@/db/schema";
 import { site } from "@/config/site";
 import { canUseAi, DATA_RULE, generateJson } from "./agents/llm";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
-import { briefEmails, emailConfigured, sendEmail } from "./notify";
+import { alertOpen, OPEN_ALERT_GAP } from "./open-alerts";
 import { OutreachError } from "./outreach";
-
-const HOUR = 60 * 60 * 1000;
 
 export const AuditItem = z.object({
   title: z.string().trim().min(1).max(120),
@@ -104,29 +102,13 @@ export async function recordDemoView(db: DB, slug: string, opts: { viewerIsStaff
     .set({ views: sql`${demos.views} + 1`, firstViewedAt: before.firstViewedAt ?? now, lastViewedAt: now })
     .where(eq(demos.id, before.id))
     .returning();
-  const alert = !before.lastViewedAt || now.getTime() - before.lastViewedAt.getTime() > HOUR;
+  const alert = !before.lastViewedAt || now.getTime() - before.lastViewedAt.getTime() > OPEN_ALERT_GAP;
   if (!alert) return { counted: true, alerted: false };
 
   const [p] = await db.select().from(prospects).where(eq(prospects.id, demo.prospectId));
   if (!p) return { counted: true, alerted: false };
   const label = demo.views === 1 ? "Opened their demo for the first time" : `Opened their demo again (view ${demo.views})`;
-  await db.insert(touches).values({ prospectId: p.id, channel: "note", outcome: "noted", note: `${label}. Call now while it's fresh.`, loggedBy: "system", occurredAt: now });
-  if (!p.doNotContact && ["to_contact", "trying", "talking", "meeting"].includes(p.status)) {
-    await db.update(prospects).set({ nextFollowUpAt: now, updatedAt: now }).where(eq(prospects.id, p.id));
-  }
-  // The call-now alert is for the owner: the first brief address, not the whole list.
-  const [to] = await briefEmails(db);
-  if (to && emailConfigured()) {
-    try {
-      await sendEmail({
-        to,
-        subject: `${p.name} just opened their demo: call now`,
-        text: `${p.name}${p.contactName ? ` (${p.contactName})` : ""} ${label.toLowerCase()} at ${now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kolkata" })}.\n\n${p.phone ? `Call: ${p.phone}\n` : ""}Prospect: ${site.url}/hq/outreach/${p.id}\n\nPeople who call within 10 minutes of an open win far more often.`,
-      });
-    } catch (err) {
-      console.error("demo alert email failed", err);
-    }
-  }
+  await alertOpen(db, p, label, now, "demo");
   return { counted: true, alerted: true };
 }
 

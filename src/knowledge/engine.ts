@@ -36,17 +36,26 @@ export const SEGMENTS = [
     offer: "The WhatsApp AI salesperson, set up and run by amfire on the Operate plan.",
     decisionRoles: ["Owner", "Manager"],
   },
+  {
+    id: "manufacturer",
+    label: "Manufacturers",
+    noun: "manufacturers",
+    brand: "amfire",
+    offer:
+      "A short written plant study: how one order moves from enquiry to production plan, dispatch and payment, and where it waits. It leads to the paid Operations Review.",
+    decisionRoles: ["Managing director", "Next-generation / whole-time director", "Plant head", "Finance head"],
+  },
 ] as const;
 export type SegmentId = (typeof SEGMENTS)[number]["id"];
 export const SEGMENT_IDS = SEGMENTS.map((s) => s.id) as [SegmentId, ...SegmentId[]];
 
 /** A prospect's kind decides its segment; people the owner knows are sold the business offer. */
 export function segmentOf(kind: string): SegmentId {
-  return kind === "school" || kind === "ca_firm" ? kind : "business";
+  return kind === "school" || kind === "ca_firm" || kind === "manufacturer" ? kind : "business";
 }
 
 export function segmentFor(id: string) {
-  return SEGMENTS.find((s) => s.id === id) ?? SEGMENTS[2];
+  return SEGMENTS.find((s) => s.id === id) ?? SEGMENTS.find((s) => s.id === "business")!;
 }
 
 // --- Signal types ---------------------------------------------------------------
@@ -245,6 +254,64 @@ export const SIGNAL_TYPES: readonly SignalType[] = [
     angle: "They pay for IndiaMART or Justdial leads, and a slow reply hands them to a competitor.",
     where: "IndiaMART response rate, paid listing badges, ads running.",
   },
+
+  // Manufacturers (the plant study). MCA records give most of these with a date.
+  {
+    id: "next_gen_director",
+    label: "Next-generation director joined",
+    segments: ["manufacturer"],
+    prior: 0.38,
+    halfLifeDays: 365,
+    angle: "A younger family director usually wants to change how the plant runs and needs a visible first win.",
+    where:
+      "The MCA director list on the company's Tofler or Zaubacorp page: a director who shares the founder's family name, appointed in the last few years. Date = appointment date. Confirm on LinkedIn.",
+  },
+  {
+    id: "hiring_ops_roles",
+    label: "Hiring for planning, dispatch, stores or reporting",
+    segments: ["manufacturer"],
+    prior: 0.4,
+    halfLifeDays: 30,
+    angle: "They're adding people to plan, chase and report work, the clearest sign the current way of running orders is straining.",
+    where: "Naukri, LinkedIn Jobs, Indeed and the company's careers page: PPC, production planning, dispatch, stores, MIS or ERP roles. Use the posting date.",
+  },
+  {
+    id: "plant_expansion",
+    label: "New plant, plot or line",
+    segments: ["manufacturer"],
+    prior: 0.35,
+    halfLifeDays: 180,
+    angle: "A new plant or line multiplies the coordination work long before the way of working catches up.",
+    where: "The company's website news, LinkedIn posts, MIDC plot allotments and local business press. Date = the announcement.",
+  },
+  {
+    id: "new_bank_charge",
+    label: "New bank loan or limit registered",
+    segments: ["manufacturer"],
+    prior: 0.3,
+    halfLifeDays: 90,
+    angle: "They have just borrowed to grow, so more orders will flow through the same team.",
+    where: "The Charges section of the company's Tofler or Zaubacorp page (MCA): bank, amount and the date the charge was created.",
+  },
+  {
+    id: "oem_or_certification",
+    label: "New OEM programme or quality certificate",
+    segments: ["manufacturer"],
+    prior: 0.3,
+    halfLifeDays: 180,
+    angle: "A new OEM programme or IATF/ISO audit raises the bar on delivery dates and traceability.",
+    where: "The website's certificates or customers page (with the certificate date), LinkedIn posts, press. Name the OEM or standard.",
+  },
+  {
+    id: "growing_owner_run_plant",
+    label: "Growing Indian-owned plant (MCA filing)",
+    segments: ["manufacturer"],
+    prior: 0.15,
+    halfLifeDays: null,
+    angle: "At this size most of the plant's promises still live in the managing director's head.",
+    where:
+      "The evergreen reason: every Indian-owned manufacturer with filed revenue of ₹10 Cr+. Source: the MCA revenue band on the company's Tofler page. Date = the end of the financial year filed (FY2024-25 → 2025-03-31).",
+  },
   {
     id: "legacy_note",
     label: "Reason written on the desk",
@@ -302,6 +369,20 @@ export const FIT_RULES: Record<SegmentId, FitRule[]> = {
     { fact: "enquiriesPerDay", label: "Enquiries a day", weight: 0.4, unknown: 0.5, hint: "WhatsApp and phone enquiries", score: (v) => band(v, [[20, 1], [8, 0.8], [3, 0.5]], 0.25) },
     { fact: "googleReviews", label: "Google reviews", weight: 0.2, unknown: 0.5, hint: "count of reviews", score: (v) => band(v, [[200, 1], [50, 0.8], [10, 0.5]], 0.3) },
   ],
+  // ₹10 Cr+ filed revenue, no upper cap: bigger plants rank higher (decided 8 Nov 2026).
+  manufacturer: [
+    { fact: "revenueLowCr", label: "Revenue (₹ Cr, low end of MCA band)", weight: 0.45, unknown: 0.4, hint: "e.g. 50 for a ₹50–75 Cr band", score: (v) => band(v, [[100, 1], [50, 0.9], [25, 0.8], [10, 0.65]], 0.1) },
+    { fact: "employees", label: "Employees", weight: 0.2, unknown: 0.5, hint: "staff across plants and office", score: (v) => band(v, [[100, 1], [50, 0.9], [20, 0.6]], 0.3) },
+    {
+      fact: "ownership",
+      label: "Ownership",
+      weight: 0.25,
+      unknown: 0.6,
+      hint: "indian_family, indian_professional, listed or foreign_subsidiary",
+      score: (v) => ({ indian_family: 1, indian_professional: 0.8, listed: 0.5, foreign_subsidiary: 0.1 })[String(v).toLowerCase()] ?? 0.6,
+    },
+    { fact: "plants", label: "Plants", weight: 0.1, unknown: 0.6, hint: "number of plants", score: (v) => band(v, [[2, 1], [1, 0.7]], 0.6) },
+  ],
 };
 
 // --- Timing ---------------------------------------------------------------------
@@ -324,6 +405,7 @@ export const TIMING: Record<SegmentId, Window[]> = {
     { from: "03-15", to: "03-31", factor: 0.6, label: "Year end" },
   ],
   business: [],
+  manufacturer: [{ from: "03-10", to: "03-31", factor: 0.6, label: "Year-end dispatch and closing rush" }],
 };
 
 export const BLACKOUTS: { from: string; to: string; factor: number; label: string }[] = [{ from: "2026-11-06", to: "2026-11-12", factor: 0.5, label: "Diwali week" }];
@@ -434,6 +516,91 @@ export const PLAYS: Play[] = [
       { day: 12, channel: "whatsapp", goal: "A polite close", variants: [{ id: "close", text: "Namaste {contact}, I won't message again. If you want {org}'s WhatsApp answering at night, I'm one message away. {owner}" }] },
     ],
   },
+  {
+    // First touch never says "AI" or "automation": one idea, one ask, no price.
+    id: "plant_study",
+    segment: "manufacturer",
+    name: "Plant study",
+    asset: "A one-page plant study outline for the company, printed and left at the plant gate, with a tracked link",
+    steps: [
+      {
+        day: 0,
+        channel: "call",
+        goal: "Call the plant's number: get the MD's office or the plant head, and ask how to get the note to the MD",
+        variants: [
+          {
+            id: "switchboard",
+            text: "Namaste, this is {owner} from {brand}, Pune. I've prepared a short note for {contact} about a plant study for {org}. Could you put me through to their office, or tell me the best way to get it to them: email, or a printed copy at the plant?",
+          },
+        ],
+      },
+      {
+        day: 0,
+        channel: "email",
+        goal: "Email the company inbox, addressed to the MD by name",
+        variants: [
+          {
+            id: "note",
+            text: "Dear {contact},\n\nI run {brand}, a Pune company that studies how work moves through growing plants: from an enquiry, to the production plan, to dispatch and payment.\n\nI'd like to prepare a short written study for {org}: where orders wait between teams, and what that costs in days. It takes one hour of your plant head's time, and the study is yours to keep, whatever you decide.\n\nWould 20 minutes next week work, to see if it's worth doing?\n\nWarm regards,\n{owner}\n{brand}, Pune",
+          },
+          {
+            id: "question",
+            text: "Dear {contact},\n\nOne question I ask every plant MD in Pune: if you were away for two weeks, what would slow down first: quotes, the production plan, dispatch or collections?\n\nAt {org}'s size, the answer usually shows where the next stage of growth is stuck. We prepare a short written plant study that maps it, using one hour of your team's time, and it's yours to keep.\n\nCould I come by for 20 minutes next week?\n\n{owner}\n{brand}, Pune",
+          },
+        ],
+      },
+      {
+        day: 2,
+        channel: "visit",
+        goal: "Leave the printed note at the gate, in an envelope addressed to the MD by name",
+        variants: [
+          {
+            id: "drop",
+            text: "Envelope addressed to {contact}: the one-page plant study outline, a handwritten line with your number, and the tracked link {asset}. Ask reception for the name and number of the MD's assistant or the plant head. Why them: {reason}",
+          },
+        ],
+      },
+      {
+        day: 3,
+        channel: "linkedin",
+        goal: "Connect with the MD or the next-generation director",
+        variants: [{ id: "connect", text: "Namaste {contact}, I left a short note for {org} at the plant this week, about a plant study. Would be glad to connect." }],
+      },
+      {
+        day: 5,
+        channel: "call",
+        goal: "Check the note reached them and ask for 20 minutes at the plant",
+        variants: [
+          {
+            id: "followup",
+            text: "Namaste {contact}, {owner} from {brand}. I left a note at {org} about a short plant study. Did it reach you? Could I take 20 minutes at the plant next week, Tuesday or Thursday, to see if it's worth doing?",
+          },
+        ],
+      },
+      {
+        day: 9,
+        channel: "visit",
+        goal: "The 20-minute meeting: ask what breaks first, map one order, agree the study",
+        variants: [
+          {
+            id: "meeting",
+            text: "Bring the printed outline and one example study. Ask: \"If you were away for two weeks, what would slow down first?\" Write down their words, sketch one order from enquiry to payment on paper, and agree a date for the study. No price at this meeting.",
+          },
+        ],
+      },
+      {
+        day: 14,
+        channel: "email",
+        goal: "A polite close that keeps the door open",
+        variants: [
+          {
+            id: "close",
+            text: "Dear {contact},\n\nI won't follow up again after this. If keeping delivery dates, or getting paid on time, becomes the thing to fix at {org}, I'm one message away.\n\nWith best wishes,\n{owner}\n{brand}",
+          },
+        ],
+      },
+    ],
+  },
 ];
 
 export function playFor(id: string | null | undefined) {
@@ -510,17 +677,54 @@ export const AREA_CENTRES: Record<string, [number, number]> = {
   bhosari: [18.628, 73.847],
   moshi: [18.67, 73.85],
   chakan: [18.76, 73.86],
+  // Industrial belts and villages around them (approximate), for plant visit routes.
+  "pimpri midc": [18.632, 73.81],
+  kuruli: [18.735, 73.85],
+  nighoje: [18.716, 73.81],
+  ambethan: [18.757, 73.83],
+  mahalunge: [18.745, 73.82],
+  kharabwadi: [18.77, 73.87],
+  nanekarwadi: [18.75, 73.865],
+  bhamboli: [18.78, 73.8],
+  talegaon: [18.715, 73.7],
+  ranjangaon: [18.765, 74.255],
+  shirur: [18.826, 74.373],
+  "saswad road": [18.45, 73.96],
   vishrantwadi: [18.573, 73.878],
   dhanori: [18.59, 73.9],
   lohegaon: [18.599, 73.925],
 };
 
-/** The centre of a locality named anywhere in `area` ("Baner (106 K Square…)" → Baner). */
-export function areaCentre(area: string | null | undefined): [number, number] | null {
+/**
+ * Pune's industrial belts, for plant-visit days: one belt is one day out.
+ * `start` is where the day's route begins (the belt's main town).
+ */
+export const BELTS = [
+  { id: "chakan", label: "Chakan", start: "chakan", places: ["chakan", "kuruli", "nighoje", "ambethan", "mahalunge", "kharabwadi", "nanekarwadi", "bhamboli"] },
+  { id: "bhosari", label: "Bhosari & Pimpri-Chinchwad", start: "bhosari", places: ["bhosari", "moshi", "pimpri midc", "pimpri", "chinchwad", "akurdi", "nigdi"] },
+  { id: "talegaon", label: "Talegaon", start: "talegaon", places: ["talegaon"] },
+  { id: "ranjangaon", label: "Ranjangaon & Shirur", start: "ranjangaon", places: ["ranjangaon", "shirur"] },
+] as const;
+export type BeltId = (typeof BELTS)[number]["id"];
+
+/** The locality named in `area` that we know the centre of: the longest name wins ("Chakan (Nighoje)" → nighoje). */
+function knownPlace(area: string | null | undefined) {
   if (!area) return null;
   const a = area.toLowerCase();
   // Longest names first, so "pimple saudagar" wins over "pimpri"-like prefixes.
-  const names = Object.keys(AREA_CENTRES).sort((x, y) => y.length - x.length);
-  const hit = names.find((n) => a.includes(n));
+  return Object.keys(AREA_CENTRES)
+    .sort((x, y) => y.length - x.length)
+    .find((n) => a.includes(n)) ?? null;
+}
+
+/** The industrial belt a plant is in, from its area ("Chakan (Kuruli)" → chakan), or null. */
+export function beltOf(area: string | null | undefined): BeltId | null {
+  const place = knownPlace(area);
+  return BELTS.find((b) => (b.places as readonly string[]).includes(place ?? ""))?.id ?? null;
+}
+
+/** The centre of a locality named anywhere in `area` ("Baner (106 K Square…)" → Baner). */
+export function areaCentre(area: string | null | undefined): [number, number] | null {
+  const hit = knownPlace(area);
   return hit ? AREA_CENTRES[hit] : null;
 }

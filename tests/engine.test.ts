@@ -8,11 +8,11 @@ import { before, describe, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { openPglite, type DB } from "@/db";
 import { buyingSignals, engineRuns, engineStats, prospects, touches, users } from "@/db/schema";
-import { playFor } from "@/knowledge/engine";
+import { beltOf, playFor } from "@/knowledge/engine";
 import { loadActor, type Actor } from "@/server/access";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
 import { handleMcpMessage } from "@/server/connector";
-import { findTargets, getEngineInsights, getEngineQueue, getProspectEngine, recordFeedback, runLearning, startPlay, upsertTargets } from "@/server/engine";
+import { findTargets, getEngineInsights, getEngineQueue, getProspectEngine, getVisitRoute, recordFeedback, runLearning, startPlay, upsertTargets } from "@/server/engine";
 import {
   advancePlay,
   combine,
@@ -20,6 +20,7 @@ import {
   fitScore,
   haversineKm,
   learn,
+  nearestNeighbourRoute,
   parseMapsCoords,
   pickVariant,
   posteriorRate,
@@ -27,7 +28,7 @@ import {
   stepDue,
   timingScore,
 } from "@/server/engine-core";
-import { logTouch } from "@/server/outreach";
+import { logTouch, updateProspect } from "@/server/outreach";
 
 const DAY = 24 * 60 * 60 * 1000;
 const now = new Date("2026-10-29T06:00:00Z"); // 11:30 in Pune
@@ -325,6 +326,93 @@ describe("engine, end to end", () => {
     const run = await call("run_learning", {});
     assert.ok(run.prospectsScored >= 3);
     const insights = await call("get_engine_insights", {});
-    assert.equal(insights.segments.length, 3);
+    assert.equal(insights.segments.length, 4);
+  });
+});
+
+describe("manufacturers", () => {
+  let db: DB;
+  let owner: Actor;
+  const MFG = {
+    prospect: { name: "Example Forgings Pvt Ltd", kind: "manufacturer" as const, area: "Bhosari", cin: "u28939pn2007ptc130375", website: "https://forgings.example.in" },
+    facts: { revenueLowCr: 150, revenueBand: "₹150–200 Cr", ownership: "indian_family" },
+    contacts: [{ name: "Ravi Example", title: "Managing Director", role: "decision_maker" as const, sourceUrl: "https://www.tofler.in/example/company/U28939PN2007PTC130375" }],
+    signals: [{ type: "growing_owner_run_plant", title: "Filed revenue ₹150–200 Cr in FY2024-25, run by its founding family", sourceUrl: "https://www.tofler.in/example/company/U28939PN2007PTC130375", observedAt: "2025-03-31" }],
+  };
+
+  before(async () => {
+    db = await openPglite();
+    await bootstrap(db);
+    const [u] = await db.select().from(users).where(eq(users.email, DEFAULT_OWNER_EMAIL));
+    owner = await loadActor(db, u);
+  });
+
+  test("bigger plants fit better, and a foreign subsidiary barely fits", () => {
+    const big = fitScore("manufacturer", { revenueLowCr: 150, ownership: "indian_family" }).fit;
+    const small = fitScore("manufacturer", { revenueLowCr: 10, ownership: "indian_family" }).fit;
+    const foreign = fitScore("manufacturer", { revenueLowCr: 150, ownership: "foreign_subsidiary" }).fit;
+    assert.ok(big > small && small > foreign, `${big} ${small} ${foreign}`);
+  });
+
+  test("a manufacturer is matched by its CIN, whatever its name or area", async () => {
+    const [first] = await upsertTargets(db, owner, [MFG], { now });
+    assert.equal(first.created, true);
+    const [p] = await db.select().from(prospects).where(eq(prospects.id, first.id));
+    assert.equal(p.cin, "U28939PN2007PTC130375"); // stored upper-case
+    const [again] = await upsertTargets(db, owner, [{ prospect: { name: "Example Forgings", kind: "manufacturer", area: "Chakan", cin: "U28939PN2007PTC130375" } }], { now });
+    assert.equal(again.created, false);
+    assert.equal(again.id, first.id);
+    await assert.rejects(upsertTargets(db, owner, [{ prospect: { name: "Bad CIN Ltd", kind: "manufacturer", cin: "12345" } }], { now }), /CIN looks like/);
+  });
+
+  test("the plant study play starts with a call to the plant and drafts the email to the MD", async () => {
+    const [p] = await db.select().from(prospects).where(eq(prospects.cin, "U28939PN2007PTC130375"));
+    await startPlay(db, owner, p.id, undefined, now);
+    const queue = await getEngineQueue(db, owner, { now });
+    const item = queue.due.find((q) => q.prospect.id === p.id);
+    assert.equal(item?.next?.play, "plant_study");
+    assert.equal(item?.next?.channel, "call");
+    assert.match(item!.next!.message, /Ravi Example/);
+    const email = playFor("plant_study")!.steps[1];
+    for (const v of email.variants) assert.doesNotMatch(v.text, /AI|automation|₹|price/i); // never in a first touch
+  });
+
+  test("plants fall into their industrial belt, the village beating the town", () => {
+    assert.equal(beltOf("Chakan (Nighoje)"), "chakan");
+    assert.equal(beltOf("Bhosari / Kuruli"), "bhosari");
+    assert.equal(beltOf("Ranjangaon"), "ranjangaon");
+    assert.equal(beltOf("Saswad Road (Haveli)"), null);
+  });
+
+  test("a visit day drives to the nearest plant next", () => {
+    const start: [number, number] = [18.76, 73.86];
+    const order = nearestNeighbourRoute(start, [
+      { id: "far", at: [18.79, 73.8] as [number, number] },
+      { id: "near", at: [18.761, 73.861] as [number, number] },
+      { id: "mid", at: [18.775, 73.83] as [number, number] },
+    ]);
+    assert.deepEqual(order.map((s) => s.id), ["near", "mid", "far"]);
+    assert.equal(order[0].legKm, 0.2); // straight-line km, to one decimal
+  });
+
+  test("the visit route lists the belt's plants, pinned by their Maps link", async () => {
+    const [p] = await db.select().from(prospects).where(eq(prospects.cin, "U28939PN2007PTC130375"));
+    await updateProspect(db, owner, p.id, { mapsUrl: "https://www.google.com/maps/place/Example+Forgings/@18.6301,73.8452,17z" });
+    const route = await getVisitRoute(db, owner, { belt: "bhosari", now });
+    assert.equal(route.counts.bhosari, 1);
+    assert.equal(route.stops[0].prospect.id, p.id);
+    assert.equal(route.stops[0].approximate, false);
+    assert.deepEqual(route.stops[0].at, [18.6301, 73.8452]);
+    assert.equal((await getVisitRoute(db, owner, { belt: "chakan", now })).stops.length, 0);
+  });
+
+  test("learning files manufacturers under their own segment", () => {
+    const rows = learn({
+      prospects: [{ id: "m1", kind: "manufacturer", area: "Chakan", status: "talking", fit: 0.9, won: false }],
+      signals: [],
+      touches: [{ prospectId: "m1", channel: "call", outcome: "interested", occurredAt: daysAgo(1), signalId: null, play: "plant_study", playStep: 0, variant: "switchboard" }],
+      feedback: [],
+    });
+    assert.ok(rows.every((r) => r.segment === "manufacturer"));
   });
 });

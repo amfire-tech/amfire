@@ -29,6 +29,7 @@ import {
   TOUCH_CHANNELS,
 } from "@/knowledge/outreach";
 import { AccessDenied, loadActor, type Actor } from "./access";
+import { trackedAssetUrl } from "./asset-links";
 import { AuditItem, upsertDemo } from "./demos";
 import { EmailContentSchema, EmailDraftInput, saveEmailDraft } from "./outreach-emails";
 import {
@@ -94,7 +95,8 @@ const ProspectFields = z.object({
   city: z.string().optional().describe("Defaults to Pune"),
   area: z.string().optional().describe("Locality, e.g. Baner, Bhosari MIDC, Market Yard"),
   industry: z.string().optional().describe(`Prefer one of: ${BUSINESS_TYPES.join("; ")}`),
-  kind: z.enum(PROSPECT_KIND_IDS).optional().describe("business, school, ca_firm or network (someone the owner knows)"),
+  cin: z.string().optional().describe("A company's MCA CIN, e.g. U28939PN2007PTC130375 (from its Tofler or Zaubacorp page). Matches the company first."),
+  kind: z.enum(PROSPECT_KIND_IDS).optional().describe("business, school, ca_firm, manufacturer or network (someone the owner knows)"),
   tier: z.enum(["A", "B", "C"]).optional().describe("A = strongest signal, gets a personal demo; B = audit page; C = researched call"),
   score: z.number().int().min(0).max(100).optional().describe("Fit and buying-signal strength"),
   signal: z.string().optional().describe("Why now: the job ad, review, ranking gap or enquiry problem, with specifics"),
@@ -130,6 +132,9 @@ const compact = (p: Awaited<ReturnType<typeof listProspects>>["prospects"][numbe
   doNotContact: p.doNotContact,
   nextFollowUpAt: p.nextFollowUpAt,
   lastTouchAt: p.lastTouchAt,
+  // Opens of their tracked report link (src/server/asset-links.ts).
+  linkOpens: p.linkOpens,
+  linkLastOpenedAt: p.linkLastOpenedAt,
   signal: p.signal,
   leadId: p.leadId,
 });
@@ -174,13 +179,13 @@ export const TOOLS: Tool[] = [
   ),
   tool(
     "get_prospect",
-    "One prospect with its full research and every touch, newest first, including call transcripts and analysis, plus the engine's view: people, dated signals, feedback and the next play step drafted.",
+    "One prospect with its full research and every touch, newest first, including call transcripts and analysis, plus the engine's view: people, dated signals, feedback and the next play step drafted. trackedLink is the link to send for their report (opens alert the owner); linkOpens and linkLastOpenedAt say whether they've read it.",
     z.object({ id: z.uuid() }),
     async (db, actor, { id }) => {
       const found = await getProspect(db, actor, id);
       if (!found) throw new OutreachError("Prospect not found.");
       const engine = await getProspectEngine(db, actor, id);
-      return { ...found, engine: engine && { contacts: engine.contacts, signals: engine.signals, feedback: engine.feedback, next: engine.next } };
+      return { ...found, trackedLink: trackedAssetUrl(found.prospect), engine: engine && { contacts: engine.contacts, signals: engine.signals, feedback: engine.feedback, next: engine.next } };
     },
   ),
   tool(
@@ -285,7 +290,7 @@ export const TOOLS: Tool[] = [
     "Write (or rewrite) the prospect's outreach email in the amfire Toran theme as a draft. It is never sent from here: the owner edits it on the prospect's Email page in HQ, sends a test to their own inbox, then sends it. Use only facts from public sources. Never put a price in it. Write the brand as \"amfire\".",
     EmailDraftInput.extend({
       content: EmailContentSchema.describe(
-        "headline: new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the one reply button, which opens WhatsApp to amfire, e.g. 'Yes, book 15 minutes'. replyBody: the WhatsApp message typed in for them when they tap it. ps: one line under the signature. Keep cold emails under ~120 words: one idea, one click, one ask.",
+        "headline: new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link or their report link (assetUrl; it's swapped for the tracked link when sent) (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the one reply button, which opens WhatsApp to amfire, e.g. 'Yes, book 15 minutes'. replyBody: the WhatsApp message typed in for them when they tap it. ps: one line under the signature. Keep cold emails under ~120 words: one idea, one click, one ask.",
       ),
     }),
     async (db, actor, args) => {
@@ -305,7 +310,7 @@ export const TOOLS: Tool[] = [
   // --- Signal engine ---
   tool(
     "get_engine_playbook",
-    "The signal engine's rules: segments (school, ca_firm, business) with the fit facts to record, every signal type with its prior, learned weights, half-life, where to find it and how to date it, the plays (touch sequences) and contact roles. Read before researching schools or CA firms.",
+    "The signal engine's rules: segments (school, ca_firm, business, manufacturer) with the fit facts to record, every signal type with its prior, learned weights, half-life, where to find it and how to date it, the plays (touch sequences) and contact roles. Read before researching schools, CA firms or manufacturers.",
     z.object({}),
     async (db) => enginePlaybook(await loadStats(db)),
   ),
@@ -317,11 +322,11 @@ export const TOOLS: Tool[] = [
         .array(
           z.object({
             prospectId: z.uuid().optional(),
-            prospect: ProspectFields.optional().describe("For a new or matched prospect. Use kind school or ca_firm for those segments."),
+            prospect: ProspectFields.optional().describe("For a new or matched prospect. Use kind school, ca_firm or manufacturer for those segments; give a manufacturer its cin."),
             facts: z
               .record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.null()]))
               .optional()
-              .describe("Fit facts from get_engine_playbook, e.g. { board: 'CBSE', students: 900, annualFee: 85000 } or { partners: 4, attestation: true }. null clears one."),
+              .describe("Fit facts from get_engine_playbook, e.g. { board: 'CBSE', students: 900, annualFee: 85000 } or { partners: 4, attestation: true } or { revenueLowCr: 50, revenueBand: '₹50–75 Cr', revenueYear: 'FY2024-25', ownership: 'indian_family' }. null clears one."),
             pincode: z.string().optional(),
             lat: z.number().optional(),
             lng: z.number().optional(),

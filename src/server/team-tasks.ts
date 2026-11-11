@@ -19,7 +19,7 @@ import { and, asc, desc, eq, inArray, isNull, lt, lte, or, sql } from "drizzle-o
 import * as z from "zod";
 import type { DB } from "@/db";
 import { connectorTokens, huntRequests, prospects, type HuntRequest } from "@/db/schema";
-import { SEGMENT_IDS } from "@/knowledge/engine";
+import { SEGMENT_IDS, beltOf, type BeltId } from "@/knowledge/engine";
 import { copyProblems, TASK_RESULTS, type MessagePackResult, type ResearchBatchResult } from "@/knowledge/team";
 import { assertStaff, type Actor } from "./access";
 import { audit } from "./audit";
@@ -537,6 +537,36 @@ export async function listTeamRunners(db: DB, actor: Actor | null, now = new Dat
   }));
 }
 
+/** Cancels a task that hasn't started. A running one finishes or times out by itself. */
+export async function cancelTask(db: DB, actor: Actor | null, taskId: string, now = new Date()) {
+  assertStaff(actor);
+  if (actor.agent) throw new TaskError("Only a person can cancel a task.");
+  const [row] = await db
+    .update(huntRequests)
+    .set({ status: "cancelled", finishedAt: now })
+    .where(and(eq(huntRequests.id, taskId), eq(huntRequests.status, "queued"), inArray(huntRequests.type, TASK_TYPES)))
+    .returning();
+  if (!row) throw new TaskError("Only a task that hasn't started can be cancelled.");
+  await audit(db, { actorId: actor.userId, action: "task.cancelled", subjectType: "task", subjectId: row.id });
+  return row;
+}
+
+/**
+ * Manufacturers to choose from for a pack: active, not do-not-contact,
+ * optionally in one belt, best first. `packed` = already has an opener.
+ */
+export async function packCandidates(db: DB, actor: Actor | null, opts: { belt?: BeltId } = {}) {
+  assertStaff(actor);
+  const rows = await db
+    .select({ id: prospects.id, name: prospects.name, area: prospects.area, score: prospects.score, tier: prospects.tier, opener: prospects.opener, email: prospects.email, status: prospects.status })
+    .from(prospects)
+    .where(and(eq(prospects.kind, "manufacturer"), eq(prospects.doNotContact, false), inArray(prospects.status, ["to_contact", "trying", "talking", "meeting"])))
+    .orderBy(desc(prospects.score));
+  return rows
+    .map((r) => ({ ...r, belt: beltOf(r.area), packed: !!r.opener }))
+    .filter((r) => !opts.belt || r.belt === opts.belt);
+}
+
 /** Recent team tasks, newest first, for HQ. */
 export async function listTasks(db: DB, actor: Actor | null, opts: { limit?: number } = {}) {
   assertStaff(actor);
@@ -546,4 +576,21 @@ export async function listTasks(db: DB, actor: Actor | null, opts: { limit?: num
     .where(inArray(huntRequests.type, TASK_TYPES))
     .orderBy(desc(huntRequests.createdAt))
     .limit(Math.min(opts.limit ?? 20, 100));
+}
+
+/** Everything the Revenue team page shows: recent tasks (with account names), the runners, and what's waiting. */
+export async function teamBoard(db: DB, actor: Actor | null, now = new Date()) {
+  assertStaff(actor);
+  const tasks = await listTasks(db, actor, { limit: 25 });
+  const ids = [...new Set(tasks.flatMap((t) => (t.type === "message_pack" ? ((t.payload.prospectIds as string[] | undefined) ?? []) : [])))];
+  const names = new Map(ids.length ? (await db.select({ id: prospects.id, name: prospects.name }).from(prospects).where(inArray(prospects.id, ids))).map((p) => [p.id, p.name]) : []);
+  const runners = await listTeamRunners(db, actor, now);
+  return {
+    tasks: tasks.map((t) => ({ ...t, accounts: ((t.payload.prospectIds as string[] | undefined) ?? []).map((id) => ({ id, name: names.get(id) ?? "Unknown account" })) })),
+    runners,
+    online: runners.some((r) => r.online),
+    lastSeen: runners.map((r) => r.heartbeatAt).find(Boolean) ?? null,
+    queued: tasks.filter((t) => t.status === "queued").length,
+    running: tasks.filter((t) => t.status === "running").length,
+  };
 }

@@ -23,9 +23,12 @@ import {
   createTask,
   failTask,
   listTeamRunners,
+  cancelTask,
+  packCandidates,
   renewLease,
   reportProgress,
   ResultError,
+  teamBoard,
   runnerHeartbeat,
   TaskError,
 } from "@/server/team-tasks";
@@ -214,5 +217,32 @@ describe("applying results", () => {
     assert.equal(p.kind, "manufacturer");
     assert.equal(p.source, "claude");
     assert.match(p.reason ?? "", /SBI charge/);
+  });
+});
+
+describe("the Revenue team page", () => {
+  test("only a waiting task can be cancelled, and never by an agent", async () => {
+    const { task } = await createTask(db, owner, pack("cancel-1"));
+    await assert.rejects(cancelTask(db, runner, task.id), TaskError);
+    const cancelled = await cancelTask(db, owner, task.id);
+    assert.equal(cancelled.status, "cancelled");
+    await assert.rejects(cancelTask(db, owner, task.id), TaskError); // already done with
+    assert.equal(await claimTask(db, runner, {}, at(400)), null);
+  });
+
+  test("the pack list shows active manufacturers by belt, marking those already packed", async () => {
+    const chakan = await packCandidates(db, owner, { belt: "chakan" });
+    const mine = chakan.find((c) => c.id === prospectId)!;
+    assert.equal(mine.belt, "chakan");
+    assert.equal(mine.packed, true); // an earlier test saved its opener
+    assert.equal((await packCandidates(db, owner, { belt: "bhosari" })).some((c) => c.id === prospectId), false);
+  });
+
+  test("the board names a pack's accounts and shows the runner's status", async () => {
+    const board = await teamBoard(db, owner, at(400));
+    const packTask = board.tasks.find((t) => t.type === "message_pack")!;
+    assert.equal(packTask.accounts[0].name, "Example Forgings Pvt Ltd");
+    assert.equal(board.runners.length, 1);
+    assert.equal(board.online, false); // last heartbeat was at t0
   });
 });

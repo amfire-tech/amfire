@@ -50,6 +50,20 @@ export function Home() {
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <Panel title="Revenue this month" action={<span className="font-mono text-[12.5px] text-[#3ccf8e]">108% of pace</span>}>
           <RevenueChart days={REVENUE_DAYS} target={REVENUE_TARGET} />
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-white/[0.06] pt-4 sm:grid-cols-4">
+            {[
+              { k: "Average a day", v: "$115K", s: "12 working days" },
+              { k: "Needed a day to hit target", v: "$101K", s: "18 days left" },
+              { k: "Best day", v: "$139K", s: "Sun 8 Nov" },
+              { k: "Biggest customer", v: "Apex Motors", s: "$412K this month" },
+            ].map((x) => (
+              <div key={x.k} className="min-w-0">
+                <dt className="text-[11.5px] text-[#8b8b92]">{x.k}</dt>
+                <dd className="mt-0.5 truncate font-mono text-[14px]">{x.v}</dd>
+                <dd className="text-[11.5px] text-[#8b8b92]">{x.s}</dd>
+              </div>
+            ))}
+          </dl>
         </Panel>
         <ApprovalsMini />
       </div>
@@ -98,6 +112,7 @@ export function Home() {
         <LiveWork />
         <Panel title="Cash, next 8 weeks">
           <CashChart weeks={CASH_WEEKS} start={CASH_START} />
+          <CashWeek />
         </Panel>
       </div>
     </div>
@@ -113,10 +128,10 @@ function ApprovalsMini() {
         <p className="rounded-lg bg-[#3ccf8e]/[0.08] p-3 text-[13.5px] text-[#3ccf8e]">All decided. The agents have carried on.</p>
       ) : (
         <ul className="flex flex-col gap-2.5">
-          {open.slice(0, 3).map((a, i) => (
+          {open.slice(0, 2).map((a, i) => (
             <li key={a.id} className="rounded-lg border border-white/[0.07] bg-[#0e0e10] p-3">
               <p className="text-[13.5px] leading-snug font-medium">{a.title}</p>
-              <p className="mt-1 text-[12.5px] leading-snug text-[#8b8b92]">{a.ask}</p>
+              <p className="mt-1 line-clamp-2 text-[12.5px] leading-snug text-[#8b8b92]">{a.ask}</p>
               <div className="mt-2.5 flex gap-2">
                 <button type="button" onClick={() => approve(a.id)} className={`rounded-md bg-[#f2f1ec] px-3 py-1.5 text-[12.5px] font-medium text-[#0b0b0c] hover:bg-white ${i === 0 ? "od-pulse" : ""}`}>
                   Approve
@@ -127,9 +142,44 @@ function ApprovalsMini() {
               </div>
             </li>
           ))}
+          {open.length > 2 && (
+            <li>
+              <button type="button" onClick={() => go("approvals")} className="w-full rounded-lg border border-dashed border-white/[0.12] px-3 py-2.5 text-left text-[12.5px] text-[#b9b9b4] transition-colors hover:border-white/25 hover:text-[#ededea]">
+                {open.length - 2} more waiting · open Approvals →
+              </button>
+            </li>
+          )}
         </ul>
       )}
     </Panel>
+  );
+}
+
+const CASH_WEEK = [
+  { who: "Vega Systems", what: "2 invoices, reminder sent Tue", amount: "+$61K", when: "Wed", tone: "in" },
+  { who: "Norda Electric", what: "Promised by their accounts team", amount: "+$12K", when: "Fri", tone: "in" },
+  { who: "Kiran Motors", what: "Overdue, claim waiting for approval", amount: "+$84K", when: "At risk", tone: "risk" },
+  { who: "Payroll", what: "240 people, November", amount: "−$620K", when: "Mon", tone: "out" },
+  { who: "Ridge Alloys", what: "PO-7738, aluminium bar", amount: "−$7.8K", when: "Mon", tone: "out" },
+];
+
+function CashWeek() {
+  return (
+    <div className="mt-4 border-t border-white/[0.06] pt-3">
+      <p className={C.label}>Next 7 days</p>
+      <ul className="mt-2">
+        {CASH_WEEK.map((c) => (
+          <li key={c.who + c.amount} className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-3 border-b border-white/[0.05] py-2 last:border-b-0">
+            <span className="min-w-0">
+              <span className="block truncate text-[13px]">{c.who}</span>
+              <span className="block truncate text-[11.5px] text-[#8b8b92]">{c.what}</span>
+            </span>
+            <span className={`text-[11.5px] ${c.tone === "risk" ? "text-[#f5b54a]" : "text-[#8b8b92]"}`}>{c.when}</span>
+            <span className={`w-16 text-right font-mono text-[13px] tabular-nums ${c.tone === "out" ? "text-[#b9b9b4]" : c.tone === "risk" ? "text-[#f5b54a]" : "text-[#3ccf8e]"}`}>{c.amount}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -173,7 +223,7 @@ function LiveWork() {
   return (
     <Panel title="Live: what the agents are doing" action={<span className="text-[12px] text-[#8b8b92]">Click a line to see every step</span>} flush>
       <ul className="pb-1">
-        {feed.slice(0, 7).map((a, i) => (
+        {feed.slice(0, 8).map((a, i) => (
           <li key={a.id} className={i === 0 && tick > 0 ? "od-in" : ""}>
             <button type="button" onClick={() => openDrawer(traceDrawer(a, clock(base - i * 2)))} className="grid w-full grid-cols-[42px_minmax(0,1fr)_auto] items-start gap-3 border-t border-white/[0.05] px-4 py-2.5 text-left text-[13px] transition-colors first:border-t-0 hover:bg-white/[0.03]">
               <span className="pt-px font-mono text-[12px] text-[#8b8b92] tabular-nums">{clock(base - i * 2)}</span>

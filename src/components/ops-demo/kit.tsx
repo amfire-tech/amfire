@@ -345,7 +345,7 @@ export function CashChart({ weeks, start }: { weeks: { wk: string; in: number; o
 /** Cumulative revenue this month against the straight-line target. */
 export function RevenueChart({ days, target }: { days: number[]; target: number }) {
   const W = 640;
-  const H = 170;
+  const H = 230;
   const pad = { l: 40, r: 10, t: 10, b: 22 };
   const total = 30;
   const x = (d: number) => pad.l + (d / total) * (W - pad.l - pad.r);
@@ -356,7 +356,7 @@ export function RevenueChart({ days, target }: { days: number[]; target: number 
   const fy = y(Math.min(target * 1.1, rate * total));
   return (
     <div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto max-h-[230px] w-full" role="img" aria-label="Revenue this month against target">
+      <svg viewBox={`0 0 ${W} ${H}`} className="h-auto max-h-[290px] w-full" role="img" aria-label="Revenue this month against target">
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
           <g key={f}>
             <line x1={pad.l} x2={W - pad.r} y1={y(target * f)} y2={y(target * f)} stroke="rgba(255,255,255,0.06)" />

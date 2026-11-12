@@ -119,23 +119,28 @@ export function OpsDemo() {
         `}</style>
 
         {/* Title bar */}
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-white/[0.07] px-4 py-2.5 sm:px-5">
-          <div className="flex min-w-0 items-center gap-3">
+        {/* One line at every width: the company on the left (truncating), the owner always far right.
+            Less important details drop out as the frame narrows instead of wrapping. */}
+        <div className="flex shrink-0 items-center gap-4 border-b border-white/[0.07] px-4 py-2.5 sm:px-5">
+          <div className="flex min-w-0 flex-1 items-center gap-3">
             <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-md bg-[#f2f1ec] text-[12px] font-bold text-[#0b0b0c]">HP</span>
             <div className="min-w-0 leading-tight">
-              <p className="truncate font-medium">{COMPANY.name}</p>
+              <p className="flex items-center gap-2 truncate font-medium">
+                {COMPANY.name}
+                <span className="rounded border border-white/10 px-1.5 py-px text-[10.5px] font-normal text-[#8b8b92] max-sm:hidden">Demo company</span>
+              </p>
               <p className="truncate text-[12px] text-[#8b8b92]">
-                {COMPANY.line} · {COMPANY.people} · 2 plants in {city} · {COMPANY.customers}
+                <span className="max-2xl:hidden">{COMPANY.line} · </span>
+                {COMPANY.people} · 2 plants in {city} · {COMPANY.customers}
               </p>
             </div>
-            <span className="rounded border border-white/10 px-1.5 py-0.5 text-[11px] text-[#8b8b92] max-xl:hidden">Demo company</span>
           </div>
-          <div className="flex items-center gap-3 text-[12px] text-[#8b8b92]">
-            <span className="inline-flex items-center gap-2 text-[#3ccf8e] max-xl:hidden">
+          <div className="ml-auto flex shrink-0 items-center gap-3 text-[12px] text-[#8b8b92]">
+            <span className="inline-flex items-center gap-2 text-[#3ccf8e] max-2xl:hidden">
               <span aria-hidden className="od-ping size-[7px] rounded-full bg-[#3ccf8e]" />
               11 agents running
             </span>
-            <span className="inline-flex items-center gap-1.5 max-lg:hidden">
+            <span className="inline-flex items-center gap-1.5 max-xl:hidden">
               <svg aria-hidden viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M8 14s4.5-4.2 4.5-7.5a4.5 4.5 0 0 0-9 0C3.5 9.8 8 14 8 14Z" />
                 <circle cx="8" cy="6.5" r="1.6" />
@@ -146,15 +151,15 @@ export function OpsDemo() {
             <button
               type="button"
               onClick={() => setFull((f) => !f)}
-              className="rounded-md px-2.5 py-1.5 text-[12px] font-medium text-[#ededea] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] hover:bg-white/5"
+              className="rounded-md px-2.5 py-1.5 text-[12px] font-medium whitespace-nowrap text-[#ededea] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] hover:bg-white/5"
             >
               {full ? "Close full screen" : "Full screen"}
             </button>
-            <span className="flex items-center gap-2 border-l border-white/[0.08] pl-3" title={`Signed in as ${OWNER.name}`}>
+            <span className="flex shrink-0 items-center gap-2 border-l border-white/[0.08] pl-3" title={`Signed in as ${OWNER.name}`}>
               <span aria-hidden className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-[#e8482a] to-[#f5b54a] text-[11px] font-semibold text-[#0b0b0c]">
                 {OWNER.initials}
               </span>
-              <span className="leading-tight max-md:hidden">
+              <span className="leading-tight whitespace-nowrap max-md:hidden">
                 <span className="block text-[12.5px] font-medium text-[#ededea]">{OWNER.name}</span>
                 <span className="block text-[11px] text-[#8b8b92]">{OWNER.role}</span>
               </span>
@@ -267,8 +272,9 @@ export function OpsDemo() {
 function IstClock() {
   const now = useIST();
   return (
-    <span className="font-mono text-[12px] tabular-nums max-sm:hidden" aria-label="Indian Standard Time">
-      {now ? `${now.date} · ${now.time} IST` : "IST"}
+    <span className="font-mono text-[12px] whitespace-nowrap tabular-nums max-sm:hidden" aria-label="Indian Standard Time">
+      <span className="max-xl:hidden">{now ? `${now.date} · ` : ""}</span>
+      {now ? `${now.time} IST` : "IST"}
     </span>
   );
 }

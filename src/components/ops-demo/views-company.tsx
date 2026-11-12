@@ -309,6 +309,36 @@ function SyncFlow() {
   const xs = SYNC_SOURCES.map((_, i) => (W / n) * (i + 0.5));
   const hot = k > 0 ? event.from : -1;
 
+  // Phones show the tiles as a 3×3 grid, so the lines are drawn from where each tile
+  // really sits to the dashboard pill, measured from the page and kept current on resize.
+  const wrap = useRef<HTMLDivElement>(null);
+  const tiles = useRef<(HTMLLIElement | null)[]>([]);
+  const pill = useRef<HTMLSpanElement>(null);
+  const [geo, setGeo] = useState<{ w: number; h: number; paths: string[] } | null>(null);
+  useEffect(() => {
+    const el = wrap.current;
+    if (!el) return;
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      const p = pill.current?.getBoundingClientRect();
+      if (!p || r.width === 0) return;
+      const tx = p.left - r.left + p.width / 2;
+      const ty = p.top - r.top;
+      const paths = tiles.current.map((t) => {
+        if (!t) return "";
+        const b = t.getBoundingClientRect();
+        const x = b.left - r.left + b.width / 2;
+        const y = b.bottom - r.top - 2;
+        const mid = (ty - y) / 2;
+        return `M${x.toFixed(1)} ${y.toFixed(1)} C${x.toFixed(1)} ${(y + mid).toFixed(1)} ${tx.toFixed(1)} ${(ty - mid).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}`;
+      });
+      setGeo({ w: r.width, h: r.height, paths });
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <section className="rounded-xl border border-white/[0.07] bg-[#121215] p-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -319,13 +349,49 @@ function SyncFlow() {
         </span>
       </div>
 
-      <ol className="mt-3 grid grid-cols-3 gap-1.5 md:grid-cols-9 md:gap-1">
+      <style>{`
+        @keyframes sf-amb { 0% { offset-distance: 0%; opacity: 0 } 12% { opacity: .7 } 88% { opacity: .7 } 100% { offset-distance: 100%; opacity: 0 } }
+        @keyframes sf-shot { 0% { offset-distance: 0%; opacity: 0 } 8% { opacity: 1 } 92% { opacity: 1 } 100% { offset-distance: 100%; opacity: 0 } }
+        @keyframes sf-land { 0%, 80% { box-shadow: 0 0 0 0 rgba(60,207,142,0) } 86% { box-shadow: 0 0 0 0 rgba(60,207,142,.6) } 100% { box-shadow: 0 0 0 14px rgba(60,207,142,0) } }
+        .sf-amb { position: absolute; left: 0; top: 0; width: 4px; height: 4px; border-radius: 9999px; background: #3ccf8e; offset-rotate: 0deg; animation: sf-amb 2.8s linear infinite }
+        .sf-shot { position: absolute; left: 0; top: 0; width: 9px; height: 9px; border-radius: 9999px; background: #3ccf8e; offset-rotate: 0deg;
+          box-shadow: 0 0 0 4px rgba(60,207,142,.18), 0 0 16px rgba(60,207,142,.9); animation: sf-shot 1.15s cubic-bezier(.45,0,.25,1) forwards }
+        .sf-land { animation: sf-land 1.35s ease-out }
+        @media (prefers-reduced-motion: reduce) { .sf-amb, .sf-shot { display: none } .sf-land { animation: none } }
+      `}</style>
+
+      <div ref={wrap} className="relative">
+      {/* Phones: lines from each tile to the dashboard, ambient dots, and a packet for each sync. */}
+      {geo && (
+        <>
+          <svg aria-hidden className="pointer-events-none absolute inset-0 z-0 md:hidden" width={geo.w} height={geo.h} viewBox={`0 0 ${geo.w} ${geo.h}`}>
+            {geo.paths.map((d, i) => d && (
+              <path key={i} d={d} fill="none" stroke={i === hot ? "#3ccf8e" : "rgba(255,255,255,0.09)"} strokeWidth={i === hot ? 1.6 : 1} style={{ transition: "stroke .5s" }} />
+            ))}
+          </svg>
+          <div aria-hidden className="pointer-events-none absolute inset-0 z-0 md:hidden">
+            {geo.paths.map((d, i) => d && <span key={i} className="sf-amb" style={{ offsetPath: `path('${d}')`, animationDelay: `${(i * 0.31).toFixed(2)}s` }} />)}
+          </div>
+          {hot >= 0 && geo.paths[hot] && (
+            <div aria-hidden className="pointer-events-none absolute inset-0 z-20 md:hidden">
+              <span key={k} className="sf-shot" style={{ offsetPath: `path('${geo.paths[hot]}')` }} />
+            </div>
+          )}
+        </>
+      )}
+
+      <ol className="relative z-10 mt-3 grid grid-cols-3 gap-1.5 md:grid-cols-9 md:gap-1">
         {SYNC_SOURCES.map((s, i) => (
-          <li key={s.id}>
+          <li
+            key={s.id}
+            ref={(el) => {
+              tiles.current[i] = el;
+            }}
+          >
             <button
               type="button"
               onClick={() => go(s.id)}
-              className={`flex h-full w-full flex-col items-center gap-0.5 rounded-lg border px-1.5 py-2 text-center transition-colors duration-500 hover:border-white/25 ${i === hot ? "border-[#3ccf8e]/60 bg-[#3ccf8e]/[0.10]" : "border-white/[0.07] bg-[#0e0e10]"}`}
+              className={`flex h-full w-full flex-col items-center gap-0.5 rounded-lg border px-1.5 py-2 text-center transition-colors duration-500 hover:border-white/25 ${i === hot ? "border-[#3ccf8e]/60 bg-[#13241c]" : "border-white/[0.07] bg-[#0e0e10]"}`}
             >
               <span className="text-[12px] font-medium">{s.team}</span>
               <span className="text-[10.5px] leading-tight text-[#8b8b92]">{s.system}</span>
@@ -351,14 +417,19 @@ function SyncFlow() {
         })}
       </svg>
 
-      <div className="mt-2 flex flex-col items-center gap-2 md:mt-0">
-        <span className="inline-flex items-center gap-2 rounded-full border border-[#3ccf8e]/30 bg-[#3ccf8e]/[0.08] px-3 py-1.5 text-[12px] font-medium text-[#3ccf8e]">
+      <div className="relative z-10 mt-10 flex flex-col items-center gap-2 md:mt-0">
+        <span
+          ref={pill}
+          key={`pill-${k}`}
+          className={`inline-flex items-center gap-2 rounded-full border border-[#3ccf8e]/30 bg-[#121a16] px-3 py-1.5 text-[12px] font-medium text-[#3ccf8e] ${k > 0 ? "sf-land" : ""}`}
+        >
           <span aria-hidden className="od-ping size-[7px] rounded-full bg-[#3ccf8e]" />
           {OWNER.first}&rsquo;s dashboard · updated {now ? now.time : "live"} IST
         </span>
         <p key={k} className="od-in text-center text-[12.5px] leading-snug text-[#b9b9b4]">
           <span className="text-[#ededea]">{SYNC_SOURCES[event.from].team}</span> · {event.text}
         </p>
+      </div>
       </div>
     </section>
   );

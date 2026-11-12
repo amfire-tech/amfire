@@ -95,6 +95,8 @@ export function FlowLine({ className }: { className?: string }) {
   const elapsed = useRef(0);
   const fill = useRef<HTMLDivElement>(null);
   const chip = useRef<HTMLDivElement>(null);
+  const fillV = useRef<HTMLDivElement>(null);
+  const chipV = useRef<HTMLDivElement>(null);
   const num = useRef<HTMLSpanElement>(null);
   const wait = useRef<HTMLElement>(null);
   const lastKey = useRef(keyOf(discreteOf(REST)));
@@ -103,6 +105,8 @@ export function FlowLine({ className }: { className?: string }) {
     const x = fr.p / LEN;
     if (fill.current) fill.current.style.transform = `scaleX(${x})`;
     if (chip.current) chip.current.style.transform = `translate3d(${x * 100}%,0,0)`;
+    if (fillV.current) fillV.current.style.transform = `scaleY(${x})`;
+    if (chipV.current) chipV.current.style.transform = `translate3d(0,${x * 100}%,0)`;
     if (num.current) num.current.textContent = String(Math.round(fr.days));
     if (wait.current) wait.current.textContent = `${fr.mode === "today" ? Math.max(0, Math.round(fr.days - x * MOVE_DAYS.today)) : 0} days`;
     const next = discreteOf(fr);
@@ -254,7 +258,7 @@ export function FlowLine({ className }: { className?: string }) {
                   {here && <span className="fl-ring absolute size-[14px] rounded-full border border-ember" />}
                   <span className={`absolute top-[6px] h-[26px] w-px -translate-x-1/2 transition-colors duration-500 ${reached ? (today ? "bg-ember/40" : "bg-success/40") : "bg-fg/10"}`} />
                   <div
-                    className={`absolute top-[34px] w-max -translate-x-1/2 rounded-xl border bg-white px-3.5 py-2.5 shadow-[0_12px_30px_-18px_rgba(11,11,12,0.35)] transition-all duration-500 ease-[cubic-bezier(.2,.7,.2,1)] ${reached ? "translate-y-0 opacity-100" : "translate-y-2 opacity-40"} ${here ? "border-ember/50" : "border-line"}`}
+                    className={`absolute top-[34px] w-max rounded-xl border bg-white ${i === 0 ? "-translate-x-[22%]" : i === STUCK.length - 1 ? "-translate-x-[80%]" : "-translate-x-1/2"} px-3.5 py-2.5 shadow-[0_12px_30px_-18px_rgba(11,11,12,0.35)] transition-all duration-500 ease-[cubic-bezier(.2,.7,.2,1)] ${reached ? "translate-y-0 opacity-100" : "translate-y-2 opacity-40"} ${here ? "border-ember/50" : "border-line"}`}
                   >
                     <p className="flex items-center gap-2 text-[14px] leading-none">
                       {today ? (
@@ -286,23 +290,59 @@ export function FlowLine({ className }: { className?: string }) {
           </div>
         </div>
 
-        {/* Phones and tablets: the same story as a list for the current act. */}
-        <ol className="mt-8 border-t border-line lg:hidden" aria-label={today ? "How an order runs today" : "How an order runs with amfire"}>
-          {STUCK.map((s) => (
-            <li key={s.after} className="flex items-center justify-between gap-4 border-b border-line py-3.5">
-              <span className="min-w-0">
-                <span className="block text-[12px] tracking-[0.08em] text-muted uppercase">
-                  {STAGES[s.after]} → {STAGES[s.after + 1]}
-                </span>
-                <span className="mt-0.5 flex items-center gap-2 text-[15px]">
-                  <span aria-hidden className={`size-2 shrink-0 rounded-full ${today ? "bg-ember" : "bg-success"}`} />
-                  {today ? s.today : s.amfire}
-                </span>
-              </span>
-              <span className={`shrink-0 font-mono text-[14px] ${today ? "text-ember" : "text-success"}`}>{today ? `+${s.wait} day${s.wait === 1 ? "" : "s"}` : s.took}</span>
-            </li>
-          ))}
-        </ol>
+        {/* Phones and tablets: the same story on a vertical rail. The order glides down
+            through the stages, and each stuck point's card rises beside it as it arrives. */}
+        <div className="relative mt-9 pb-3 lg:hidden" aria-hidden>
+          <div className="relative h-[440px]">
+            <div className="absolute top-0 bottom-0 left-[11px] w-[3px] rounded-full bg-fg/[0.08]" />
+            <div
+              ref={fillV}
+              className={`absolute top-0 bottom-0 left-[11px] w-[3px] origin-top rounded-full will-change-transform ${today ? "bg-fg" : "bg-success shadow-[0_0_14px_rgba(6,118,71,0.55)]"}`}
+              style={{ transform: "scaleY(1)" }}
+            />
+
+            {STAGES.map((s, i) => {
+              const passed = i < d.passed;
+              const last = i === STAGES.length - 1;
+              return (
+                <div key={s} className="absolute left-0 flex -translate-y-1/2 items-center gap-4" style={{ top: pct(i) }}>
+                  <span
+                    className={`ml-[6.5px] rounded-full border-2 transition-colors duration-300 ${last ? "size-[15px] -ml-[0.5px]" : "size-[12px]"} ${passed ? (today ? "border-fg bg-fg" : "border-success bg-success") : "border-fg/20 bg-page"}`}
+                  />
+                  <span className={`text-[12px] tracking-[0.1em] uppercase transition-colors duration-500 ${passed ? "text-fg" : "text-muted/70"} ${last ? "font-medium" : ""}`}>{s}</span>
+                </div>
+              );
+            })}
+
+            {STUCK.map((s, i) => {
+              const at = s.after + 0.5;
+              const reached = i < d.reached;
+              const here = d.stoppedAt === i;
+              return (
+                <div key={s.after} className="absolute right-0 left-0" style={{ top: pct(at) }}>
+                  <span className={`absolute left-[12.5px] size-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors duration-500 ${reached ? (today ? "bg-ember" : "bg-success") : "bg-fg/15"}`} />
+                  {here && <span className="fl-ring absolute left-[12.5px] size-[14px] rounded-full border border-ember" />}
+                  <div
+                    className={`absolute left-[34px] max-w-[calc(100%-34px)] -translate-y-1/2 rounded-xl border bg-white px-3 py-2 shadow-[0_12px_30px_-18px_rgba(11,11,12,0.35)] transition-all duration-500 ease-[cubic-bezier(.2,.7,.2,1)] ${reached ? "opacity-100" : "translate-x-1.5 opacity-40"} ${here ? "border-ember/50" : "border-line"}`}
+                  >
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[13.5px] leading-tight">
+                      <span aria-hidden className={`size-1.5 rounded-full ${today ? "bg-ember" : "bg-success"}`} />
+                      {today ? s.today : s.amfire}
+                      <span className={`font-mono text-[12.5px] ${today ? "text-ember" : "text-success"}`}>{today ? `+${s.wait} day${s.wait === 1 ? "" : "s"}` : s.took}</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* The order: a glowing marker that glides down the rail. */}
+            <div ref={chipV} className="absolute top-0 bottom-0 left-[12.5px] z-10 w-0 will-change-transform" style={{ transform: "translate3d(0,100%,0)" }}>
+              <span
+                className={`absolute top-0 left-0 size-[15px] -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-page transition-colors duration-300 ${today ? (d.stoppedAt !== null ? "bg-ember shadow-[0_0_0_5px_rgba(232,72,42,0.18)]" : "bg-fg shadow-[0_0_0_5px_rgba(11,11,12,0.12)]") : "bg-success shadow-[0_0_0_5px_rgba(6,118,71,0.2)]"}`}
+              />
+            </div>
+          </div>
+        </div>
 
         <figcaption className="mt-8 text-[14px] text-muted lg:mt-4">
           {today ? (

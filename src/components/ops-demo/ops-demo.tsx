@@ -100,13 +100,14 @@ export function OpsDemo() {
     <Demo.Provider value={api}>
       <div
         className={`flex flex-col overflow-hidden bg-[#0e0e10] text-left text-[13px] text-[#ededea] ${full ? "fixed inset-0 z-[1000]" : "rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06),0_50px_100px_-40px_rgba(11,11,12,0.55),0_30px_60px_-30px_rgba(232,72,42,0.18)]"}`}
+        style={full ? { paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" } : undefined}
       >
         <style>{`
           @keyframes od-in { from { opacity: 0; transform: translateY(-8px) } to { opacity: 1; transform: none } }
           @keyframes od-ping { to { box-shadow: 0 0 0 7px rgba(60,207,142,0) } }
           @keyframes od-pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(242,241,236,.5) } 50% { box-shadow: 0 0 0 6px rgba(242,241,236,0) } }
           @keyframes od-up { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
-          @keyframes od-slide { from { transform: translateX(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+          @keyframes od-slide { from { transform: translateX(28px) } to { transform: none } }
           @keyframes od-blink { 50% { opacity: .45 } }
           .od-in { animation: od-in .5s cubic-bezier(.2,.7,.2,1) }
           .od-ping { box-shadow: 0 0 0 0 rgba(60,207,142,.6); animation: od-ping 2s ease-out infinite }
@@ -114,14 +115,15 @@ export function OpsDemo() {
           .od-up { animation: od-up .3s ease-out }
           .od-slide { animation: od-slide .28s cubic-bezier(.2,.7,.2,1) }
           .od-blink { animation: od-blink 1.6s ease-in-out infinite }
-          .od-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent }
+          .od-scroll, .od-nav { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.15) transparent }
+          @media (max-width: 1023.98px) { .od-nav { scrollbar-width: none } .od-nav::-webkit-scrollbar { display: none } }
           @media (prefers-reduced-motion: reduce) { .od-in, .od-ping, .od-pulse, .od-up, .od-slide, .od-blink { animation: none } }
         `}</style>
 
         {/* Title bar */}
         {/* One line at every width: the company on the left (truncating), the owner always far right.
             Less important details drop out as the frame narrows instead of wrapping. */}
-        <div className="flex shrink-0 items-center gap-4 border-b border-white/[0.07] px-4 py-2.5 sm:px-5">
+        <div className="flex shrink-0 items-center gap-3 border-b border-white/[0.07] px-3 py-2.5 sm:gap-4 sm:px-5">
           <div className="flex min-w-0 flex-1 items-center gap-3">
             <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-md bg-[#f2f1ec] text-[12px] font-bold text-[#0b0b0c]">HP</span>
             <div className="min-w-0 leading-tight">
@@ -135,7 +137,7 @@ export function OpsDemo() {
               </p>
             </div>
           </div>
-          <div className="ml-auto flex shrink-0 items-center gap-3 text-[12px] text-[#8b8b92]">
+          <div className="ml-auto flex shrink-0 items-center gap-2.5 text-[12px] text-[#8b8b92] sm:gap-3">
             <span className="inline-flex items-center gap-2 text-[#3ccf8e] max-2xl:hidden">
               <span aria-hidden className="od-ping size-[7px] rounded-full bg-[#3ccf8e]" />
               11 agents running
@@ -151,11 +153,15 @@ export function OpsDemo() {
             <button
               type="button"
               onClick={() => setFull((f) => !f)}
-              className="rounded-md px-2.5 py-1.5 text-[12px] font-medium whitespace-nowrap text-[#ededea] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] hover:bg-white/5"
+              aria-label={full ? "Close full screen" : "Full screen"}
+              className="inline-flex items-center gap-1.5 rounded-md p-1.5 text-[12px] font-medium whitespace-nowrap text-[#ededea] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] hover:bg-white/5 sm:px-2.5"
             >
-              {full ? "Close full screen" : "Full screen"}
+              <svg aria-hidden viewBox="0 0 16 16" className="size-4 sm:hidden" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                {full ? <path d="M4 4l8 8M12 4l-8 8" /> : <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />}
+              </svg>
+              <span className="max-sm:hidden">{full ? "Close full screen" : "Full screen"}</span>
             </button>
-            <span className="flex shrink-0 items-center gap-2 border-l border-white/[0.08] pl-3" title={`Signed in as ${OWNER.name}`}>
+            <span className="flex shrink-0 items-center gap-2 border-l border-white/[0.08] pl-2.5 sm:pl-3" title={`Signed in as ${OWNER.name}`}>
               <span aria-hidden className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-[#e8482a] to-[#f5b54a] text-[11px] font-semibold text-[#0b0b0c]">
                 {OWNER.initials}
               </span>
@@ -167,9 +173,12 @@ export function OpsDemo() {
           </div>
         </div>
 
-        <div className="grid min-h-0 flex-1 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <div className="grid min-h-0 flex-1 max-lg:grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[220px_minmax(0,1fr)]">
           {/* Navigation */}
-          <nav aria-label="Halden Precision modules" className="od-scroll flex shrink-0 gap-1 overflow-x-auto border-b border-white/[0.07] p-2 lg:flex-col lg:overflow-y-auto lg:border-r lg:border-b-0 lg:p-3">
+          <nav
+            aria-label="Halden Precision modules"
+            className="od-nav flex shrink-0 snap-x scroll-px-3 gap-1.5 overflow-x-auto border-b border-white/[0.07] px-3 py-2.5 max-lg:[mask-image:linear-gradient(90deg,#000_88%,transparent)] lg:flex-col lg:gap-1 lg:overflow-y-auto lg:border-r lg:border-b-0 lg:p-3"
+          >
             {NAV.map((g) => (
               <div key={g.group} className="contents lg:flex lg:flex-col lg:gap-0.5 lg:pb-3">
                 <p className="hidden px-2.5 pt-1 pb-1.5 text-[11px] font-medium tracking-[0.1em] text-[#55555c] uppercase lg:block">{g.group}</p>
@@ -182,7 +191,7 @@ export function OpsDemo() {
                       type="button"
                       onClick={() => go(it.id)}
                       aria-current={active ? "page" : undefined}
-                      className={`flex shrink-0 items-center gap-2.5 rounded-lg px-2.5 py-[6px] text-left text-[13px] whitespace-nowrap transition-colors ${active ? "bg-white/[0.09] text-[#ededea]" : "text-[#b9b9b4] hover:bg-white/[0.04] hover:text-[#ededea]"}`}
+                      className={`flex shrink-0 snap-start items-center gap-2.5 px-2.5 py-[6px] text-left text-[13px] whitespace-nowrap transition-colors max-lg:rounded-full max-lg:border max-lg:px-3.5 max-lg:py-[7px] lg:rounded-lg ${active ? "bg-white/[0.09] text-[#ededea] max-lg:border-[#f2f1ec] max-lg:bg-[#f2f1ec] max-lg:text-[#0b0b0c]" : "text-[#b9b9b4] hover:bg-white/[0.04] hover:text-[#ededea] max-lg:border-white/[0.09]"}`}
                     >
                       {health ? <Dot tone={health} /> : <span aria-hidden className="size-[7px] shrink-0 rounded-sm bg-white/25" />}
                       <span className="flex-1">{it.label}</span>
@@ -204,11 +213,28 @@ export function OpsDemo() {
 
           {/* View */}
           <div className="relative min-h-0 min-w-0">
-            <div className={`od-scroll overflow-y-auto p-4 sm:p-5 ${full ? "h-full" : "max-lg:max-h-[78vh] lg:h-[720px]"}`}>
+            <div className={`od-scroll isolate p-4 sm:p-5 ${full ? "h-full overflow-y-auto" : "max-lg:h-[560px] max-lg:overflow-hidden lg:h-[720px] lg:overflow-y-auto"}`}>
               <div key={view} className="od-up">
                 <View />
               </div>
             </div>
+
+            {/* Phones: the page shows a preview; the demo itself opens full screen, like an app. */}
+            {!full && (
+              <div className="absolute inset-x-0 bottom-0 z-[5] flex h-60 flex-col items-center justify-end gap-2.5 bg-gradient-to-b from-transparent via-[#0e0e10]/85 to-[#0e0e10] px-5 pb-6 text-center lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setFull(true)}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#f2f1ec] px-5 py-3 text-[14px] font-medium text-[#0b0b0c] shadow-[0_10px_30px_-10px_rgba(242,241,236,0.45)] active:scale-[0.98]"
+                >
+                  <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+                    <path d="M2.5 6V2.5H6M10 2.5h3.5V6M13.5 10v3.5H10M6 13.5H2.5V10" />
+                  </svg>
+                  Open the live demo
+                </button>
+                <p className="text-[12px] text-[#8b8b92]">14 modules · tap anything · approve a decision</p>
+              </div>
+            )}
 
             {drawer && (
               <div className="absolute inset-0 z-10 flex justify-end bg-black/55" onClick={() => setDrawer(null)}>
@@ -252,6 +278,16 @@ export function OpsDemo() {
             )}
           </div>
         </div>
+
+        {/* Phones, full screen: the way out is always one tap away. */}
+        {full && (
+          <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] px-4 py-3 text-[13px] lg:hidden">
+            <span className="text-[#b9b9b4]">Your company, run like this.</span>
+            <Link href={START} className="rounded-full bg-[#3ccf8e] px-4 py-2 font-medium whitespace-nowrap text-[#0b0b0c]">
+              Start a conversation
+            </Link>
+          </div>
+        )}
       </div>
     </Demo.Provider>
   );
@@ -261,7 +297,7 @@ export function OpsDemo() {
   if (full) {
     return (
       <>
-        <div aria-hidden className="h-[780px] rounded-2xl bg-[#0e0e10]" />
+        <div aria-hidden className="h-[680px] rounded-2xl bg-[#0e0e10] lg:h-[790px]" />
         {createPortal(frame, document.body)}
       </>
     );

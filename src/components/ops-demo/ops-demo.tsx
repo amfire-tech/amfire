@@ -32,7 +32,11 @@ const VIEWS: Record<ViewId, () => React.JSX.Element> = {
   agents: Agents,
 };
 
-export function OpsDemo() {
+/**
+ * `page`: the demo is the whole page (the shareable /demo link). It fills its container,
+ * scrolls inside, and has no preview fade or full-screen toggle.
+ */
+export function OpsDemo({ page = false }: { page?: boolean } = {}) {
   const [view, setView] = useState<ViewId>("home");
   const [drawer, setDrawer] = useState<DrawerContent | null>(null);
   const [approved, setApproved] = useState<Record<string, boolean>>({});
@@ -99,7 +103,7 @@ export function OpsDemo() {
   const frame = (
     <Demo.Provider value={api}>
       <div
-        className={`flex flex-col overflow-hidden bg-[#0e0e10] text-left text-[13px] text-[#ededea] ${full ? "fixed inset-0 z-[1000]" : "rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06),0_50px_100px_-40px_rgba(11,11,12,0.55),0_30px_60px_-30px_rgba(232,72,42,0.18)]"}`}
+        className={`flex flex-col overflow-hidden bg-[#0e0e10] text-left text-[13px] text-[#ededea] ${full ? "fixed inset-0 z-[1000]" : page ? "h-full sm:rounded-2xl sm:shadow-[0_0_0_1px_rgba(255,255,255,0.08)]" : "rounded-2xl shadow-[0_0_0_1px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.06),0_50px_100px_-40px_rgba(11,11,12,0.55),0_30px_60px_-30px_rgba(232,72,42,0.18)]"}`}
         style={full ? { paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" } : undefined}
       >
         <style>{`
@@ -150,6 +154,7 @@ export function OpsDemo() {
               {city}
             </span>
             <IstClock />
+            {!page && (
             <button
               type="button"
               onClick={() => setFull((f) => !f)}
@@ -161,6 +166,7 @@ export function OpsDemo() {
               </svg>
               <span className="max-sm:hidden">{full ? "Close full screen" : "Full screen"}</span>
             </button>
+            )}
             <span className="flex shrink-0 items-center gap-2 border-l border-white/[0.08] pl-2.5 sm:pl-3" title={`Signed in as ${OWNER.name}`}>
               <span aria-hidden className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-[#e8482a] to-[#f5b54a] text-[11px] font-semibold text-[#0b0b0c]">
                 {OWNER.initials}
@@ -213,14 +219,14 @@ export function OpsDemo() {
 
           {/* View */}
           <div className="relative min-h-0 min-w-0">
-            <div className={`od-scroll isolate p-4 sm:p-5 ${full ? "h-full overflow-y-auto" : "max-lg:h-[560px] max-lg:overflow-hidden lg:h-[720px] lg:overflow-y-auto"}`}>
+            <div className={`od-scroll isolate p-4 sm:p-5 ${full || page ? "h-full overflow-y-auto" : "max-lg:h-[560px] max-lg:overflow-hidden lg:h-[720px] lg:overflow-y-auto"}`}>
               <div key={view} className="od-up">
                 <View />
               </div>
             </div>
 
             {/* Phones: the page shows a preview; the demo itself opens full screen, like an app. */}
-            {!full && (
+            {!full && !page && (
               <div className="absolute inset-x-0 bottom-0 z-[5] flex h-60 flex-col items-center justify-end gap-2.5 bg-gradient-to-b from-transparent via-[#0e0e10]/85 to-[#0e0e10] px-5 pb-6 text-center lg:hidden">
                 <button
                   type="button"
@@ -280,7 +286,7 @@ export function OpsDemo() {
         </div>
 
         {/* Phones, full screen: the way out is always one tap away. */}
-        {full && (
+        {(full || page) && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] px-4 py-3 text-[13px] lg:hidden">
             <span className="text-[#b9b9b4]">Your company, run like this.</span>
             <Link href={START} className="rounded-full bg-[#3ccf8e] px-4 py-2 font-medium whitespace-nowrap text-[#0b0b0c]">

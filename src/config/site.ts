@@ -7,6 +7,11 @@ export const site = {
   // and support), and the reply-to address on emails sent to clients.
   // Sign-in for the owner is a separate account (OWNER_EMAIL).
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@amfire.in",
+  // The founder's own mailbox (Hostinger): cold outreach emails come from it and
+  // replies land in it. OUTREACH_FROM_EMAIL overrides it on the server.
+  outreachEmail: "navanishpandey@amfire.in",
+  // Whose mailbox that is: the signature (and From name) on outreach drafts when the HQ account is named after the brand.
+  outreachSender: "Navanish Pandey",
   // Mobile for calls and WhatsApp, as shown to visitors (Indian format).
   contactPhone: process.env.NEXT_PUBLIC_CONTACT_PHONE ?? "+91 93730 10143",
   // Canonical address for links, the sitemap and structured data. On Vercel, the production domain is used if this isn't set.

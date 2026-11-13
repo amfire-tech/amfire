@@ -19,8 +19,8 @@ import { followTrackedLink } from "@/server/growth";
 import { addProspects, findCallTouch, getProspect, listResponseTests, logTouch, markResponseTestReplied, startResponseTest } from "@/server/outreach";
 import { createPartnerLink, getPartners } from "@/server/partners";
 import { fromHeader } from "@/server/notify";
-import { saveEmailDraft, sendEmailTest, sendEmailToProspect } from "@/server/outreach-emails";
-import { defaultEmailContent } from "@/knowledge/email-theme";
+import { EmailContentSchema, saveEmailDraft, sendEmailTest, sendEmailToProspect } from "@/server/outreach-emails";
+import { EMAIL_ASSETS, defaultEmailContent, renderEmailHtml, renderEmailText, senderName } from "@/knowledge/email-theme";
 
 const HOUR = 60 * 60 * 1000;
 
@@ -204,7 +204,7 @@ describe("outreach emails", () => {
     const [p] = (await addProspects(db, owner, [{ name: "Email Test & Co (Noida)", phone: "9811100009", kind: "ca_firm" }])).created;
     const REPORT_URL = "https://drive.google.com/file/d/emailtest/view";
     await db.update(prospects).set({ assetUrl: REPORT_URL }).where(eq(prospects.id, p.id));
-    const content = { ...defaultEmailContent({ business: "Email Test & Co", contactName: "Asha Rao", demoUrl: REPORT_URL, ownerName: owner.name }), findings: [{ title: "No phone layout.", body: "Text <runs> off." }] };
+    const content = { ...defaultEmailContent({ business: "Email Test & Co", contactName: "Asha Rao", demoUrl: REPORT_URL, ownerName: owner.name }), style: "toran" as const, findings: [{ title: "No phone layout.", body: "Text <runs> off." }] };
     const draft = await saveEmailDraft(db, owner, { prospectId: p.id, toEmail: "partner@example.com", subject: "Hello", content });
     assert.equal(draft.version, 1);
     assert.equal((await saveEmailDraft(db, owner, { prospectId: p.id, toEmail: "partner@example.com", subject: "Hello", content })).version, 1, "an unchanged save keeps the version");
@@ -232,9 +232,12 @@ describe("outreach emails", () => {
       assert.deepEqual(logged.map((n) => n.status).sort(), ["failed", "sent"]);
       assert.equal(sent[0].subject, "[TEST] Hello");
       assert.deepEqual(sent[0].to, ["me@example.com"]);
+      // Outreach comes from the founder's own mailbox and replies go back to it.
       // The test owner signs as "amfire Owner", so it sends as the brand.
-      assert.equal(sent[0].from, "amfire <hello@amfire.in>");
+      assert.equal(sent[0].from, "amfire <navanishpandey@amfire.in>");
+      assert.equal((sent[0] as { reply_to?: string }).reply_to, "navanishpandey@amfire.in");
       assert.equal(fromHeader("hello@amfire.in", "Navanish"), "Navanish from amfire <hello@amfire.in>");
+      assert.equal(fromHeader("navanishpandey@amfire.in", "Navanish Pandey", true), "Navanish Pandey <navanishpandey@amfire.in>");
       assert.ok(sent[0].html.includes("Text &lt;runs&gt; off."), "content is escaped");
 
       // Editing after the test needs a new test.
@@ -257,6 +260,22 @@ describe("outreach emails", () => {
       delete process.env.RESEND_API_KEY;
       delete process.env.NOTIFY_FROM_EMAIL;
     }
+  });
+
+  test("a plain email reads like a typed one and comes from the person", () => {
+    const c = defaultEmailContent({ business: "Sukrut Electric", contactName: "Mr. Anil Rathi", demoUrl: "https://www.amfire.in/demo/x", ownerName: "Navanish Pandey" });
+    assert.equal(c.style, "plain");
+    assert.equal(c.greeting, "Hi Anil,");
+    const f = { subject: "A demo for Sukrut", replyTo: "navanishpandey@amfire.in", phone: "+91 93730 10143", recipient: { business: "Sukrut Electric", name: null, email: null } };
+    const html = renderEmailHtml(c, f);
+    assert.ok(!html.includes(EMAIL_ASSETS.logo) && !html.includes("wa.me") && !html.includes("A line about them"), "no logo, WhatsApp button or headline");
+    assert.ok(html.includes('href="https://www.amfire.in/demo/x"') && html.includes("Navanish Pandey"));
+    assert.ok(renderEmailText(c, f).includes("The demo I made for Sukrut Electric: https://www.amfire.in/demo/x"));
+    assert.deepEqual(senderName(c), { name: "Navanish Pandey", personal: true });
+    assert.deepEqual(senderName({ ...c, style: "toran" }), { name: "Navanish", personal: false });
+    // A plain email needs no headline; the designed one does.
+    assert.ok(EmailContentSchema.safeParse({ ...c, headline: "" }).success);
+    assert.ok(!EmailContentSchema.safeParse({ ...c, style: "toran", headline: "" }).success);
   });
 
   test("the connector can draft emails", () => {

@@ -9,7 +9,7 @@ import * as z from "zod";
 import type { DB } from "@/db";
 import { notifications, outreachEmails, prospectContacts, prospects, type OutreachEmail, type Prospect, type ProspectContact } from "@/db/schema";
 import { site } from "@/config/site";
-import { defaultEmailContent, renderEmailHtml, renderEmailText, type EmailContent, type EmailFrame, type EmailRecipient } from "@/knowledge/email-theme";
+import { defaultEmailContent, renderEmailHtml, renderEmailText, senderName, type EmailContent, type EmailFrame, type EmailRecipient } from "@/knowledge/email-theme";
 import { assertStaff, type Actor } from "./access";
 import { withTrackedAsset } from "./asset-links";
 import { audit } from "./audit";
@@ -21,9 +21,10 @@ const line = (max: number) => z.string().trim().max(max);
 const optionalEmail = z.union([z.literal(""), z.email("That email address doesn't look right.")]).nullish();
 
 export const EmailContentSchema = z.object({
+  style: z.enum(["plain", "toran"]).optional(),
   preheader: line(200),
   eyebrow: line(120),
-  headline: z.string().trim().min(1, "Give the email a headline.").max(200),
+  headline: line(200),
   greeting: line(120),
   opening: z.string().trim().max(3000),
   image: z.object({ url: z.url(), alt: line(200) }).nullable(),
@@ -38,7 +39,9 @@ export const EmailContentSchema = z.object({
   signName: z.string().trim().min(1, "Add your name for the signature.").max(80),
   signRole: line(120),
   footer: line(300),
-}) satisfies z.ZodType<EmailContent>;
+})
+  // A plain email has no headline; the designed one needs it.
+  .refine((c) => c.style === "plain" || c.headline.length > 0, { message: "Give the email a headline.", path: ["headline"] }) satisfies z.ZodType<EmailContent>;
 
 export const EmailDraftInput = z.object({
   prospectId: z.uuid(),
@@ -61,7 +64,7 @@ function personFor(p: Prospect, contacts: ProspectContact[], email: string | nul
 }
 
 function frame(subject: string, recipient: EmailRecipient): EmailFrame {
-  return { subject, replyTo: site.contactEmail, phone: site.contactPhone, recipient };
+  return { subject, replyTo: outreachFromAddress(), phone: site.contactPhone, recipient };
 }
 
 /**
@@ -80,14 +83,23 @@ export async function renderOutreachEmail(db: DB, email: Pick<OutreachEmail, "pr
   return { html: renderEmailHtml(content, f), text: renderEmailText(content, f) };
 }
 
-/** Outreach comes from the inbox replies go to: hello@amfire.in (OUTREACH_FROM_EMAIL overrides). */
-export const outreachFromAddress = () => process.env.OUTREACH_FROM_EMAIL?.trim() || site.contactEmail;
+/**
+ * Cold outreach comes from the founder's own mailbox and replies go back to it
+ * (OUTREACH_FROM_EMAIL overrides). hello@amfire.in stays the public support inbox.
+ */
+export const outreachFromAddress = () => process.env.OUTREACH_FROM_EMAIL?.trim() || site.outreachEmail;
+
+/** The From name: the person for a plain email, "Navanish from amfire" for a designed one. */
+function fromFor(content: EmailContent) {
+  const s = senderName(content);
+  return { fromName: s.name || undefined, fromIsPerson: s.personal };
+}
 
 /**
- * Sends from hello@amfire.in and logs every attempt in notifications. Failures
+ * Sends from the outreach mailbox and logs every attempt in notifications. Failures
  * become messages the owner can read in the composer. Returns Resend's id.
  */
-async function deliver(db: DB, args: Omit<Parameters<typeof sendEmail>[0], "fromAddress">) {
+async function deliver(db: DB, args: Omit<Parameters<typeof sendEmail>[0], "fromAddress" | "replyTo">) {
   if (!emailConfigured()) throw new OutreachError("Email sending isn't set up on this server (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
   // The log is a record, not the send: failing to write it mustn't report a sent email as failed.
   const log = (status: "sent" | "failed", error: string | null) =>
@@ -97,7 +109,7 @@ async function deliver(db: DB, args: Omit<Parameters<typeof sendEmail>[0], "from
       .catch((err) => console.error("Couldn't log the outreach email:", err));
   let id: string | null;
   try {
-    id = await sendEmail({ ...args, fromAddress: outreachFromAddress() });
+    id = await sendEmail({ ...args, fromAddress: outreachFromAddress(), replyTo: outreachFromAddress() });
   } catch (err) {
     const reason = err instanceof Error ? err.message : "unknown error";
     await log("failed", reason);
@@ -145,8 +157,8 @@ export async function getEmailComposer(db: DB, actor: Actor | null, prospectId: 
     .filter((r, i, all) => all.findIndex((x) => x.email.toLowerCase() === r.email.toLowerCase()) === i)
     // `person` is the bare name the WhatsApp message carries.
     .map((r) => ({ ...r, person: personFor(p, contacts, r.email) }));
-  // An account still named after the brand leaves the signature for the owner to fill in.
-  const ownerName = /amfire/i.test(actor.name) ? "" : actor.name;
+  // An account still named after the brand signs as the person whose mailbox sends outreach.
+  const ownerName = /amfire/i.test(actor.name) ? site.outreachSender : actor.name;
   const draft =
     latest && latest.status === "draft"
       ? latest
@@ -211,7 +223,7 @@ export async function sendEmailTest(db: DB, actor: Actor | null, emailId: string
   const address = z.email("Type the address to send the test to.").parse(to.trim());
   const email = await loadDraft(db, emailId);
   const { html, text } = await renderOutreachEmail(db, email);
-  const resendId = await deliver(db, { to: address, subject: `[TEST] ${email.subject}`, html, text, fromName: email.content.signName.split(" ")[0] });
+  const resendId = await deliver(db, { to: address, subject: `[TEST] ${email.subject}`, html, text, ...fromFor(email.content) });
   const [row] = await db
     .update(outreachEmails)
     .set({ testedVersion: email.version, testSentTo: address, testSentAt: new Date(), resendId })
@@ -231,7 +243,7 @@ export async function sendEmailToProspect(db: DB, actor: Actor | null, emailId: 
   if (email.testedVersion !== email.version) throw new OutreachError("Send yourself a test of this version first.");
   const { html, text } = await renderOutreachEmail(db, email, { track: true });
   // Keyed to this version: a second click, or a retry after a step below failed, can't send it twice.
-  const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, fromName: email.content.signName.split(" ")[0], idempotencyKey: `outreach-${email.id}-v${email.version}` });
+  const resendId = await deliver(db, { to: email.toEmail, cc: ccList(email.cc), subject: email.subject, html, text, ...fromFor(email.content), idempotencyKey: `outreach-${email.id}-v${email.version}` });
   const touch = await logTouch(db, actor, { prospectId: p.id, channel: "email", outcome: "sent", note: `Email sent to ${email.toEmail}: "${email.subject}"` });
   const [row] = await db
     .update(outreachEmails)

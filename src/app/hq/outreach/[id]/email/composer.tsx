@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from "react";
 import { Button, Card, CardTitle, Field, Notice, cx, inputClass } from "@/components/ui";
-import { renderEmailHtml, type EmailContent, type EmailFrame } from "@/knowledge/email-theme";
+import { isPlain, renderEmailHtml, senderName, toranStarter, type EmailContent, type EmailFrame, type EmailStyle } from "@/knowledge/email-theme";
 import { checkEmailDeliveryAction, saveEmailDraftAction, sendEmailTestAction, sendEmailToProspectAction, type DraftFields, type DraftState } from "./actions";
 
 export function EmailComposer({
@@ -15,7 +15,7 @@ export function EmailComposer({
   lastTestTo,
   fromAddress,
 }: {
-  /** The address the email comes from (hello@amfire.in). */
+  /** The address the email comes from and replies go to: the founder's own mailbox. */
   fromAddress: string;
   prospectId: string;
   /** `person` is the bare name, written into the WhatsApp message they send from the email. */
@@ -41,6 +41,15 @@ export function EmailComposer({
     setDirty(true);
   };
   const setContent = (patch: Partial<EmailContent>) => set({ content: { ...fields.content, ...patch } });
+  const plain = isPlain(c);
+  // Switching to the designed email fills in its headline and the rest where they're empty.
+  const setStyle = (style: EmailStyle) => {
+    if (style === "plain") return setContent({ style });
+    const starter = toranStarter({ business: frame.recipient.business });
+    const fill = Object.fromEntries(Object.entries(starter).filter(([k]) => !String(c[k as keyof EmailContent] ?? "").trim()));
+    setContent({ ...fill, style });
+  };
+  const sender = senderName(c);
 
   const html = useMemo(() => {
     const to = fields.toEmail.trim();
@@ -96,44 +105,68 @@ export function EmailComposer({
             <Field label="Subject" htmlFor="subject">
               <input id="subject" value={fields.subject} onChange={(e) => set({ subject: e.target.value })} className={inputClass} />
             </Field>
-            <Field label="Preview text" htmlFor="preheader" optional hint="Shown next to the subject in the inbox.">
-              <input id="preheader" value={c.preheader} onChange={(e) => setContent({ preheader: e.target.value })} className={inputClass} />
-            </Field>
+            {!plain && (
+              <Field label="Preview text" htmlFor="preheader" optional hint="Shown next to the subject in the inbox.">
+                <input id="preheader" value={c.preheader} onChange={(e) => setContent({ preheader: e.target.value })} className={inputClass} />
+              </Field>
+            )}
           </div>
         </Card>
 
         <Card>
           <CardTitle>The email</CardTitle>
-          <p className="-mt-2 mb-4 text-sm text-muted">
-            Blank line = new paragraph. **bold**, *italic*; in the headline, *word* is the saffron accent.
+          <div role="radiogroup" aria-label="Email style" className="-mt-2 mb-3 grid grid-cols-2 gap-1 rounded-full border border-line p-1 text-sm">
+            {(
+              [
+                ["plain", "Plain, like typed"],
+                ["toran", "Designed"],
+              ] as const
+            ).map(([s, label]) => (
+              <button key={s} type="button" role="radio" aria-checked={(plain ? "plain" : "toran") === s} onClick={() => setStyle(s)} className={cx("rounded-full px-3 py-1.5", (plain ? "plain" : "toran") === s ? "bg-fg text-page" : "text-muted")}>
+                {label}
+              </button>
+            ))}
+          </div>
+          <p className="mb-4 text-sm text-muted">
+            {plain
+              ? "No logo, no colours: it reads like an email you typed yourself, the best fit for a first cold email. Blank line = new paragraph. **bold**, *italic*."
+              : "Blank line = new paragraph. **bold**, *italic*; in the headline, *word* is the saffron accent."}
           </p>
           <div className="space-y-3">
-            <Field label="Small line above the headline" htmlFor="eyebrow" optional>
-              <input id="eyebrow" value={c.eyebrow} onChange={(e) => setContent({ eyebrow: e.target.value })} className={inputClass} />
-            </Field>
-            <Field label="Headline" htmlFor="headline">
-              <textarea id="headline" rows={2} value={c.headline} onChange={(e) => setContent({ headline: e.target.value })} className={inputClass} />
-            </Field>
+            {!plain && (
+              <>
+                <Field label="Small line above the headline" htmlFor="eyebrow" optional>
+                  <input id="eyebrow" value={c.eyebrow} onChange={(e) => setContent({ eyebrow: e.target.value })} className={inputClass} />
+                </Field>
+                <Field label="Headline" htmlFor="headline">
+                  <textarea id="headline" rows={2} value={c.headline} onChange={(e) => setContent({ headline: e.target.value })} className={inputClass} />
+                </Field>
+              </>
+            )}
             <Field label="Greeting" htmlFor="greeting" optional>
               <input id="greeting" value={c.greeting} onChange={(e) => setContent({ greeting: e.target.value })} className={inputClass} />
             </Field>
             <Field label="Opening" htmlFor="opening">
               <textarea id="opening" rows={7} value={c.opening} onChange={(e) => setContent({ opening: e.target.value })} className={inputClass} />
             </Field>
-            <Group title="Picture" optional>
-              <input aria-label="Picture link" placeholder="https://www.amfire.in/email/…png" value={c.image?.url ?? ""} onChange={(e) => setContent({ image: e.target.value.trim() ? { url: e.target.value, alt: c.image?.alt ?? "" } : null })} className={inputClass} />
-              {c.image && <input aria-label="Picture description" placeholder="What the picture shows" value={c.image.alt} onChange={(e) => setContent({ image: { ...c.image!, alt: e.target.value } })} className={inputClass} />}
-            </Group>
-            <Group title="Main button" optional>
-              <input aria-label="Button text" placeholder="Button text" value={c.button?.label ?? ""} onChange={(e) => setContent({ button: { label: e.target.value, url: c.button?.url ?? "", note: c.button?.note ?? "" } })} className={inputClass} />
+            {!plain && (
+              <Group title="Picture" optional>
+                <input aria-label="Picture link" placeholder="https://www.amfire.in/email/…png" value={c.image?.url ?? ""} onChange={(e) => setContent({ image: e.target.value.trim() ? { url: e.target.value, alt: c.image?.alt ?? "" } : null })} className={inputClass} />
+                {c.image && <input aria-label="Picture description" placeholder="What the picture shows" value={c.image.alt} onChange={(e) => setContent({ image: { ...c.image!, alt: e.target.value } })} className={inputClass} />}
+              </Group>
+            )}
+            <Group title={plain ? "The demo link" : "Main button"} optional>
+              <input aria-label={plain ? "Link text" : "Button text"} placeholder={plain ? "Link text, e.g. The demo I made for you" : "Button text"} value={c.button?.label ?? ""} onChange={(e) => setContent({ button: { label: e.target.value, url: c.button?.url ?? "", note: c.button?.note ?? "" } })} className={inputClass} />
               <input aria-label="Button link" placeholder="https://…" value={c.button?.url ?? ""} onChange={(e) => setContent({ button: { label: c.button?.label ?? "", url: e.target.value, note: c.button?.note ?? "" } })} className={inputClass} />
-              <input aria-label="Line under the button" placeholder="Line under the button (optional)" value={c.button?.note ?? ""} onChange={(e) => setContent({ button: { label: c.button?.label ?? "", url: c.button?.url ?? "", note: e.target.value } })} className={inputClass} />
+              {!plain && <input aria-label="Line under the button" placeholder="Line under the button (optional)" value={c.button?.note ?? ""} onChange={(e) => setContent({ button: { label: c.button?.label ?? "", url: c.button?.url ?? "", note: e.target.value } })} className={inputClass} />}
               {c.button && (
                 <button type="button" className="text-sm text-muted underline" onClick={() => setContent({ button: null })}>
-                  Remove the button
+                  {plain ? "Remove the link" : "Remove the button"}
                 </button>
               )}
             </Group>
+            {!plain && (
+            <>
             <Group title="Findings">
               <input aria-label="Findings heading" placeholder="Heading" value={c.findingsTitle} onChange={(e) => setContent({ findingsTitle: e.target.value })} className={inputClass} />
               {c.findings.map((f, i) => (
@@ -158,15 +191,21 @@ export function EmailComposer({
               <input type="checkbox" checked={c.showMethod} onChange={(e) => setContent({ showMethod: e.target.checked })} />
               Show the amfire FIRM Method block
             </label>
+            </>
+            )}
             <Field label="Closing" htmlFor="closing">
-              <textarea id="closing" rows={6} value={c.closing} onChange={(e) => setContent({ closing: e.target.value })} className={inputClass} />
+              <textarea id="closing" rows={plain ? 4 : 6} value={c.closing} onChange={(e) => setContent({ closing: e.target.value })} className={inputClass} />
             </Field>
+            {!plain && (
+            <>
             <Field label="WhatsApp button" htmlFor="replyLabel">
               <input id="replyLabel" value={c.replyLabel} onChange={(e) => setContent({ replyLabel: e.target.value })} className={inputClass} />
             </Field>
             <Field label="Their WhatsApp message, already typed" htmlFor="replyBody" optional hint={`Tapping the button opens WhatsApp to ${frame.phone} with this written in, so they only add a time. Above it, the message says who they are and which email they're answering.`}>
               <input id="replyBody" value={c.replyBody ?? ""} onChange={(e) => setContent({ replyBody: e.target.value })} className={inputClass} />
             </Field>
+            </>
+            )}
             <Field label="P.S." htmlFor="ps" optional hint="Under your signature. The line most people read.">
               <textarea id="ps" rows={2} value={c.ps ?? ""} onChange={(e) => setContent({ ps: e.target.value })} className={inputClass} />
             </Field>
@@ -178,7 +217,7 @@ export function EmailComposer({
                 <input id="signRole" value={c.signRole} onChange={(e) => setContent({ signRole: e.target.value })} className={inputClass} />
               </Field>
             </div>
-            <Field label="Small print" htmlFor="footer" optional>
+            <Field label={plain ? "Last line" : "Small print"} htmlFor="footer" optional>
               <input id="footer" value={c.footer} onChange={(e) => setContent({ footer: e.target.value })} className={inputClass} />
             </Field>
           </div>
@@ -213,7 +252,7 @@ export function EmailComposer({
           </p>
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted">
             <span>
-              From <b className="font-medium text-fg">{c.signName && !/amfire/i.test(c.signName) ? `${c.signName.split(" ")[0]} from amfire` : "amfire"}</b> &lt;{fromAddress}&gt; · replies come to {frame.replyTo}
+              From <b className="font-medium text-fg">{!sender.name ? "amfire" : sender.personal ? sender.name : `${sender.name} from amfire`}</b> &lt;{fromAddress}&gt; · replies come to {frame.replyTo}
             </span>
             {draft?.testSentAt && (
               <button type="button" className="underline" disabled={pending} onClick={() => run(() => checkEmailDeliveryAction(draft.id))}>
@@ -235,7 +274,7 @@ export function EmailComposer({
               ))}
             </div>
           </div>
-          <div className="bg-[#f6efe6] p-2">
+          <div className={cx("p-2", plain ? "bg-line/40" : "bg-[#f6efe6]")}>
             <Preview html={html} width={width === "phone" ? 380 : 680} />
           </div>
         </Card>

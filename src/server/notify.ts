@@ -20,16 +20,19 @@ export function whatsappConfigured() {
  * The brand is written "amfire": whatever name NOTIFY_FROM_EMAIL carries, emails come from "amfire <address>",
  * or "Navanish from amfire <address>" when a person writes.
  */
-export function fromHeader(from: string, personName?: string) {
+export function fromHeader(from: string, personName?: string, asPerson = false) {
   const address = from.match(/<([^>]+)>/)?.[1] ?? from.trim();
   const name = personName?.replace(/[^\p{L}\p{N} .'-]/gu, "").trim();
   // An account still named after the brand ("AMFIRE Owner") just sends as amfire.
-  return name && !/amfire/i.test(name) ? `${name} from amfire <${address}>` : `amfire <${address}>`;
+  if (!name || /amfire/i.test(name)) return `amfire <${address}>`;
+  // A plain cold email comes from the person alone, like one typed in their mail app.
+  return asPerson ? `${name} <${address}>` : `${name} from amfire <${address}>`;
 }
 
 /**
  * Sends through Resend and returns Resend's message id. `fromAddress` overrides
- * NOTIFY_FROM_EMAIL, e.g. outreach comes from hello@amfire.in.
+ * NOTIFY_FROM_EMAIL, e.g. outreach comes from the founder's own mailbox; `replyTo`
+ * overrides hello@amfire.in.
  *
  * A timeout, a network error, 429 or 5xx is tried again (three attempts in all).
  * Pass `idempotencyKey` when a duplicate would matter: Resend then sends that
@@ -42,7 +45,9 @@ export async function sendEmail({
   html,
   cc,
   fromName,
+  fromIsPerson,
   fromAddress,
+  replyTo,
   idempotencyKey,
   attachments,
 }: {
@@ -52,18 +57,21 @@ export async function sendEmail({
   html?: string;
   cc?: string[];
   fromName?: string;
+  /** Send as "Name <address>" instead of "Name from amfire <address>". */
+  fromIsPerson?: boolean;
   fromAddress?: string;
+  replyTo?: string;
   idempotencyKey?: string;
   /** Files as Resend takes them: content is base64. */
   attachments?: { filename: string; content: string; content_type?: string }[];
 }): Promise<string | null> {
   if (!emailConfigured()) throw new Error("Email isn't set up (RESEND_API_KEY and NOTIFY_FROM_EMAIL).");
-  // Replies go to the support inbox (hello@amfire.in), whatever address sends.
+  // Replies go to the support inbox (hello@amfire.in) unless the sender says otherwise.
   const payload = JSON.stringify({
-    from: fromHeader(fromAddress ?? process.env.NOTIFY_FROM_EMAIL!, fromName),
+    from: fromHeader(fromAddress ?? process.env.NOTIFY_FROM_EMAIL!, fromName, fromIsPerson),
     to: [to],
     ...(cc?.length ? { cc } : {}),
-    reply_to: site.contactEmail,
+    reply_to: replyTo ?? site.contactEmail,
     subject,
     text,
     ...(html ? { html } : {}),

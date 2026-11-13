@@ -3,8 +3,15 @@
 // periwinkle sign-off band. Tables and inline styles only, so it holds up in
 // Gmail, Outlook and phone mail apps. Pure functions: the composer's live
 // preview and the server's send use the same renderer.
+//
+// The "plain" style drops all of that: a short note that looks typed in Gmail,
+// for cold outreach, where a designed email reads as a newsletter.
+
+export type EmailStyle = "plain" | "toran";
 
 export type EmailContent = {
+  /** "plain" looks like a typed email; "toran" (the default, for older drafts) is the designed one. */
+  style?: EmailStyle;
   /** Shown next to the subject in the inbox. */
   preheader: string;
   /** Small capitals above the headline, e.g. "MADE FOR B.M. CHATRATH & CO." */
@@ -144,8 +151,62 @@ function whatsappUrl(f: EmailFrame, body: string) {
 /** One tap opens WhatsApp to amfire with the yes already written; they only add a time. */
 const whatsappReplyUrl = (c: EmailContent, f: EmailFrame) => whatsappUrl(f, c.replyBody?.trim() || "Hi, I got your email.");
 
+export const isPlain = (c: Pick<EmailContent, "style">) => c.style === "plain";
+
+/** The From name: a plain email comes from the person ("Navanish Pandey"), a designed one from "Navanish from amfire". */
+export function senderName(c: Pick<EmailContent, "style" | "signName">) {
+  const name = c.signName.replace(/[^\p{L}\p{N} .'-]/gu, "").trim();
+  if (!name || /amfire/i.test(name)) return { name: "", personal: false };
+  return isPlain(c) ? { name, personal: true } : { name: name.split(" ")[0], personal: false };
+}
+
+/**
+ * The plain email: no logo, no colours, no buttons, the way a person writes
+ * from Gmail. Same fields as the designed one; the parts a typed email
+ * wouldn't have (headline, picture, findings, the WhatsApp button) are left out.
+ */
+function renderPlainHtml(c: EmailContent, f: EmailFrame) {
+  const para = (html: string) => `<p style="margin:0 0 14px;">${html}</p>`;
+  const body = [
+    c.greeting && para(inline(c.greeting)),
+    ...paragraphs(c.opening).map((s) => para(inline(s))),
+    c.button && para(`<a href="${esc(safeUrl(c.button.url))}" target="_blank" style="color:#1a73e8; text-decoration:underline;">${esc(c.button.label)}</a>`),
+    ...paragraphs(c.closing).map((s) => para(inline(s))),
+    para(`Regards,<br>${esc(c.signName)}${c.signRole ? `<br>${esc(c.signRole)}` : ""}<br>${esc(f.phone)} · <a href="https://www.amfire.in" target="_blank" style="color:#1a73e8; text-decoration:underline;">amfire.in</a>`),
+    c.ps && para(`P.S. ${inline(c.ps)}`),
+    c.footer && para(inline(c.footer)),
+  ].filter(Boolean);
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(f.subject)}</title>
+</head>
+<body style="margin:0; padding:16px; background-color:#ffffff;">
+<div style="font-family:Arial, Helvetica, sans-serif; font-size:14px; line-height:21px; color:#222222; max-width:620px;">
+${body.join("\n")}
+</div>
+</body>
+</html>`;
+}
+
+function renderPlainText(c: EmailContent, f: EmailFrame) {
+  const plain = (s: string) => s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1");
+  const out: string[] = [];
+  if (c.greeting) out.push(plain(c.greeting), "");
+  out.push(...paragraphs(c.opening).flatMap((s) => [plain(s), ""]));
+  if (c.button) out.push(`${c.button.label}: ${c.button.url}`, "");
+  out.push(...paragraphs(c.closing).flatMap((s) => [plain(s), ""]));
+  out.push("Regards,", c.signName, ...(c.signRole ? [c.signRole] : []), `${f.phone} · amfire.in`);
+  if (c.ps) out.push("", `P.S. ${plain(c.ps)}`);
+  if (c.footer) out.push("", plain(c.footer));
+  return out.join("\n");
+}
+
 /** The full HTML document that goes out. */
 export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
+  if (isPlain(c)) return renderPlainHtml(c, f);
   const p = (s: string, last: boolean) => `<p style="margin:0${last ? "" : " 0 16px"};">${inline(s)}</p>`;
   const opening = paragraphs(c.opening);
   const closing = paragraphs(c.closing);
@@ -258,6 +319,7 @@ export function renderEmailHtml(c: EmailContent, f: EmailFrame) {
 
 /** The plain-text part, for mail apps that don't show HTML and for spam filters. */
 export function renderEmailText(c: EmailContent, f: EmailFrame) {
+  if (isPlain(c)) return renderPlainText(c, f);
   const plain = (s: string) => s.replace(/\*\*(.+?)\*\*/g, "$1").replace(/\*(.+?)\*/g, "$1");
   const out = [plain(c.headline.replace(/\n/g, " ")), "", c.greeting, "", ...paragraphs(c.opening).flatMap((s) => [plain(s), ""])];
   if (c.button) out.push(`${c.button.label}: ${c.button.url}`, "");
@@ -279,26 +341,34 @@ export function renderEmailText(c: EmailContent, f: EmailFrame) {
   return out.join("\n");
 }
 
-/** A first draft for a prospect, to edit before sending. */
-export function defaultEmailContent(o: { business: string; contactName?: string | null; demoUrl?: string | null; ownerName: string }): EmailContent {
-  const surname = o.contactName?.trim().split(/\s+/).pop();
+/** The designed Toran email's starting copy, for a draft switched to that style. */
+export function toranStarter(o: { business: string }): Pick<EmailContent, "preheader" | "eyebrow" | "headline" | "replyLabel" | "replyBody"> {
   return {
     preheader: `Something I made for ${o.business}. Take a look.`,
     eyebrow: `Made for ${o.business}`,
     headline: `A line about them.\nAnd the *gap* you found.`,
-    greeting: surname ? `Dear Mr./Ms. ${surname},` : "Hello,",
-    opening: "What you noticed about their firm, in two or three sentences.\n\nSo instead of telling you, I built it:",
+    replyLabel: "Yes, book 15 minutes",
+    replyBody: "Hi, yes, 15 minutes works. A good time for me is: ",
+  };
+}
+
+/** A first draft for a prospect, to edit before sending: a plain, typed-looking note. */
+export function defaultEmailContent(o: { business: string; contactName?: string | null; demoUrl?: string | null; ownerName: string }): EmailContent {
+  const first = o.contactName?.trim().replace(/^(mr|mrs|ms|dr|shri|smt|ca)\.?\s+/i, "").split(/\s+/)[0];
+  return {
+    style: "plain",
+    ...toranStarter(o),
+    greeting: first ? `Hi ${first},` : "Hello,",
+    opening: `One or two lines on what you noticed about ${o.business}.\n\nSo instead of describing it, I built a small working demo for you:`,
     image: null,
-    button: o.demoUrl ? { label: "Open what I made for you", url: o.demoUrl, note: "" } : null,
+    button: o.demoUrl ? { label: `The demo I made for ${o.business}`, url: o.demoUrl, note: "" } : null,
     findingsTitle: "What a new client notices today",
     findings: [],
     showMethod: false,
-    closing: "The website is only the first step. The rest is what we call the **FIRM Method**, and it’s easier to show than to write.\n\n**Worth 15 minutes next week?**",
-    replyLabel: "Yes, book 15 minutes",
-    replyBody: "Hi, yes, 15 minutes works. A good time for me is: ",
+    closing: "It takes two minutes to look at. If it's useful, would 15 minutes next week work to walk you through it?",
     ps: "",
     signName: o.ownerName,
-    signRole: "Founder, amfire · Build · Operate · Automate",
-    footer: "Not relevant? Reply “no” and I won’t write again.",
+    signRole: "Founder, amfire",
+    footer: "If this isn't relevant, just reply \"no\" and I won't write again.",
   };
 }

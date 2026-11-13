@@ -306,10 +306,10 @@ export const TOOLS: Tool[] = [
   ),
   tool(
     "draft_email",
-    "Write (or rewrite) the prospect's outreach email in the amfire Toran theme as a draft. It is never sent from here: the owner edits it on the prospect's Email page in HQ, sends a test to their own inbox, then sends it. Use only facts from public sources. Never put a price in it. Write the brand as \"amfire\".",
+    "Write (or rewrite) the prospect's outreach email as a draft, sent from the founder's own mailbox. Use style 'plain' (a short note that looks typed, no headline or buttons; best for first cold emails) unless asked for the designed Toran theme ('toran'). It is never sent from here: the owner edits it on the prospect's Email page in HQ, sends a test to their own inbox, then sends it. Use only facts from public sources. Never put a price in it. Write the brand as \"amfire\".",
     EmailDraftInput.extend({
       content: EmailContentSchema.describe(
-        "headline: new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link or their report link (assetUrl; it's swapped for the tracked link when sent) (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the one reply button, which opens WhatsApp to amfire, e.g. 'Yes, book 15 minutes'. replyBody: the WhatsApp message typed in for them when they tap it. ps: one line under the signature. Keep cold emails under ~120 words: one idea, one click, one ask.",
+        "style: 'plain' or 'toran'. In plain, only greeting, opening, button (shown as a plain link), closing, ps, signName, signRole and footer appear. headline (toran only): new lines break it, *word* is the saffron accent. opening/closing: paragraphs separated by a blank line, **bold** and *italic* allowed. image: a public image URL (or null). button: the main call to action, usually the demo link or their report link (assetUrl; it's swapped for the tracked link when sent) (or null). findings: up to 8 {title (shown bold), body}. showMethod: include the amfire FIRM Method block (CA firms). replyLabel: the one reply button, which opens WhatsApp to amfire, e.g. 'Yes, book 15 minutes'. replyBody: the WhatsApp message typed in for them when they tap it. ps: one line under the signature. Keep cold emails under ~120 words: one idea, one click, one ask.",
       ),
     }),
     async (db, actor, args) => {

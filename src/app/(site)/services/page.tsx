@@ -64,7 +64,7 @@ export default function ServicesPage() {
           </p>
           <ConversationButton href={START} size="lg" className="mt-[clamp(1rem,3vh,1.75rem)] w-full sm:w-auto" />
           <div className="mt-[clamp(1.75rem,5.5vh,3.5rem)] w-full pb-[clamp(3.5rem,9vh,6rem)]">
-            <OpsDemo />
+            <OpsDemo track={{ page: "services", startOnLoad: false }} />
             <p className="mt-3.5 text-[13px] text-muted">A demo company with illustrative figures. Yours is built around how your company works.</p>
           </div>
         </Container>

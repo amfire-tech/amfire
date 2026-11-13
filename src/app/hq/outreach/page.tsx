@@ -50,6 +50,9 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
         actions={
           <>
             <ButtonLink href="/hq/outreach/engine">Signal engine</ButtonLink>
+            <ButtonLink href="/hq/outreach/demo-visits" variant="secondary">
+              Demo visits
+            </ButtonLink>
             <ButtonLink href="/hq/outreach/route" variant="secondary">
               Visit route
             </ButtonLink>
@@ -160,7 +163,10 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
                     <Link href={`/hq/outreach/${p.id}`} className="block rounded-xl p-3 ring-1 ring-line active:bg-subtle">
                       <div className="flex items-start justify-between gap-2">
                         <p className="font-medium">{p.name}</p>
-                        <Chip>{prospectStatusLabel(p.status)}</Chip>
+                        <span className="flex shrink-0 gap-1">
+                          {p.demoVisits > 0 && <Chip className="!bg-[#eff8ff] !text-[#175cd3]">Demo {p.demoVisits}×</Chip>}
+                          <Chip>{prospectStatusLabel(p.status)}</Chip>
+                        </span>
                       </div>
                       <p className="text-xs text-muted">{[p.area, p.industry, `Tier ${p.tier}`].filter(Boolean).join(" · ")}</p>
                       {p.signal && <p className="mt-1 line-clamp-2 text-sm text-fg/80">{p.signal}</p>}
@@ -195,6 +201,7 @@ export default async function OutreachPage({ searchParams }: PageProps<"/hq/outr
                         <td>
                           <Chip>{prospectStatusLabel(p.status)}</Chip>
                           {p.linkOpens > 0 && <Chip className="ml-1 !bg-[#ecfdf3] !text-[#05603a]">Opened {p.linkOpens}×</Chip>}
+                          {p.demoVisits > 0 && <Chip className="ml-1 !bg-[#eff8ff] !text-[#175cd3]">Demo {p.demoVisits}×</Chip>}
                           {p.statusReason && <div className="mt-1 text-xs text-muted">{p.statusReason}</div>}
                         </td>
                         <td className="text-sm whitespace-nowrap text-muted">

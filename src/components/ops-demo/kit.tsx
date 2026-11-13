@@ -5,7 +5,8 @@ import { STAGES, type Impact, type Risk, type Stat, type Tone, type ViewId } fro
 
 // Shared pieces for the Halden Precision demo: one dark, dense, readable look.
 
-export type DrawerContent = { eyebrow: string; title: string; body: ReactNode };
+/** `act` names what was opened for the visit record, e.g. "order:SO-1182". */
+export type DrawerContent = { eyebrow: string; title: string; body: ReactNode; act?: string };
 export type DemoApi = {
   city: string;
   go: (v: ViewId) => void;

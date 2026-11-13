@@ -242,6 +242,7 @@ function LiveWork() {
 
 export function traceDrawer(a: Activity, time: string) {
   return {
+    act: `agent:${a.id}`,
     eyebrow: `${a.agent} · ${time}`,
     title: a.text,
     body: (
@@ -484,6 +485,7 @@ export function Tracker() {
 
 export function orderDrawer(o: Order) {
   return {
+    act: `order:${o.so}`,
     eyebrow: `${o.so} · ${o.customer}`,
     title: `${o.part} · ${o.qty} pieces · ${o.value}`,
     body: (
@@ -599,6 +601,7 @@ export function Documents() {
           rows={DOCUMENTS}
           onRow={(d) =>
             openDrawer({
+              act: "doc",
               eyebrow: `${d.type} · ${d.from} · ${d.time}`,
               title: "What the agent read",
               body: (

@@ -30,6 +30,7 @@ import {
 } from "@/knowledge/outreach";
 import { AccessDenied, loadActor, type Actor } from "./access";
 import { trackedAssetUrl } from "./asset-links";
+import { demoLinkFor, describeAction, prospectDemoVisits, viewLabel } from "./demo-visits";
 import { taskPacket, toolAllowed } from "./team-tasks";
 import { AuditItem, upsertDemo } from "./demos";
 import { EmailContentSchema, EmailDraftInput, saveEmailDraft } from "./outreach-emails";
@@ -136,6 +137,9 @@ const compact = (p: Awaited<ReturnType<typeof listProspects>>["prospects"][numbe
   // Opens of their tracked report link (src/server/asset-links.ts).
   linkOpens: p.linkOpens,
   linkLastOpenedAt: p.linkLastOpenedAt,
+  // Visits to their personal live demo link (src/server/demo-visits.ts).
+  demoVisits: p.demoVisits,
+  demoLastVisitAt: p.demoLastVisitAt,
   signal: p.signal,
   leadId: p.leadId,
 });
@@ -180,13 +184,27 @@ export const TOOLS: Tool[] = [
   ),
   tool(
     "get_prospect",
-    "One prospect with its full research and every touch, newest first, including call transcripts and analysis, plus the engine's view: people, dated signals, feedback and the next play step drafted. trackedLink is the link to send for their report (opens alert the owner); linkOpens and linkLastOpenedAt say whether they've read it.",
+    "One prospect with its full research and every touch, newest first, including call transcripts and analysis, plus the engine's view: people, dated signals, feedback and the next play step drafted. trackedLink is the link to send for their report (opens alert the owner); linkOpens and linkLastOpenedAt say whether they've read it. liveDemoLink is their personal link to the live operating-system demo (it says “prepared for” them); demoVisitLog lists their visits with time on screen, modules looked at and what they did, so a follow-up can start from what interested them.",
     z.object({ id: z.uuid() }),
     async (db, actor, { id }) => {
       const found = await getProspect(db, actor, id);
       if (!found) throw new OutreachError("Prospect not found.");
       const engine = await getProspectEngine(db, actor, id);
-      return { ...found, trackedLink: trackedAssetUrl(found.prospect), engine: engine && { contacts: engine.contacts, signals: engine.signals, feedback: engine.feedback, next: engine.next } };
+      const visits = await prospectDemoVisits(db, actor, id, 10);
+      return {
+        ...found,
+        trackedLink: trackedAssetUrl(found.prospect),
+        liveDemoLink: demoLinkFor(found.prospect),
+        demoVisitLog: visits.map((v) => ({
+          at: v.startedAt,
+          secondsOnScreen: v.activeSeconds,
+          device: v.device,
+          city: v.city,
+          lookedAt: v.views.map(viewLabel),
+          did: v.actions.map(describeAction),
+        })),
+        engine: engine && { contacts: engine.contacts, signals: engine.signals, feedback: engine.feedback, next: engine.next },
+      };
     },
   ),
   tool(

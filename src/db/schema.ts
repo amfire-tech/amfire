@@ -748,6 +748,10 @@ export const prospects = appSchema.table(
     linkOpens: integer("link_opens").notNull().default(0),
     linkFirstOpenedAt: timestamp("link_first_opened_at", { withTimezone: true }),
     linkLastOpenedAt: timestamp("link_last_opened_at", { withTimezone: true }),
+    /** Visits to their personal live demo link ({site}/demo?p={linkToken}); details in demo_visits. */
+    demoVisits: integer("demo_visits").notNull().default(0),
+    demoFirstVisitAt: timestamp("demo_first_visit_at", { withTimezone: true }),
+    demoLastVisitAt: timestamp("demo_last_visit_at", { withTimezone: true }),
     /** The play (sequence of touches) they're on, the next step's index and when it started. */
     play: text("play"),
     playStep: integer("play_step").notNull().default(0),
@@ -1032,6 +1036,45 @@ export const demos = appSchema.table("demos", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 });
+
+/**
+ * One visit to the live operating-system demo (/demo, or the demo on /services).
+ * A personal link (/demo?p={linkToken}) ties the visit to a prospect; other
+ * visits stay anonymous and keep only coarse facts: city from the request,
+ * device type, where they came from. No IP address is stored. Staff and
+ * automated link checkers are never recorded (src/server/demo-visits.ts).
+ */
+export const demoVisits = appSchema.table(
+  "demo_visits",
+  {
+    id: id(),
+    prospectId: uuid("prospect_id").references(() => prospects.id, { onDelete: "set null" }),
+    /** A random id kept in the visitor's browser, so repeat anonymous visits group together. */
+    visitorId: text("visitor_id"),
+    /** "demo" (the shareable page) or "services" (the demo on the Services page). */
+    page: text("page").notNull().default("demo"),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Seconds the demo was on screen and the tab visible. */
+    activeSeconds: integer("active_seconds").notNull().default(0),
+    /** Modules opened, in order, e.g. ["home", "trace", "finance"]. */
+    views: jsonb("views").$type<string[]>().notNull().default([]),
+    /** What they did, e.g. ["approve:price", "order:SO-1182", "fullscreen", "cta"]. */
+    actions: jsonb("actions").$type<string[]>().notNull().default([]),
+    /** "phone", "tablet" or "desktop". */
+    device: text("device"),
+    city: text("city"),
+    region: text("region"),
+    country: text("country"),
+    /** The referring site's host, e.g. "linkedin.com". */
+    referrer: text("referrer"),
+    utmSource: text("utm_source"),
+    utmMedium: text("utm_medium"),
+    utmCampaign: text("utm_campaign"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("demo_visits_prospect_idx").on(t.prospectId), index("demo_visits_started_idx").on(t.startedAt)],
+);
 
 /**
  * An outreach email to a prospect in the "Toran" theme: drafted by the owner or

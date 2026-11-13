@@ -7,6 +7,8 @@ import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { CHANNEL_LABELS, PROSPECT_KINDS, fillTemplate, formatIst, hookFor, objectionLabel, outcomeLabel, prospectStatusLabel, type TouchChannel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
 import { trackedAssetUrl } from "@/server/asset-links";
+import { demoLinkFor, prospectDemoVisits } from "@/server/demo-visits";
+import { VisitDetails } from "../demo-visit-ui";
 import { whatsappLink } from "@/server/brain";
 import { getProspectEngine } from "@/server/engine";
 import { RESPONSE_TEST_CHANNELS, getProspect } from "@/server/outreach";
@@ -35,6 +37,9 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
   if (!found || !engine) notFound();
   const { prospect: p, history, lead, demo, responseTests, referral } = found;
   const trackedLink = trackedAssetUrl(p);
+  const liveDemoLink = demoLinkFor(p);
+  const liveVisits = await prospectDemoVisits(db, actor, p.id, 5);
+  const liveDemoMessage = `Hi${p.contactName ? ` ${p.contactName.split(" ")[0]}` : ""}, this is ${actor.name.split(" ")[0]} from amfire. Here's a live demo of a company run by agents: every order from enquiry to payment on one screen, and you approve only what matters. It takes two minutes and works on your phone: ${liveDemoLink}`;
 
   return (
     <div className="space-y-6">
@@ -185,6 +190,36 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
         </div>
 
         <aside className="space-y-6">
+          <Card>
+            <CardTitle aside={<span className="text-sm text-muted">{p.demoVisits} {p.demoVisits === 1 ? "visit" : "visits"}</span>}>Live demo link</CardTitle>
+            <div className="space-y-3 text-sm">
+              <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{liveDemoLink}</code>
+              <div className="flex flex-wrap gap-2">
+                {p.phone && !p.doNotContact && (
+                  <a href={whatsappLink(p.phone, liveDemoMessage)} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>
+                    Send on WhatsApp ↗
+                  </a>
+                )}
+                <a href={liveDemoLink} target="_blank" rel="noopener noreferrer" className={buttonClass("secondary", "sm")}>
+                  Preview ↗
+                </a>
+              </div>
+              <p className="text-muted">{p.demoLastVisitAt ? `Last visit ${formatIst(p.demoLastVisitAt)}` : "Not visited yet"}</p>
+              {liveVisits.length > 0 && (
+                <ol className="space-y-3 border-t border-line pt-3">
+                  {liveVisits.map((v) => (
+                    <li key={v.id}>
+                      <VisitDetails v={v} />
+                    </li>
+                  ))}
+                </ol>
+              )}
+              <p className="text-xs text-muted">
+                Their demo says “prepared for {p.name.replace(/\s*\(.*?\)\s*/g, " ").trim()}”. When they open it they jump to the top of your list and you get an email; what they looked at shows here. Your own clicks while signed in don’t count.
+              </p>
+            </div>
+          </Card>
+
           {trackedLink && trackedLink !== p.assetUrl && (
             <Card>
               <CardTitle aside={<span className="text-sm text-muted">{p.linkOpens} {p.linkOpens === 1 ? "open" : "opens"}</span>}>Report link</CardTitle>

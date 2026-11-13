@@ -60,6 +60,7 @@ export function Sales() {
   const { openDrawer } = useDemo();
   const [tab, setTab] = useState<"pipeline" | "enquiries" | "quotes" | "customers">("pipeline");
   const dealDrawer = (d: Deal, stage: string) => ({
+    act: `deal:${d.id}`,
     eyebrow: `${d.id} · ${stage}`,
     title: `${d.customer}: ${d.title}`,
     body: (
@@ -180,6 +181,7 @@ export function Service() {
   const [t, setT] = useState<(typeof types)[number]>("All");
   const rows = TICKETS.filter((x) => t === "All" || x.type === t);
   const drawer = (k: Ticket) => ({
+    act: `ticket:${k.id}`,
     eyebrow: `${k.id} · ${k.type} · ${k.pri} · ${k.channel}`,
     title: `${k.customer}: ${k.subject}`,
     body: (

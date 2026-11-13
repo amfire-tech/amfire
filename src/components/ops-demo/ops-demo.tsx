@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { APPROVALS, COMPANY, HEALTH, NAV, OWNER, type ViewId } from "./data";
 import { Demo, Dot, useIST, type DemoApi, type DrawerContent } from "./kit";
+import { useDemoTracking, type TrackConfig } from "./track";
 import { Agents, Approvals, Documents, Home, Tracker } from "./views-company";
 import { Dispatch, Finance, Orders, People, Production, Purchase, Quality, Sales, Service } from "./views-depts";
 
@@ -36,7 +37,8 @@ const VIEWS: Record<ViewId, () => React.JSX.Element> = {
  * `page`: the demo is the whole page (the shareable /demo link). It fills its container,
  * scrolls inside, and has no preview fade or full-screen toggle.
  */
-export function OpsDemo({ page = false }: { page?: boolean } = {}) {
+export function OpsDemo({ page = false, track }: { page?: boolean; track?: TrackConfig } = {}) {
+  const { note, flush } = useDemoTracking(track);
   const [view, setView] = useState<ViewId>("home");
   const [drawer, setDrawer] = useState<DrawerContent | null>(null);
   const [approved, setApproved] = useState<Record<string, boolean>>({});
@@ -77,25 +79,39 @@ export function OpsDemo({ page = false }: { page?: boolean } = {}) {
     };
   }, [drawer, full]);
 
-  const go = useCallback((v: ViewId) => {
-    setView(v);
-    setDrawer(null);
-  }, []);
+  const go = useCallback(
+    (v: ViewId) => {
+      setView(v);
+      setDrawer(null);
+      note("view", v);
+    },
+    [note],
+  );
 
   const api: DemoApi = useMemo(
     () => ({
       city,
       go,
-      openDrawer: setDrawer,
+      openDrawer: (d) => {
+        setDrawer(d);
+        if (d.act) note("action", d.act);
+      },
       approved,
       approve: (id) => {
         const a = APPROVALS.find((x) => x.id === id);
         setApproved((s) => ({ ...s, [id]: true }));
         if (a) setToast(a.result);
+        note("action", `approve:${id}`);
       },
     }),
-    [city, go, approved],
+    [city, go, approved, note],
   );
+
+  /** Someone heading to book a conversation: record it and send the report before the page changes. */
+  const onCta = () => {
+    note("action", "cta");
+    flush(true);
+  };
 
   const waiting = APPROVALS.filter((a) => !approved[a.id]).length;
   const View = VIEWS[view];
@@ -157,7 +173,10 @@ export function OpsDemo({ page = false }: { page?: boolean } = {}) {
             {!page && (
             <button
               type="button"
-              onClick={() => setFull((f) => !f)}
+              onClick={() => {
+                if (!full) note("action", "fullscreen");
+                setFull((f) => !f);
+              }}
               aria-label={full ? "Close full screen" : "Full screen"}
               className="inline-flex items-center gap-1.5 rounded-md p-1.5 text-[12px] font-medium whitespace-nowrap text-[#ededea] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.16)] hover:bg-white/5 sm:px-2.5"
             >
@@ -210,7 +229,7 @@ export function OpsDemo({ page = false }: { page?: boolean } = {}) {
             <div className="mt-auto hidden pt-2 lg:block">
               <div className="rounded-xl border border-white/[0.07] bg-[#141417] p-3.5">
                 <p className="text-[13px] leading-snug">Your company, run like this.</p>
-                <Link href={START} className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#3ccf8e] hover:underline">
+                <Link href={START} onClick={onCta} className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#3ccf8e] hover:underline">
                   Start a conversation <span aria-hidden>→</span>
                 </Link>
               </div>
@@ -230,7 +249,10 @@ export function OpsDemo({ page = false }: { page?: boolean } = {}) {
               <div className="absolute inset-x-0 bottom-0 z-[5] flex h-60 flex-col items-center justify-end gap-2.5 bg-gradient-to-b from-transparent via-[#0e0e10]/85 to-[#0e0e10] px-5 pb-6 text-center lg:hidden">
                 <button
                   type="button"
-                  onClick={() => setFull(true)}
+                  onClick={() => {
+                    note("action", "fullscreen");
+                    setFull(true);
+                  }}
                   className="inline-flex items-center gap-2 rounded-full bg-[#f2f1ec] px-5 py-3 text-[14px] font-medium text-[#0b0b0c] shadow-[0_10px_30px_-10px_rgba(242,241,236,0.45)] active:scale-[0.98]"
                 >
                   <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
@@ -276,7 +298,7 @@ export function OpsDemo({ page = false }: { page?: boolean } = {}) {
                 </p>
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/[0.08] pt-3 text-[13px]">
                   <span className="text-[#b9b9b4]">One tap from your phone. That&rsquo;s your whole job.</span>
-                  <Link href={START} className="font-medium whitespace-nowrap text-[#3ccf8e] hover:underline">
+                  <Link href={START} onClick={onCta} className="font-medium whitespace-nowrap text-[#3ccf8e] hover:underline">
                     Get this →
                   </Link>
                 </div>
@@ -289,7 +311,7 @@ export function OpsDemo({ page = false }: { page?: boolean } = {}) {
         {(full || page) && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] px-4 py-3 text-[13px] lg:hidden">
             <span className="text-[#b9b9b4]">Your company, run like this.</span>
-            <Link href={START} className="rounded-full bg-[#3ccf8e] px-4 py-2 font-medium whitespace-nowrap text-[#0b0b0c]">
+            <Link href={START} onClick={onCta} className="rounded-full bg-[#3ccf8e] px-4 py-2 font-medium whitespace-nowrap text-[#0b0b0c]">
               Start a conversation
             </Link>
           </div>

@@ -10,6 +10,7 @@ import { organizationJsonLd } from "@/config/structured-data";
 
 const COMPANY = [
   { href: "/services", label: "Services" },
+  { href: "/manufacturing", label: "For manufacturers" },
   { href: "/how-we-work", label: "How we work" },
   { href: "/work", label: "Work" },
   { href: "/about", label: "About" },
@@ -135,7 +136,10 @@ export default function SiteLayout({ children }: LayoutProps<"/">) {
           <div className="flex flex-col gap-2 border-t border-white/10 py-6 text-[13px] text-white/45 sm:flex-row sm:justify-between">
             <span className="flex flex-wrap gap-x-4 gap-y-1">
               <span>
-                © {new Date().getFullYear()} amfire · {site.location}
+                © {new Date().getFullYear()} amfire ·{" "}
+                <Link href="/pune" className="hover:text-white">
+                  {site.location}
+                </Link>
               </span>
               <Link href="/privacy" className="hover:text-white">
                 Privacy

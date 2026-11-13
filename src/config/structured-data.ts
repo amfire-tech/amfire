@@ -37,6 +37,46 @@ export function breadcrumbJsonLd(trail: { name: string; path: string }[]) {
   };
 }
 
+/** A service amfire offers to one kind of buyer, on that buyer's landing page. */
+export function serviceJsonLd({ path, name, serviceType, description, audience }: { path: string; name: string; serviceType: string; description: string; audience: string }) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": absolute(`${path}#service`),
+    name,
+    serviceType,
+    description,
+    url: absolute(path),
+    provider: { "@id": ORGANIZATION_ID },
+    audience: { "@type": "BusinessAudience", name: audience },
+  };
+}
+
+/**
+ * amfire as a local business in Pune, on the Pune page only. It shares the organisation's
+ * @id, so search engines merge it with the sitewide entry; the sitewide entry deliberately
+ * names no service area, and this one adds the belts we visit in person.
+ */
+export function puneJsonLd(areas: string[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfessionalService",
+    "@id": ORGANIZATION_ID,
+    name: site.name,
+    url: site.url,
+    telephone: site.contactPhone,
+    email: site.contactEmail,
+    address: { "@type": "PostalAddress", addressLocality: "Pune", addressRegion: "Maharashtra", addressCountry: "IN" },
+    areaServed: areas.map((name) => ({ "@type": "Place", name })),
+    openingHoursSpecification: {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+      opens: "10:00",
+      closes: "19:00",
+    },
+  };
+}
+
 /** A case study as an article written by amfire about a client it built for. */
 export function caseStudyJsonLd(study: CaseStudy) {
   const amfire = { "@type": "Organization", "@id": ORGANIZATION_ID, name: site.name, url: site.url };

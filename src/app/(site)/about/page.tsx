@@ -59,7 +59,7 @@ function FounderCard({ founder }: { founder: Founder }) {
 export default function AboutPage() {
   const several = FOUNDERS.length > 1;
   const facts = [
-    { term: "Based in", value: "Pune, India" },
+    { term: "Based in", value: "Pune, India", href: "/pune" },
     { term: "Write to", value: site.contactEmail, href: contact.email },
     { term: "Call", value: site.contactPhone, href: contact.call },
     { term: "Hours", value: "Mon–Sat, 10 AM–7 PM IST" },

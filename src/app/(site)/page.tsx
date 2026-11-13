@@ -242,6 +242,13 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+          {/* The one door to the manufacturing page from the main pages (approved 14 Nov). */}
+          <p className="mt-8 text-center text-[15px] text-muted">
+            Running a plant?{" "}
+            <Link href="/manufacturing" className="inline-flex items-center gap-1.5 font-medium text-fg underline-offset-[6px] hover:underline">
+              See where an order waits in manufacturing <Arrow />
+            </Link>
+          </p>
         </Container>
       </section>
 

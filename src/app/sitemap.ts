@@ -8,14 +8,14 @@ import { CASE_STUDIES } from "@/knowledge/case-studies";
  * whenever you change what a page says.
  */
 const CHANGED = {
-  home: "2026-11-08",
-  services: "2026-11-13",
-  howWeWork: "2026-11-07",
-  work: "2026-11-07",
-  caseStudies: "2026-11-08",
-  about: "2026-11-07",
+  home: "2026-11-14",
+  services: "2026-11-14",
+  howWeWork: "2026-11-14",
+  work: "2026-11-14",
+  caseStudies: "2026-11-14",
+  about: "2026-11-14",
   start: "2026-11-07",
-  agencies: "2026-11-07",
+  agencies: "2026-11-14",
   partners: "2026-11-07",
   privacy: "2026-11-06",
   terms: "2026-11-07",

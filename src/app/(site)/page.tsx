@@ -19,8 +19,11 @@ import { CASE_STUDIES } from "@/knowledge/case-studies";
 // The vocabulary is four words: work moves, gets stuck, the owner chases, and sees.
 // Orange means "stuck" and nothing else. Mono is for figures only. No text under 13px.
 
-const TITLE = "amfire · Operations engineering";
-const DESCRIPTION = site.description;
+// Search titles and descriptions carry the phrases buyers type (approved 14 Nov 2026,
+// docs/seo/seo-audit.html); the words on the page stay exactly as approved.
+const TITLE = "amfire · Operations engineering and process automation";
+const DESCRIPTION =
+  "A company that runs without you chasing it. amfire maps how work moves between your teams, then builds and runs the systems that keep it moving.";
 
 export const metadata: Metadata = {
   title: { absolute: TITLE },

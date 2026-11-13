@@ -11,9 +11,9 @@ import { JsonLd } from "@/components/json-ld";
 import { breadcrumbJsonLd } from "@/config/structured-data";
 
 export const metadata: Metadata = {
-  title: "White-Label AI for Marketing Agencies and Coaches",
+  title: "White-label AI automation for agencies",
   description:
-    "Your AI build team, under your brand. Chat and voice agents, lead follow-up and automations built for your clients. You keep the client and the margin.",
+    "Your AI build team under your brand: voice and chat agents, speed-to-lead follow-up and automations for your clients. You keep the client and the margin.",
   alternates: { canonical: "/agencies" },
 };
 

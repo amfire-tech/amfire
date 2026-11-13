@@ -10,10 +10,10 @@ import { breadcrumbJsonLd } from "@/config/structured-data";
 // next to real projects they suggested we had few clients, and none fit the buyer.
 
 export const metadata: Metadata = {
-  title: "Our work",
+  title: "Case studies: systems built and running",
   alternates: { canonical: "/work" },
   description:
-    "Real client systems amfire has designed and built, live today: Skillship's platform for schools and MyGreenHome's website.",
+    "Real systems amfire designed, built and runs today: what each client needed, what we built, and what happens now.",
 };
 
 export default function WorkPage() {

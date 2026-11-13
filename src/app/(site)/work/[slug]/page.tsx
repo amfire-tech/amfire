@@ -15,7 +15,11 @@ export async function generateMetadata({ params }: PageProps<"/work/[slug]">): P
   const { slug } = await params;
   const study = caseStudyBySlug(slug);
   return study
-    ? { title: `${study.client} case study`, description: study.searchDescription ?? study.summary, alternates: { canonical: `/work/${slug}` } }
+    ? {
+        title: study.searchTitle ?? `${study.client} case study`,
+        description: study.searchDescription ?? study.summary,
+        alternates: { canonical: `/work/${slug}` },
+      }
     : {};
 }
 

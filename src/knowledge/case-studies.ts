@@ -16,6 +16,8 @@ export type CaseStudy = {
   summary: string;
   /** A shorter summary for search results when `summary` runs past 160 characters (results cut it off). */
   searchDescription?: string;
+  /** The title shown in search results, when "{client} case study" says too little. */
+  searchTitle?: string;
   cover: string;
   coverAlt: string;
   /** When the case study went live on the site (YYYY-MM-DD), for search engines. */
@@ -42,6 +44,7 @@ export const CASE_STUDIES: CaseStudy[] = [
       "We designed and built Skillship's complete school platform — five role-based dashboards, a quiz engine, and AI that writes questions, grades answers and guides careers.",
     searchDescription:
       "We designed and built Skillship's school platform: five role-based dashboards, a quiz engine, and AI that writes questions, grades answers and guides careers.",
+    searchTitle: "Skillship: a school platform with AI built in",
     cover: "/work/skillship.jpg",
     coverAlt: "Skillship — AI-powered learning for Indian schools",
     published: "2026-10-23",

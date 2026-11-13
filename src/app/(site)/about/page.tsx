@@ -14,9 +14,9 @@ import { breadcrumbJsonLd } from "@/config/structured-data";
 // nothing here is a stuck point.
 
 export const metadata: Metadata = {
-  title: "About the founders",
+  title: { absolute: "About amfire: founder-led operations engineering in Pune" },
   description:
-    "amfire is a small team in Pune, led by its founders. We build systems around how your company works, so your team keeps moving and you are free to lead its growth.",
+    "amfire is a founder-led team in Pune. We build systems around how your company works, so your team keeps moving and you are free to lead its growth.",
   alternates: { canonical: "/about" },
 };
 

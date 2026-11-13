@@ -11,10 +11,10 @@ import { breadcrumbJsonLd } from "@/config/structured-data";
 // every company recognises itself through its departments. About 170 words of copy.
 
 export const metadata: Metadata = {
-  title: "Services",
+  title: "AI agents and process automation for operations",
   alternates: { canonical: "/services" },
   description:
-    "amfire designs, builds and runs agent systems across your company, from the first enquiry to the final payment. Your people approve what matters.",
+    "Agent systems that carry work across sales, production, dispatch and accounts, from the first enquiry to the final payment. Your people approve what matters.",
 };
 
 const START = "/start";

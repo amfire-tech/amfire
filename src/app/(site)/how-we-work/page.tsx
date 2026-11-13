@@ -11,7 +11,7 @@ import { breadcrumbJsonLd } from "@/config/structured-data";
 // homepage, in more depth. No orange: nothing here is a stuck point.
 
 export const metadata: Metadata = {
-  title: "How we work",
+  title: "How an automation project works, start to finish",
   alternates: { canonical: "/how-we-work" },
   description:
     "Every amfire engagement follows four stages: understand, measure, build and run, with a written agreement and your approval at each step.",

@@ -36,6 +36,7 @@ const nextConfig: NextConfig = {
       { source: "/contact", destination: "/start", permanent: true },
       { source: "/blog/:path*", destination: "/work", permanent: true },
       { source: "/industries/:path+", destination: "/services", permanent: true },
+      { source: "/careers", destination: "/about", permanent: true },
     ];
   },
   turbopack: {

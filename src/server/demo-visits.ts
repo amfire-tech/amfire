@@ -172,6 +172,10 @@ export function describeAction(a: string) {
       return "Opened full screen";
     case "cta":
       return "Clicked Start a conversation";
+    case "locked":
+      return `Tried to open ${DEMO_VIEWS[ref] ?? ref} (locked)`;
+    case "unlock":
+      return "Said hi on WhatsApp to unlock the demo";
     default:
       return a;
   }

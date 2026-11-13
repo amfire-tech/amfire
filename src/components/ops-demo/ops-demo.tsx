@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { APPROVALS, COMPANY, HEALTH, NAV, OWNER, type ViewId } from "./data";
 import { Demo, Dot, useIST, type DemoApi, type DrawerContent } from "./kit";
 import { useDemoTracking, type TrackConfig } from "./track";
+import { FREE_VIEWS, LockedView, LockIcon, useUnlocked } from "./lock";
 import { Agents, Approvals, Documents, Home, Tracker } from "./views-company";
 import { Dispatch, Finance, Orders, People, Production, Purchase, Quality, Sales, Service } from "./views-depts";
 
@@ -37,8 +38,11 @@ const VIEWS: Record<ViewId, () => React.JSX.Element> = {
  * `page`: the demo is the whole page (the shareable /demo link). It fills its container,
  * scrolls inside, and has no preview fade or full-screen toggle.
  */
-export function OpsDemo({ page = false, track }: { page?: boolean; track?: TrackConfig } = {}) {
+export function OpsDemo({ page = false, track, locked = false }: { page?: boolean; track?: TrackConfig; locked?: boolean } = {}) {
   const { note, flush } = useDemoTracking(track);
+  const { unlocked, unlock } = useUnlocked();
+  /** Visitors we don't know see the command centre and order tracker; the rest unlocks on WhatsApp. */
+  const isLocked = (v: ViewId) => locked && !unlocked && !FREE_VIEWS.has(v);
   const [view, setView] = useState<ViewId>("home");
   const [drawer, setDrawer] = useState<DrawerContent | null>(null);
   const [approved, setApproved] = useState<Record<string, boolean>>({});
@@ -79,14 +83,22 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
     };
   }, [drawer, full]);
 
+  const lockActive = locked && !unlocked;
   const go = useCallback(
     (v: ViewId) => {
       setView(v);
       setDrawer(null);
       note("view", v);
+      if (lockActive && !FREE_VIEWS.has(v)) note("action", `locked:${v}`);
     },
-    [note],
+    [note, lockActive],
   );
+
+  const onUnlocked = () => {
+    unlock();
+    note("action", "unlock");
+    flush(true);
+  };
 
   const api: DemoApi = useMemo(
     () => ({
@@ -106,12 +118,6 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
     }),
     [city, go, approved, note],
   );
-
-  /** Someone heading to book a conversation: record it and send the report before the page changes. */
-  const onCta = () => {
-    note("action", "cta");
-    flush(true);
-  };
 
   const waiting = APPROVALS.filter((a) => !approved[a.id]).length;
   const View = VIEWS[view];
@@ -220,7 +226,13 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
                     >
                       {health ? <Dot tone={health} /> : <span aria-hidden className="size-[7px] shrink-0 rounded-sm bg-white/25" />}
                       <span className="flex-1">{it.label}</span>
-                      {it.id === "approvals" && waiting > 0 && <span className="rounded-full bg-[#f2f1ec] px-1.5 font-mono text-[11px] text-[#0b0b0c]">{waiting}</span>}
+                      {isLocked(it.id) ? (
+                        <span className="text-[#55555c]" title="Part of the full demo">
+                          <LockIcon className="size-3" />
+                        </span>
+                      ) : (
+                        it.id === "approvals" && waiting > 0 && <span className="rounded-full bg-[#f2f1ec] px-1.5 font-mono text-[11px] text-[#0b0b0c]">{waiting}</span>
+                      )}
                     </button>
                   );
                 })}
@@ -228,10 +240,21 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
             ))}
             <div className="mt-auto hidden pt-2 lg:block">
               <div className="rounded-xl border border-white/[0.07] bg-[#141417] p-3.5">
-                <p className="text-[13px] leading-snug">Your company, run like this.</p>
-                <Link href={START} onClick={onCta} className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#3ccf8e] hover:underline">
-                  Start a conversation <span aria-hidden>→</span>
-                </Link>
+                {lockActive ? (
+                  <>
+                    <p className="text-[13px] leading-snug">You&rsquo;re seeing 2 of 14 modules.</p>
+                    <button type="button" onClick={() => go("sales")} className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#3ccf8e] hover:underline">
+                      <LockIcon className="size-3" /> Unlock the full demo
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-[13px] leading-snug">Your company, run like this.</p>
+                    <Link href={START} className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-medium text-[#3ccf8e] hover:underline">
+                      Start a conversation <span aria-hidden>→</span>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </nav>
@@ -240,7 +263,7 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
           <div className="relative min-h-0 min-w-0">
             <div className={`od-scroll isolate p-4 sm:p-5 ${full || page ? "h-full overflow-y-auto" : "max-lg:h-[560px] max-lg:overflow-hidden lg:h-[720px] lg:overflow-y-auto"}`}>
               <div key={view} className="od-up">
-                <View />
+                {isLocked(view) ? <LockedView view={view} preview={<View />} onUnlocked={onUnlocked} /> : <View />}
               </div>
             </div>
 
@@ -298,7 +321,7 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
                 </p>
                 <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/[0.08] pt-3 text-[13px]">
                   <span className="text-[#b9b9b4]">One tap from your phone. That&rsquo;s your whole job.</span>
-                  <Link href={START} onClick={onCta} className="font-medium whitespace-nowrap text-[#3ccf8e] hover:underline">
+                  <Link href={START} className="font-medium whitespace-nowrap text-[#3ccf8e] hover:underline">
                     Get this →
                   </Link>
                 </div>
@@ -311,7 +334,7 @@ export function OpsDemo({ page = false, track }: { page?: boolean; track?: Track
         {(full || page) && (
           <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/[0.07] px-4 py-3 text-[13px] lg:hidden">
             <span className="text-[#b9b9b4]">Your company, run like this.</span>
-            <Link href={START} onClick={onCta} className="rounded-full bg-[#3ccf8e] px-4 py-2 font-medium whitespace-nowrap text-[#0b0b0c]">
+            <Link href={START} className="rounded-full bg-[#3ccf8e] px-4 py-2 font-medium whitespace-nowrap text-[#0b0b0c]">
               Start a conversation
             </Link>
           </div>

@@ -99,13 +99,25 @@ export function useDemoTracking(config: TrackConfig | undefined) {
       if (document.visibilityState === "hidden") flush(true);
     };
     const onLeave = () => flush(true);
+    // "Start a conversation" opens the calendar popup, which stops the click before the
+    // demo sees it, so the booking click is noticed here, before anything else.
+    const onBookClick = (e: MouseEvent) => {
+      const a = (e.target as Element | null)?.closest?.("a");
+      if (!a || !/^\/start(\?|$)/.test(a.getAttribute("href") ?? "")) return;
+      const list = t.actions;
+      if (!list.includes("cta")) list.push("cta");
+      if (!t.started) start();
+      flush(true);
+    };
     document.addEventListener("visibilitychange", onHide);
     window.addEventListener("pagehide", onLeave);
+    window.addEventListener("click", onBookClick, { capture: true });
     return () => {
       window.clearInterval(tick);
       window.clearInterval(report);
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", onLeave);
+      window.removeEventListener("click", onBookClick, { capture: true });
       flush(true);
     };
   }, [start, flush]);

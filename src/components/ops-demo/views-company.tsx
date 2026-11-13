@@ -425,7 +425,7 @@ function SyncFlow() {
           className={`inline-flex items-center gap-2 rounded-full border border-[#3ccf8e]/30 bg-[#121a16] px-3 py-1.5 text-[12px] font-medium text-[#3ccf8e] ${k > 0 ? "sf-land" : ""}`}
         >
           <span aria-hidden className="od-ping size-[7px] rounded-full bg-[#3ccf8e]" />
-          {OWNER.first}&rsquo;s dashboard · updated {now ? now.time : "live"} IST
+          Your dashboard · updated {now ? now.time : "live"} IST
         </span>
         <p key={k} className="od-in text-center text-[12.5px] leading-snug text-[#b9b9b4]">
           <span className="text-[#ededea]">{SYNC_SOURCES[event.from].team}</span> · {event.text}

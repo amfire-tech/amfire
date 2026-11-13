@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { OneClickBooking } from "@/components/cal-booking";
 import { OpsDemo } from "@/components/ops-demo/ops-demo";
 import { Logo } from "@/components/ui";
 import { getDb } from "@/db";
 import { getDemoInvite } from "@/server/demo-visits";
+import { MobileNotice } from "./mobile-notice";
 
 // The shareable demo: amfire.in/demo opens straight into the live operating system of a
 // demo company, filling the screen on a laptop or a phone. Sent in outreach so a founder
@@ -55,8 +57,12 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
         </Link>
       </header>
       <div className="min-h-0 flex-1 sm:px-3 sm:pb-3">
-        <OpsDemo page track={{ page: "demo", token: invite ? token : null, startOnLoad: true }} />
+        {/* Someone we sent a personal link sees everything; everyone else unlocks it on WhatsApp. */}
+        <OpsDemo page locked={!invite} track={{ page: "demo", token: invite ? token : null, startOnLoad: true }} />
       </div>
+      {/* Every "Start a conversation" here opens the calendar over the demo, not the /start page. */}
+      <OneClickBooking />
+      <MobileNotice />
     </main>
   );
 }

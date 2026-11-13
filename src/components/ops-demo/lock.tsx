@@ -61,14 +61,15 @@ export function LockedView({ view, preview, onUnlocked }: { view: ViewId; previe
 const WAITING = ["Sales", "Production", "Finance", "Quality"];
 
 /**
- * The unlock card, kept to one tap. WhatsApp already shows the founder their name and
- * number, so nothing is typed here; the message ends with "My company:" so most people
- * add it. It unlocks the moment they tap, so the promise on the button is true.
+ * The unlock card, kept to one tap. Nothing is typed here; the WhatsApp message ends with
+ * "Name:" and "Company:" lines for them to fill in before sending. It unlocks the moment they tap, so the promise on the button is true.
  */
 export function UnlockCard({ locked, onUnlocked }: { locked: string; onUnlocked: () => void }) {
   const open = 2;
   function sayHi() {
-    const text = `Hi Navanish 👋 I tried the amfire demo and I'd like the full dashboard.\nMy company: `;
+    // Plain text only: WhatsApp's link garbles some emoji on WhatsApp Web. The two labelled
+    // lines are for them to fill in before sending.
+    const text = `Hi Navanish, I tried the amfire demo and I'd like the full dashboard.\n\nName: \nCompany: `;
     const url = contact.whatsapp(text);
     const win = window.open(url, "_blank", "noopener");
     if (!win) window.location.href = url;

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { APPROVALS, COMPANY, HEALTH, NAV, OWNER, type ViewId } from "./data";
+import { APPROVALS, COMPANY, DEFAULT_PERSONA, HEALTH, NAV, type Persona, type ViewId } from "./data";
 import { Demo, Dot, useIST, type DemoApi, type DrawerContent } from "./kit";
 import { useDemoTracking, type TrackConfig } from "./track";
 import { FREE_VIEWS, LockedView, LockIcon, useUnlocked } from "./lock";
@@ -38,9 +38,28 @@ const VIEWS: Record<ViewId, () => React.JSX.Element> = {
  * `page`: the demo is the whole page (the shareable /demo link). It fills its container,
  * scrolls inside, and has no preview fade or full-screen toggle.
  */
-export function OpsDemo({ page = false, track, locked = false }: { page?: boolean; track?: TrackConfig; locked?: boolean } = {}) {
+/**
+ * `locked`: a visitor we don't know (most modules locked). `grant`: they arrived on the
+ * unlock link the founder sent back on WhatsApp, so this browser is unlocked for good.
+ */
+export function OpsDemo({
+  page = false,
+  track,
+  locked = false,
+  grant = false,
+  persona: personaIn,
+}: { page?: boolean; track?: TrackConfig; locked?: boolean; grant?: boolean; persona?: Persona | null } = {}) {
+  /** Their own company and name when the founder made this demo personal; the demo company otherwise. */
+  const persona = personaIn ?? DEFAULT_PERSONA;
   const { note, flush } = useDemoTracking(track);
   const { unlocked, unlock } = useUnlocked();
+  useEffect(() => {
+    if (!grant) return;
+    unlock();
+    note("action", "unlocked");
+    // Run once, when the page opens on the unlock link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grant]);
   /** Visitors we don't know see the command centre and order tracker; the rest unlocks on WhatsApp. */
   const isLocked = (v: ViewId) => locked && !unlocked && !FREE_VIEWS.has(v);
   const [view, setView] = useState<ViewId>("home");
@@ -48,11 +67,14 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
   const [approved, setApproved] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [full, setFull] = useState(false);
-  const [city, setCity] = useState<string>(COMPANY.defaultCity);
+  const [geoCity, setCity] = useState<string>(COMPANY.defaultCity);
+  /** A personal demo uses their own area; otherwise the visitor's city. */
+  const city = persona.place ?? geoCity;
 
   // Place the demo company near the visitor, from the city their request comes from.
   // No browser permission is asked; unknown or blocked means Pune.
   useEffect(() => {
+    if (personaIn?.place) return;
     const ctrl = new AbortController();
     fetch("/api/geo", { signal: ctrl.signal })
       .then((r) => (r.ok ? r.json() : null))
@@ -61,7 +83,7 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
       })
       .catch(() => {});
     return () => ctrl.abort();
-  }, []);
+  }, [personaIn?.place]);
 
   useEffect(() => {
     if (!toast) return;
@@ -94,15 +116,16 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
     [note, lockActive],
   );
 
-  const onUnlocked = () => {
-    unlock();
-    note("action", "unlock");
+  /** They tapped "Say hi": WhatsApp opens, nothing unlocks until the founder sends the link. */
+  const onSayHi = () => {
+    note("action", "hi");
     flush(true);
   };
 
   const api: DemoApi = useMemo(
     () => ({
       city,
+      persona,
       go,
       openDrawer: (d) => {
         setDrawer(d);
@@ -116,7 +139,7 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
         note("action", `approve:${id}`);
       },
     }),
-    [city, go, approved, note],
+    [city, persona, go, approved, note],
   );
 
   const waiting = APPROVALS.filter((a) => !approved[a.id]).length;
@@ -151,15 +174,19 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
             Less important details drop out as the frame narrows instead of wrapping. */}
         <div className="flex shrink-0 items-center gap-3 border-b border-white/[0.07] px-3 py-2.5 sm:gap-4 sm:px-5">
           <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-md bg-[#f2f1ec] text-[12px] font-bold text-[#0b0b0c]">HP</span>
+            <span aria-hidden className="grid size-7 shrink-0 place-items-center rounded-md bg-[#f2f1ec] text-[12px] font-bold text-[#0b0b0c]">
+              {persona.companyInitials}
+            </span>
             <div className="min-w-0 leading-tight">
-              <p className="flex items-center gap-2 truncate font-medium">
-                {COMPANY.name}
-                <span className="rounded border border-white/10 px-1.5 py-px text-[10.5px] font-normal text-[#8b8b92] max-sm:hidden">Demo company</span>
+              <p className="flex min-w-0 items-center gap-2 font-medium">
+                <span className="truncate">{persona.company}</span>
+                <span className="shrink-0 rounded border border-white/10 px-1.5 py-px text-[10.5px] font-normal text-[#8b8b92] max-sm:hidden">
+                  {persona.personal ? "Prepared for you" : "Demo company"}
+                </span>
               </p>
               <p className="truncate text-[12px] text-[#8b8b92]">
-                <span className="max-2xl:hidden">{COMPANY.line} · </span>
-                {COMPANY.people} · 2 plants in {city} · {COMPANY.customers}
+                <span className={persona.personal ? "" : "max-2xl:hidden"}>{persona.line} · </span>
+                {persona.facts.replace("{city}", city)}
               </p>
             </div>
           </div>
@@ -192,13 +219,13 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
               <span className="max-sm:hidden">{full ? "Close full screen" : "Full screen"}</span>
             </button>
             )}
-            <span className="flex shrink-0 items-center gap-2 border-l border-white/[0.08] pl-2.5 sm:pl-3" title={`Signed in as ${OWNER.name}`}>
+            <span className="flex shrink-0 items-center gap-2 border-l border-white/[0.08] pl-2.5 sm:pl-3" title={`Signed in as ${persona.person}`}>
               <span aria-hidden className="grid size-7 place-items-center rounded-full bg-gradient-to-br from-[#e8482a] to-[#f5b54a] text-[11px] font-semibold text-[#0b0b0c]">
-                {OWNER.initials}
+                {persona.personInitials}
               </span>
-              <span className="leading-tight whitespace-nowrap max-md:hidden">
-                <span className="block text-[12.5px] font-medium text-[#ededea]">{OWNER.name}</span>
-                <span className="block text-[11px] text-[#8b8b92]">{OWNER.role}</span>
+              <span className="max-w-[11rem] leading-tight whitespace-nowrap max-md:hidden">
+                <span className="block truncate text-[12.5px] font-medium text-[#ededea]">{persona.person}</span>
+                {persona.role && <span className="block truncate text-[11px] text-[#8b8b92]">{persona.role}</span>}
               </span>
             </span>
           </div>
@@ -263,7 +290,7 @@ export function OpsDemo({ page = false, track, locked = false }: { page?: boolea
           <div className="relative min-h-0 min-w-0">
             <div className={`od-scroll isolate p-4 sm:p-5 ${full || page ? "h-full overflow-y-auto" : "max-lg:h-[560px] max-lg:overflow-hidden lg:h-[720px] lg:overflow-y-auto"}`}>
               <div key={view} className="od-up">
-                {isLocked(view) ? <LockedView view={view} preview={<View />} onUnlocked={onUnlocked} /> : <View />}
+                {isLocked(view) ? <LockedView view={view} preview={<View />} onSayHi={onSayHi} /> : <View />}
               </div>
             </div>
 

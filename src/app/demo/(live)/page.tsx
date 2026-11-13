@@ -4,7 +4,7 @@ import { OneClickBooking } from "@/components/cal-booking";
 import { OpsDemo } from "@/components/ops-demo/ops-demo";
 import { Logo } from "@/components/ui";
 import { getDb } from "@/db";
-import { getDemoInvite } from "@/server/demo-visits";
+import { getDemoInvite, isDemoUnlockCode } from "@/server/demo-visits";
 import { MobileNotice } from "./mobile-notice";
 
 // The shareable demo: amfire.in/demo opens straight into the live operating system of a
@@ -16,7 +16,7 @@ const TITLE = "See a company run by agents";
 const DESCRIPTION =
   "A live demo of an operating system built by amfire: every order tracked from enquiry to payment, every department on one screen, and you approve only what matters. Click anything.";
 
-export const metadata: Metadata = {
+const BASE: Metadata = {
   title: "Live demo",
   description: DESCRIPTION,
   alternates: { canonical: "/demo" },
@@ -24,14 +24,34 @@ export const metadata: Metadata = {
   twitter: { title: `${TITLE} · amfire`, description: DESCRIPTION },
 };
 
+// A personal link is kept out of search engines, and a personal demo's WhatsApp
+// preview names their company.
+export async function generateMetadata({ searchParams }: PageProps<"/demo">): Promise<Metadata> {
+  const { p } = await searchParams;
+  if (typeof p !== "string") return BASE;
+  const invite = await getDemoInvite(await getDb(), p);
+  if (!invite) return { ...BASE, robots: { index: false, follow: false } };
+  const title = invite.persona ? `${invite.persona.company}, run by agents` : `Live demo for ${invite.org}`;
+  return {
+    ...BASE,
+    title,
+    robots: { index: false, follow: false },
+    openGraph: { ...BASE.openGraph, title: `${title} · amfire` },
+    twitter: { ...BASE.twitter, title: `${title} · amfire` },
+  };
+}
+
 export const viewport: Viewport = { themeColor: "#0b0b0c" };
 
 // A personal link (/demo?p={linkToken}, from the prospect's page in HQ) says who it was
 // prepared for and ties the visit to them; without it the visit is recorded anonymously.
+// The unlock link (/demo?unlock={code}) is what the founder sends back on WhatsApp; the
+// code is checked here on the server and opens the full demo for that browser.
 export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
-  const { p } = await searchParams;
+  const { p, unlock } = await searchParams;
   const token = typeof p === "string" ? p : null;
   const invite = await getDemoInvite(await getDb(), token);
+  const granted = isDemoUnlockCode(unlock);
   return (
     <main
       className="flex h-dvh flex-col overflow-hidden bg-[#0b0b0c] text-[#ededea]"
@@ -58,7 +78,13 @@ export default async function DemoPage({ searchParams }: PageProps<"/demo">) {
       </header>
       <div className="min-h-0 flex-1 sm:px-3 sm:pb-3">
         {/* Someone we sent a personal link sees everything; everyone else unlocks it on WhatsApp. */}
-        <OpsDemo page locked={!invite} track={{ page: "demo", token: invite ? token : null, startOnLoad: true }} />
+        <OpsDemo
+          page
+          locked={!invite && !granted}
+          grant={granted}
+          persona={invite?.persona ?? null}
+          track={{ page: "demo", token: invite ? token : null, startOnLoad: true }}
+        />
       </div>
       {/* Every "Start a conversation" here opens the calendar over the demo, not the /start page. */}
       <OneClickBooking />

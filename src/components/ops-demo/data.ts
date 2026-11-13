@@ -32,6 +32,41 @@ export const COMPANY = {
 /** The signed-in owner whose dashboard this is. */
 export const OWNER = { name: "Arjun Mehta", first: "Arjun", role: "Managing Director", initials: "AM" };
 
+/**
+ * Who the dashboard is for. The demo company by default; for a prospect the founder
+ * switched to "personal" in HQ, their own company, name, role, place and industry
+ * (built and cleaned on the server in src/server/demo-visits.ts). Any field left empty
+ * falls back to the demo company's.
+ */
+export type Persona = {
+  personal: boolean;
+  company: string;
+  companyInitials: string;
+  /** What the company does, under its name. */
+  line: string;
+  /** The rest of that line: size and place. */
+  facts: string;
+  person: string;
+  first: string;
+  personInitials: string;
+  role: string;
+  /** Overrides the visitor's own city when set. */
+  place: string | null;
+};
+
+export const DEFAULT_PERSONA: Persona = {
+  personal: false,
+  company: COMPANY.name,
+  companyInitials: "HP",
+  line: COMPANY.line,
+  facts: `${COMPANY.people} · 2 plants in {city} · ${COMPANY.customers}`,
+  person: OWNER.name,
+  first: OWNER.first,
+  personInitials: OWNER.initials,
+  role: OWNER.role,
+  place: null,
+};
+
 /** Each team works in its own system; all of them flow into the owner's view. */
 export type SyncSource = { id: ViewId; team: string; system: string };
 export const SYNC_SOURCES: SyncSource[] = [

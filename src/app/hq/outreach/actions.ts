@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import { getDb } from "@/db";
 import { toActionError, type ActionState } from "@/lib/action-result";
 import { getActor } from "@/lib/session";
+import { setDemoPersonal } from "@/server/demo-visits";
 import { createPartnerLink } from "@/server/partners";
 import {
   addProspects,
@@ -120,6 +121,13 @@ export async function setProspectStatusAction(prospectId: string, change: "partn
   if (change === "do_not_contact") await updateProspect(db, actor, prospectId, { status: "dropped", statusReason: "Asked not to be contacted", doNotContact: true, nextFollowUpAt: null });
   if (change === "reopen") await updateProspect(db, actor, prospectId, { status: "to_contact", statusReason: null, doNotContact: false, nextFollowUpAt: null });
   revalidatePath("/hq/outreach", "layout");
+}
+
+/** Their live demo shows their own company and name (on), or the demo company (off). */
+export async function setDemoPersonalAction(prospectId: string, on: boolean) {
+  const { db, actor } = await ctx();
+  await setDemoPersonal(db, actor, prospectId, on);
+  revalidatePath(`/hq/outreach/${prospectId}`);
 }
 
 export async function convertToLeadAction(prospectId: string) {

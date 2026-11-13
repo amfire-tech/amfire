@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { STAGES, type Impact, type Risk, type Stat, type Tone, type ViewId } from "./data";
+import { STAGES, type Impact, type Persona, type Risk, type Stat, type Tone, type ViewId } from "./data";
 
 // Shared pieces for the Halden Precision demo: one dark, dense, readable look.
 
@@ -9,6 +9,7 @@ import { STAGES, type Impact, type Risk, type Stat, type Tone, type ViewId } fro
 export type DrawerContent = { eyebrow: string; title: string; body: ReactNode; act?: string };
 export type DemoApi = {
   city: string;
+  persona: Persona;
   go: (v: ViewId) => void;
   openDrawer: (d: DrawerContent) => void;
   approved: Record<string, boolean>;

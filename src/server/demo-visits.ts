@@ -9,7 +9,7 @@ import { and, desc, eq, gte, isNotNull, isNull, sql, type SQL } from "drizzle-or
 import type { DB } from "@/db";
 import { demoVisits, prospects, type Prospect } from "@/db/schema";
 import { site } from "@/config/site";
-import { APPROVALS, NAV, type ViewId } from "@/components/ops-demo/data";
+import { APPROVALS, DEFAULT_PERSONA, NAV, type Persona, type ViewId } from "@/components/ops-demo/data";
 import { assertStaff, type Actor } from "./access";
 import { isAutomatedAgent } from "./asset-links";
 import { alertOpen, OPEN_ALERT_GAP } from "./open-alerts";
@@ -29,11 +29,93 @@ const MAX_SECONDS = 4 * 60 * 60;
 /** The personal live demo link for a prospect. */
 export const demoLinkFor = (p: Pick<Prospect, "linkToken">) => `${site.url}/demo?p=${p.linkToken}`;
 
-/** Who a personal link was made for, for the "Prepared for" line. Null for an unknown token. */
+/**
+ * The code in the unlock link the founder sends back to anyone who says hi on WhatsApp.
+ * Checked on the server only, never shipped to the browser. Set DEMO_UNLOCK_CODE to change
+ * it (for example if the link spreads); the fallback keeps it working until then.
+ */
+export function demoUnlockCode() {
+  const c = process.env.DEMO_UNLOCK_CODE?.trim();
+  return c && /^[A-Za-z0-9-]{6,40}$/.test(c) ? c : "hp-full-7k2q";
+}
+
+export const demoUnlockLink = () => `${site.url}/demo?unlock=${demoUnlockCode()}`;
+
+export const isDemoUnlockCode = (v: unknown) => typeof v === "string" && v === demoUnlockCode();
+
+/** A business name without the "(Chakan)"-style notes HQ keeps in it. */
+const displayName = (name: string) => name.replace(/\s*\(.*?\)\s*/g, " ").trim();
+
+/** One line of display text: no control characters, single spaces, a hard length cap. */
+function clean(v: string | null | undefined, max: number) {
+  if (!v) return "";
+  const s = v
+    .replace(/[\u0000-\u001f\u007f<>]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return s.length > max ? `${s.slice(0, max - 1).trimEnd()}…` : s;
+}
+
+const initialsOf = (s: string, fallback: string) => {
+  const letters = s
+    .split(/\s+/)
+    .filter((w) => /^[A-Za-z0-9]/.test(w) && !/^(pvt|private|ltd|limited|llp|inc|co|and|&|the|of|india)\.?$/i.test(w))
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+  return letters || fallback;
+};
+
+/** "Something else" isn't a description worth showing. */
+const SHOWN_INDUSTRY = (industry: string) => (industry && !/^something else$/i.test(industry) ? industry : "");
+
+type PersonaSource = Pick<Prospect, "name" | "contactName" | "contactRole" | "industry" | "area" | "city">;
+
+/**
+ * Who their dashboard is for, from the prospect record: only these display fields,
+ * cleaned and length-capped, ever reach the browser (never phone, notes or research).
+ * Anything missing falls back to the demo company, so a half-filled record still reads well.
+ */
+export function personaFrom(p: PersonaSource): Persona {
+  const company = clean(displayName(p.name), 40) || DEFAULT_PERSONA.company;
+  const person = clean(p.contactName, 40);
+  const role = clean(p.contactRole, 40);
+  const place = clean(p.area, 30) || clean(p.city, 30) || null;
+  const industry = clean(SHOWN_INDUSTRY(p.industry ?? ""), 48);
+  return {
+    personal: true,
+    company,
+    companyInitials: initialsOf(company, DEFAULT_PERSONA.companyInitials),
+    line: industry || DEFAULT_PERSONA.line,
+    facts: place ? `Operations in {city}` : "Your operations, run by agents",
+    person: person || DEFAULT_PERSONA.person,
+    first: person ? person.split(" ")[0] : DEFAULT_PERSONA.first,
+    personInitials: person ? initialsOf(person, "") || person[0].toUpperCase() : DEFAULT_PERSONA.personInitials,
+    role: role || (person ? "" : DEFAULT_PERSONA.role),
+    place,
+  };
+}
+
+/**
+ * Who a personal link was made for: the "Prepared for" line, and their own persona when
+ * the founder switched their demo to personal in HQ. Null for an unknown token.
+ */
 export async function getDemoInvite(db: DB, token: string | null | undefined) {
   if (!token || !TOKEN.test(token)) return null;
-  const [p] = await db.select({ name: prospects.name }).from(prospects).where(eq(prospects.linkToken, token));
-  return p ? { org: p.name.replace(/\s*\(.*?\)\s*/g, " ").trim() } : null;
+  const [p] = await db
+    .select({ name: prospects.name, contactName: prospects.contactName, contactRole: prospects.contactRole, industry: prospects.industry, area: prospects.area, city: prospects.city, demoPersonal: prospects.demoPersonal })
+    .from(prospects)
+    .where(eq(prospects.linkToken, token));
+  if (!p) return null;
+  return { org: displayName(p.name), persona: p.demoPersonal ? personaFrom(p) : null };
+}
+
+/** Switches a prospect's live demo between the demo company and their own details. */
+export async function setDemoPersonal(db: DB, actor: Actor | null, prospectId: string, on: boolean) {
+  assertStaff(actor);
+  if (!UUID.test(prospectId)) return false;
+  const rows = await db.update(prospects).set({ demoPersonal: on, updatedAt: new Date() }).where(eq(prospects.id, prospectId)).returning({ id: prospects.id });
+  return rows.length === 1;
 }
 
 export function deviceOf(userAgent: string | null | undefined): "phone" | "tablet" | "desktop" {
@@ -174,8 +256,12 @@ export function describeAction(a: string) {
       return "Clicked Start a conversation";
     case "locked":
       return `Tried to open ${DEMO_VIEWS[ref] ?? ref} (locked)`;
+    case "hi":
+      return "Opened WhatsApp to say hi (check whether the message arrived)";
     case "unlock":
-      return "Said hi on WhatsApp to unlock the demo";
+      return "Tapped Say hi on WhatsApp";
+    case "unlocked":
+      return "Opened the full demo with your unlock link";
     default:
       return a;
   }

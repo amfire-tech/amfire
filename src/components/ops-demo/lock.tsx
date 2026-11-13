@@ -6,12 +6,14 @@ import { contact } from "@/config/site";
 import { NAV, type ViewId } from "./data";
 
 // The public demo shows the command centre and the order tracker. Every other module
-// is locked until the visitor says hi on WhatsApp, so the founder gets the lead there
-// (WhatsApp shows their name and number). A personal link from HQ (/demo?p=…) is never locked. Once a
-// visitor has sent their details, this browser stays unlocked.
+// is locked. Tapping "Say hi" only opens WhatsApp, because a page can't know whether the
+// message was actually sent; the founder replies with the unlock link (/demo?unlock=…,
+// checked on the server), and that link unlocks this browser for good. A personal link
+// from HQ (/demo?p=…) is never locked.
 
 export const FREE_VIEWS = new Set<ViewId>(["home", "trace"]);
-const KEY = "amfire_demo_unlocked";
+// v2: browsers unlocked by a tap under the old rule are locked again.
+const KEY = "amfire_demo_unlocked_v2";
 const TOTAL = NAV.reduce((n, g) => n + g.items.length, 0);
 
 export function useUnlocked() {
@@ -44,14 +46,14 @@ export function LockIcon({ className = "size-3.5" }: { className?: string }) {
 const label = (v: ViewId) => NAV.flatMap((g) => g.items).find((i) => i.id === v)?.label ?? "This module";
 
 /** A locked module: the real screen blurred behind, and the way to unlock it in front. */
-export function LockedView({ view, preview, onUnlocked }: { view: ViewId; preview: ReactNode; onUnlocked: () => void }) {
+export function LockedView({ view, preview, onSayHi }: { view: ViewId; preview: ReactNode; onSayHi: () => void }) {
   return (
     <div className="relative min-h-[560px]">
       <div aria-hidden className="pointer-events-none max-h-[640px] overflow-hidden opacity-50 blur-[5px] select-none">
         {preview}
       </div>
       <div className="absolute inset-0 flex items-start justify-center bg-gradient-to-b from-[#0e0e10]/40 via-[#0e0e10]/70 to-[#0e0e10] px-1 pt-10 sm:pt-16">
-        <UnlockCard locked={label(view)} onUnlocked={onUnlocked} />
+        <UnlockCard locked={label(view)} onSayHi={onSayHi} />
       </div>
     </div>
   );
@@ -62,18 +64,36 @@ const WAITING = ["Sales", "Production", "Finance", "Quality"];
 
 /**
  * The unlock card, kept to one tap. Nothing is typed here; the WhatsApp message ends with
- * "Name:" and "Company:" lines for them to fill in before sending. It unlocks the moment they tap, so the promise on the button is true.
+ * "Name:" and "Company:" lines for them to fill in. Tapping opens WhatsApp and nothing
+ * more: the demo opens when the founder replies with the unlock link.
  */
-export function UnlockCard({ locked, onUnlocked }: { locked: string; onUnlocked: () => void }) {
+export function UnlockCard({ locked, onSayHi }: { locked: string; onSayHi: () => void }) {
   const open = 2;
+  const [sent, setSent] = useState(false);
   function sayHi() {
-    // Plain text only: WhatsApp's link garbles some emoji on WhatsApp Web. The two labelled
-    // lines are for them to fill in before sending.
+    // Plain text only: WhatsApp's link garbles some emoji on WhatsApp Web.
     const text = `Hi Navanish, I tried the amfire demo and I'd like the full dashboard.\n\nName: \nCompany: `;
     const url = contact.whatsapp(text);
     const win = window.open(url, "_blank", "noopener");
     if (!win) window.location.href = url;
-    onUnlocked();
+    setSent(true);
+    onSayHi();
+  }
+
+  if (sent) {
+    return (
+      <div className="w-full max-w-[360px] rounded-2xl border border-white/[0.09] bg-[#141417]/95 p-5 text-center shadow-[0_30px_60px_-20px_rgba(0,0,0,0.75)] backdrop-blur-sm sm:p-6">
+        <div className="relative mx-auto size-14">
+          <Image src="/team/navanish-square.jpg" alt="Navanish Pandey, founder of amfire" width={112} height={112} className="size-14 rounded-full object-cover grayscale" />
+          <span aria-hidden className="absolute right-0 bottom-0 size-3.5 rounded-full border-[2.5px] border-[#141417] bg-[#3ccf8e]" />
+        </div>
+        <h3 className="mt-4 text-[1.25rem] leading-tight font-medium tracking-[-0.02em]">Send it, and your link is on its way.</h3>
+        <p className="mt-1.5 text-[14px] leading-snug text-[#b9b9b4]">Add your name and company, press send in WhatsApp, and Navanish replies with your link to the full demo.</p>
+        <button type="button" onClick={sayHi} className="mt-4 text-[13px] font-medium text-[#3ccf8e] underline-offset-4 hover:underline">
+          WhatsApp didn&rsquo;t open? Try again
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -86,7 +106,7 @@ export function UnlockCard({ locked, onUnlocked }: { locked: string; onUnlocked:
 
       <h3 className="mt-4 text-[1.35rem] leading-tight font-medium tracking-[-0.02em]">Say hi. See everything.</h3>
       <p className="mt-1.5 text-[14px] leading-snug text-[#b9b9b4]">
-        {locked} and {TOTAL - open - 1} more modules open the moment you message.
+        {locked} and {TOTAL - open - 1} more modules. Say hi on WhatsApp and Navanish sends your link to the full demo.
       </p>
 
       {/* Endowed progress: they've started, the rest is one tap away. */}
@@ -115,7 +135,7 @@ export function UnlockCard({ locked, onUnlocked }: { locked: string; onUnlocked:
           →
         </span>
       </button>
-      <p className="mt-2.5 text-[12px] text-[#8b8b92]">Opens instantly · Navanish replies personally</p>
+      <p className="mt-2.5 text-[12px] text-[#8b8b92]">One message · Navanish replies personally</p>
     </div>
   );
 }

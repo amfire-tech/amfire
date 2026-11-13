@@ -10,14 +10,12 @@ import {
   AUDIT,
   CASH_WEEKS,
   CASH_START,
-  COMPANY,
   DEPT_TILES,
   DOC_STATS,
   DOCUMENTS,
   HEALTH,
   HOME_KPIS,
   ORDERS,
-  OWNER,
   REVENUE_DAYS,
   REVENUE_TARGET,
   RULES,
@@ -35,13 +33,13 @@ const LEVEL = { high: "bad", medium: "warn", low: "info" } as const;
 // ---------------------------------------------------------------- Command centre
 
 export function Home() {
-  const { go, approved } = useDemo();
+  const { go, approved, persona } = useDemo();
   const now = useIST(60_000);
   const waiting = APPROVALS.filter((a) => !approved[a.id]).length;
   return (
     <div className="flex flex-col gap-5">
       <ViewHeader
-        title={`${now ? greeting(now.h) : "Hello"}, ${OWNER.first}. Here is ${COMPANY.name} today.`}
+        title={`${now ? greeting(now.h) : "Hello"}, ${persona.first}. Here is ${persona.company} today.`}
         line={`Agents handled 1,146 tasks since midnight. ${waiting} decision${waiting === 1 ? "" : "s"} wait for you. 5 alerts are open, each with an owner and a plan.`}
       />
       <SyncFlow />

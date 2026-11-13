@@ -1,0 +1,1 @@
+ALTER TABLE "app"."prospects" ADD COLUMN "demo_personal" boolean DEFAULT false NOT NULL;

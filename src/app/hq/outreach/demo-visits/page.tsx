@@ -4,7 +4,7 @@ import { Card, CardTitle, Chip, EmptyState, PageHeader, cx } from "@/components/
 import { getDb } from "@/db";
 import { prospectStatusLabel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
-import { demoVisitStats, listDemoVisits, type VisitFilter } from "@/server/demo-visits";
+import { demoUnlockLink, demoVisitStats, listDemoVisits, type VisitFilter } from "@/server/demo-visits";
 import { VisitDetails, duration } from "../demo-visit-ui";
 
 export const metadata = { title: "Demo visits" };
@@ -37,6 +37,19 @@ export default async function DemoVisitsPage({ searchParams }: PageProps<"/hq/ou
         title="Demo visits"
         description="Everyone who tried the live demo. Send each prospect their personal link from their page here, so you know it was them. Call while it's fresh: the first visit puts them at the top of your list and emails you."
       />
+
+      <Card>
+        <CardTitle>Unlock link for WhatsApp replies</CardTitle>
+        <div className="space-y-2 text-sm">
+          <p className="text-muted">
+            Visitors you don&rsquo;t know see 2 of 14 modules. When one messages you on WhatsApp to unlock it, reply with this link. It opens the full demo in their browser and keeps it open.
+          </p>
+          <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{demoUnlockLink()}</code>
+          <p className="text-xs text-muted">
+            Suggested reply: &ldquo;Thanks! Here&rsquo;s your full demo: {demoUnlockLink()}. Happy to walk you through it on a call too.&rdquo; Save it as a WhatsApp quick reply. If the link ever spreads, set a new DEMO_UNLOCK_CODE in Vercel and this changes.
+          </p>
+        </div>
+      </Card>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile label="Visits, last 7 days">{stats.visits}</StatTile>

@@ -14,6 +14,11 @@ import { addProspects } from "@/server/outreach";
 import { site } from "@/config/site";
 import {
   demoLinkFor,
+  demoUnlockCode,
+  demoUnlockLink,
+  isDemoUnlockCode,
+  personaFrom,
+  setDemoPersonal,
   demoVisitStats,
   describeAction,
   deviceOf,
@@ -43,7 +48,7 @@ describe("live demo visits", () => {
   test("a personal link names the prospect, counts the visit and alerts once an hour", async () => {
     const [p] = (await addProspects(db, owner, [{ name: "Apex Pressings (Chakan)", phone: "9811100009", contactName: "Rohit Shah" }])).created;
     assert.equal(demoLinkFor(p), `${site.url}/demo?p=${p.linkToken}`);
-    assert.deepEqual(await getDemoInvite(db, p.linkToken), { org: "Apex Pressings" });
+    assert.deepEqual(await getDemoInvite(db, p.linkToken), { org: "Apex Pressings", persona: null });
     assert.equal(await getDemoInvite(db, "../etc"), null);
     assert.equal(await getDemoInvite(db, "zzzzzzzzzzzz"), null);
 
@@ -152,5 +157,62 @@ describe("live demo visits", () => {
     assert.match(describeAction("approve:price"), /^Approved a decision: Price for Apex Motors/);
     assert.equal(describeAction("order:SO-1182"), "Opened order SO-1182");
     assert.equal(describeAction("cta"), "Clicked Start a conversation");
+    assert.match(describeAction("hi"), /^Opened WhatsApp/);
+    assert.equal(describeAction("unlocked"), "Opened the full demo with your unlock link");
+  });
+
+  test("a personal demo is off by default and shows only cleaned display fields when on", async () => {
+    const [p] = (
+      await addProspects(db, owner, [
+        { name: "Shree Ganesh Auto Components Pvt Ltd (Bhosari)", phone: "9811100011", contactName: "Rohit  Shah", contactRole: "Director", industry: "Manufacturing", area: "Bhosari MIDC", notes: "Owner was rude last time" },
+      ])
+    ).created;
+    const off = await getDemoInvite(db, p.linkToken);
+    assert.equal(off?.persona, null, "off until switched on in HQ");
+    assert.equal(off?.org, "Shree Ganesh Auto Components Pvt Ltd");
+
+    assert.equal(await setDemoPersonal(db, owner, p.id, true), true);
+    const on = await getDemoInvite(db, p.linkToken);
+    assert.ok(on?.persona);
+    assert.equal(on.persona.company, "Shree Ganesh Auto Components Pvt Ltd");
+    assert.equal(on.persona.companyInitials, "SG");
+    assert.equal(on.persona.person, "Rohit Shah", "whitespace collapsed");
+    assert.equal(on.persona.first, "Rohit");
+    assert.equal(on.persona.personInitials, "RS");
+    assert.equal(on.persona.role, "Director");
+    assert.equal(on.persona.place, "Bhosari MIDC");
+    assert.equal(on.persona.line, "Manufacturing");
+    const sent = JSON.stringify(on);
+    assert.equal(sent.includes("9811100011"), false, "phone never reaches the page");
+    assert.equal(sent.includes("rude"), false, "notes never reach the page");
+
+    assert.equal(await setDemoPersonal(db, owner, p.id, false), true);
+    assert.equal((await getDemoInvite(db, p.linkToken))?.persona, null);
+    await assert.rejects(() => setDemoPersonal(db, null, p.id, true), "staff only");
+  });
+
+  test("a half-filled or odd record still reads well", () => {
+    const bare = personaFrom({ name: "Kumar Fab", contactName: null, contactRole: null, industry: "Something else", area: null, city: "" });
+    assert.equal(bare.company, "Kumar Fab");
+    assert.equal(bare.first, "Arjun", "no contact name: the demo default");
+    assert.equal(bare.role, "Managing Director");
+    assert.equal(bare.place, null, "no place: the visitor's own city");
+    assert.equal(bare.line, "Machined and pressed components", "'Something else' isn't shown");
+
+    const odd = personaFrom({ name: "<b>Evil</b>\u0007 Co", contactName: "A".repeat(80), contactRole: "Owner", industry: null, area: "Chakan", city: "Pune" });
+    assert.equal(/[<>\u0007]/.test(JSON.stringify(odd)), false);
+    assert.ok(odd.person.length <= 40 && odd.person.endsWith("…"));
+    assert.equal(odd.role, "Owner");
+    assert.equal(odd.place, "Chakan", "area before city");
+  });
+
+  test("only the exact unlock code opens the demo", () => {
+    const code = demoUnlockCode();
+    assert.equal(isDemoUnlockCode(code), true);
+    assert.equal(isDemoUnlockCode(`${code}x`), false);
+    assert.equal(isDemoUnlockCode(""), false);
+    assert.equal(isDemoUnlockCode(undefined), false);
+    assert.equal(isDemoUnlockCode([code]), false, "a repeated query parameter isn't accepted");
+    assert.equal(demoUnlockLink(), `${site.url}/demo?unlock=${code}`);
   });
 });

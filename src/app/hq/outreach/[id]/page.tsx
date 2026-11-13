@@ -7,7 +7,8 @@ import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { CHANNEL_LABELS, PROSPECT_KINDS, fillTemplate, formatIst, hookFor, objectionLabel, outcomeLabel, prospectStatusLabel, type TouchChannel } from "@/knowledge/outreach";
 import { requireStaffActor } from "@/lib/session";
 import { trackedAssetUrl } from "@/server/asset-links";
-import { demoLinkFor, prospectDemoVisits } from "@/server/demo-visits";
+import { DEFAULT_PERSONA } from "@/components/ops-demo/data";
+import { demoLinkFor, personaFrom, prospectDemoVisits } from "@/server/demo-visits";
 import { VisitDetails } from "../demo-visit-ui";
 import { whatsappLink } from "@/server/brain";
 import { getProspectEngine } from "@/server/engine";
@@ -17,6 +18,7 @@ import {
   createPartnerLinkAction,
   logTouchAction,
   markResponseRepliedAction,
+  setDemoPersonalAction,
   setProspectStatusAction,
   startResponseTestAction,
   updateProspectAction,
@@ -38,6 +40,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
   const { prospect: p, history, lead, demo, responseTests, referral } = found;
   const trackedLink = trackedAssetUrl(p);
   const liveDemoLink = demoLinkFor(p);
+  const persona = personaFrom(p);
   const liveVisits = await prospectDemoVisits(db, actor, p.id, 5);
   const liveDemoMessage = `Hi${p.contactName ? ` ${p.contactName.split(" ")[0]}` : ""}, this is ${actor.name.split(" ")[0]} from amfire. Here's a live demo of a company run by agents: every order from enquiry to payment on one screen, and you approve only what matters. It takes two minutes and works on your phone: ${liveDemoLink}`;
 
@@ -205,6 +208,34 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
                 </a>
               </div>
               <p className="text-muted">{p.demoLastVisitAt ? `Last visit ${formatIst(p.demoLastVisitAt)}` : "Not visited yet"}</p>
+
+              {/* Personal demo: off by default, switched on per prospect. */}
+              <div className="rounded-xl bg-subtle p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="font-medium">{p.demoPersonal ? "Personal demo: on" : "Personal demo: off"}</p>
+                  <form action={setDemoPersonalAction.bind(null, p.id, !p.demoPersonal)}>
+                    <Button size="sm" variant={p.demoPersonal ? "ghost" : "secondary"}>
+                      {p.demoPersonal ? "Turn off" : "Make it personal"}
+                    </Button>
+                  </form>
+                </div>
+                {p.demoPersonal ? (
+                  <dl className="mt-2 grid grid-cols-[5.5rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs">
+                    <dt className="text-muted">Company</dt>
+                    <dd>{persona.company}</dd>
+                    <dt className="text-muted">Greets</dt>
+                    <dd>{p.contactName ? persona.first : <span className="text-muted">Arjun (add their name in Details)</span>}</dd>
+                    <dt className="text-muted">Role</dt>
+                    <dd>{p.contactRole ? persona.role : <span className="text-muted">not set (add it in Details)</span>}</dd>
+                    <dt className="text-muted">Place</dt>
+                    <dd>{persona.place ?? <span className="text-muted">their own city, from their connection</span>}</dd>
+                    <dt className="text-muted">Industry</dt>
+                    <dd>{p.industry && persona.line !== DEFAULT_PERSONA.line ? persona.line : <span className="text-muted">demo default (set it in Details)</span>}</dd>
+                  </dl>
+                ) : (
+                  <p className="mt-1 text-xs text-muted">Their link shows the demo company, Halden Precision. Turn it on to show their company, their name and role, their area and their industry, from this prospect&rsquo;s details.</p>
+                )}
+              </div>
               {liveVisits.length > 0 && (
                 <ol className="space-y-3 border-t border-line pt-3">
                   {liveVisits.map((v) => (

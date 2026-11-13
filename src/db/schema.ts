@@ -750,6 +750,8 @@ export const prospects = appSchema.table(
     linkLastOpenedAt: timestamp("link_last_opened_at", { withTimezone: true }),
     /** Visits to their personal live demo link ({site}/demo?p={linkToken}); details in demo_visits. */
     demoVisits: integer("demo_visits").notNull().default(0),
+    /** When on, their live demo link shows their company, name, role, place and industry instead of the demo company's. */
+    demoPersonal: boolean("demo_personal").notNull().default(false),
     demoFirstVisitAt: timestamp("demo_first_visit_at", { withTimezone: true }),
     demoLastVisitAt: timestamp("demo_last_visit_at", { withTimezone: true }),
     /** The play (sequence of touches) they're on, the next step's index and when it started. */

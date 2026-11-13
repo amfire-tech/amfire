@@ -28,7 +28,8 @@ export function sourceOf(v: Visit) {
 
 /** How warm the visit is: a decision approved or a booking click is hot; a minute of looking is warm. */
 export function heatOf(v: Visit): { label: string; className: string } | null {
-  if (v.actions.includes("unlock")) return { label: "Messaged on WhatsApp", className: "!bg-[#ecfdf3] !text-[#05603a]" };
+  if (v.actions.includes("unlocked")) return { label: "Unlocked with your link", className: "!bg-[#ecfdf3] !text-[#05603a]" };
+  if (v.actions.includes("hi") || v.actions.includes("unlock")) return { label: "Opened WhatsApp", className: "!bg-[#ecfdf3] !text-[#05603a]" };
   if (v.actions.includes("cta")) return { label: "Clicked to talk", className: "!bg-[#ecfdf3] !text-[#05603a]" };
   if (v.actions.some((a) => a.startsWith("approve:"))) return { label: "Approved a decision", className: "!bg-[#ecfdf3] !text-[#05603a]" };
   if (v.activeSeconds >= 120 || v.views.length >= 4) return { label: "Explored", className: "!bg-[#eff8ff] !text-[#175cd3]" };

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { FreeDemoSection } from "@/components/free-demo";
 import { Container, Eyebrow } from "@/components/ui";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd } from "@/config/structured-data";
 
 // How we work, built from the approved spec (https://claude.ai/artifact/4u9XJvBPhngqpYNqAFae7o).
 // The homepage says what we do; this page says what it is like to work with us.
@@ -71,6 +73,7 @@ const LABEL = "text-[13px] font-medium tracking-[0.12em] text-muted uppercase";
 export default function HowWeWorkPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "How we work", path: "/how-we-work" }])} />
       {/* 1 · Opening */}
       <section>
         <Container className="flex flex-col items-center pt-[clamp(3.5rem,10vh,7rem)] pb-20 text-center sm:pb-24">

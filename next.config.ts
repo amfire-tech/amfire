@@ -25,11 +25,17 @@ const nextConfig: NextConfig = {
       "hospital-systems-support",
     ];
     return [
-      { source: "/pricing", destination: "/", permanent: false },
+      { source: "/pricing", destination: "/", permanent: true },
       { source: "/services/:path", destination: "/services", permanent: true },
       { source: "/solutions", destination: "/how-we-work", permanent: true },
       { source: "/industries", destination: "/work", permanent: true },
       ...examples.map((slug) => ({ source: `/work/${slug}`, destination: "/work", permanent: true })),
+      // Pages from the site before this codebase that Google still had indexed on
+      // 13 Nov 2026 (SEO audit). They returned 404; these send their visitors and
+      // link value to the nearest current page.
+      { source: "/contact", destination: "/start", permanent: true },
+      { source: "/blog/:path*", destination: "/work", permanent: true },
+      { source: "/industries/:path+", destination: "/services", permanent: true },
     ];
   },
   turbopack: {

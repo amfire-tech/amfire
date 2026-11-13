@@ -3,6 +3,8 @@ import { CaseStudyCard } from "@/components/case-study-card";
 import { FreeDemoSection } from "@/components/free-demo";
 import { Container, Eyebrow } from "@/components/ui";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd } from "@/config/structured-data";
 
 // Real client work only. The illustrative examples were retired on 7 Nov 2026:
 // next to real projects they suggested we had few clients, and none fit the buyer.
@@ -17,6 +19,7 @@ export const metadata: Metadata = {
 export default function WorkPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Work", path: "/work" }])} />
       <section>
         <Container className="pt-[clamp(3.5rem,10vh,7rem)] pb-24 sm:pb-32">
           <div className="flex flex-col items-center text-center">

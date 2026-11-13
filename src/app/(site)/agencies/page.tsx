@@ -7,11 +7,13 @@ import { Arrow, ButtonLink, CheckList, Container, Eyebrow } from "@/components/u
 import { site } from "@/config/site";
 import { AGENCY_PARTNER, LEAD_AUDIT } from "@/knowledge/catalog";
 import { DEPARTMENTS } from "@/knowledge/solutions";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd } from "@/config/structured-data";
 
 export const metadata: Metadata = {
   title: "White-Label AI for Marketing Agencies and Coaches",
   description:
-    "Your AI build team, under your brand. Chat and voice agents, lead follow-up, automations and AI search visibility built for your clients — you keep the client and the margin.",
+    "Your AI build team, under your brand. Chat and voice agents, lead follow-up and automations built for your clients. You keep the client and the margin.",
   alternates: { canonical: "/agencies" },
 };
 
@@ -103,6 +105,7 @@ function Intro({ eyebrow, title, description }: { eyebrow: string; title: string
 export default function AgenciesPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "For agencies", path: "/agencies" }])} />
       {/* Opening */}
       <section>
         <Container className="flex flex-col items-center pt-[clamp(3.5rem,10vh,7rem)] pb-20 text-center sm:pb-24">

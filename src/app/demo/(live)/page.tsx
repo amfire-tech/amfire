@@ -20,6 +20,8 @@ const BASE: Metadata = {
   title: "Live demo",
   description: DESCRIPTION,
   alternates: { canonical: "/demo" },
+  // The demo opens only from the founder's link, so a search visitor would land on a locked page.
+  robots: { index: false, follow: true },
   openGraph: { title: `${TITLE} · amfire`, description: DESCRIPTION, url: "/demo" },
   twitter: { title: `${TITLE} · amfire`, description: DESCRIPTION },
 };

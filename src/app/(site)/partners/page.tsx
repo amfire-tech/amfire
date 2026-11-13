@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { ButtonLink, Container, buttonClass } from "@/components/ui";
 import { contact } from "@/config/site";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd } from "@/config/structured-data";
 
 export const metadata: Metadata = {
   title: "Partner Programme for CA Firms",
   alternates: { canonical: "/partners" },
   description:
-    "For chartered accountants in Pune and across India: free WhatsApp AI sessions for your clients, cleaner books at the source, and 10% of what referred clients pay in their first year.",
+    "For chartered accountants in Pune and across India: cleaner books at the source for your clients, and 10% of what referred clients pay in their first year.",
 };
 
 const BENEFITS = [
@@ -34,6 +36,7 @@ export default function PartnersPage() {
   const wa = contact.whatsapp("Hi amfire, I'm a CA and I'd like to know more about the partner programme.");
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "For CA firms", path: "/partners" }])} />
       <section className="relative isolate overflow-hidden">
         <Container className="py-12 sm:py-20">
           <p className="text-sm font-medium tracking-wide text-signal uppercase">For chartered accountants</p>

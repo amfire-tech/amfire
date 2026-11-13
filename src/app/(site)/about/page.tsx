@@ -4,6 +4,8 @@ import { FreeDemoSection } from "@/components/free-demo";
 import { Arrow, Container, Eyebrow } from "@/components/ui";
 import { FOUNDERS, type Founder } from "@/config/founders";
 import { contact, site } from "@/config/site";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd } from "@/config/structured-data";
 
 // About page, built from the approved spec (https://claude.ai/artifact/PbcT4d9dNW8QxZwjLHFzu7).
 // The homepage sells the idea; this page earns trust in the people. It answers four
@@ -65,6 +67,7 @@ export default function AboutPage() {
 
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "About", path: "/about" }])} />
       {/* 1 · Why we exist */}
       <section>
         <Container className="flex flex-col items-center pt-[clamp(3.5rem,10vh,7rem)] pb-20 text-center sm:pb-24">

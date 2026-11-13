@@ -189,19 +189,31 @@ const FORM_FIRST = new Set<string>([LEAD_AUDIT.goal]);
  * into the calendar popup, so nobody has to fill in a form before picking a
  * time. The link still works without JavaScript, and a new-tab click is left alone.
  */
+/** The /start link an event came from, if any (new-tab links are left alone). */
+function startLink(target: EventTarget | null) {
+  const a = (target as Element | null)?.closest?.("a");
+  const href = a?.getAttribute("href");
+  return a && href && a.target !== "_blank" && /^\/start(\?|$)/.test(href) ? href : null;
+}
+
 export function OneClickBooking() {
   useEffect(() => {
-    // Warm up Cal.com's script once the page has settled, so the first click opens at once.
-    const warm = window.setTimeout(() => {
-      if (!site.booking.demo) return;
+    // Warm up Cal.com's script the first time a visitor heads for a Start button (pointer over
+    // it, a touch, or keyboard focus), so the click opens at once. Loading it on every page
+    // instead cost phones over a second of blocked processor time while the page was loading.
+    let warmed = false;
+    const warm = (e: Event) => {
+      if (warmed || !site.booking.demo || !startLink(e.target)) return;
+      warmed = true;
       popupApi("demo")("preload", { calLink: site.booking.demo });
-    }, 2500);
+    };
+    const intents = ["pointerover", "touchstart", "focusin"] as const;
+    intents.forEach((type) => document.addEventListener(type, warm, { passive: true }));
 
     const onClick = (e: MouseEvent) => {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const a = (e.target as Element | null)?.closest?.("a");
-      const href = a?.getAttribute("href");
-      if (!a || !href || a.target === "_blank" || !/^\/start(\?|$)/.test(href)) return;
+      const href = startLink(e.target);
+      if (!href) return;
       const goal = new URL(href, window.location.origin).searchParams.get("goal") ?? "";
       if (FORM_FIRST.has(goal)) return;
       const partner = goal === AGENCY_PARTNER.goal;
@@ -213,7 +225,7 @@ export function OneClickBooking() {
     };
     document.addEventListener("click", onClick, { capture: true });
     return () => {
-      window.clearTimeout(warm);
+      intents.forEach((type) => document.removeEventListener(type, warm));
       document.removeEventListener("click", onClick, { capture: true });
     };
   }, []);

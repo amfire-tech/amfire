@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd, caseStudyJsonLd } from "@/config/structured-data";
 import { CASE_STUDIES, caseStudyBySlug } from "@/knowledge/case-studies";
 import { CaseStudyView } from "./case-study";
 
@@ -12,12 +14,20 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps<"/work/[slug]">): Promise<Metadata> {
   const { slug } = await params;
   const study = caseStudyBySlug(slug);
-  return study ? { title: `${study.client} case study`, description: study.summary, alternates: { canonical: `/work/${slug}` } } : {};
+  return study
+    ? { title: `${study.client} case study`, description: study.searchDescription ?? study.summary, alternates: { canonical: `/work/${slug}` } }
+    : {};
 }
 
 export default async function CaseStudyPage({ params }: PageProps<"/work/[slug]">) {
   const { slug } = await params;
   const study = caseStudyBySlug(slug);
   if (!study) notFound();
-  return <CaseStudyView study={study} />;
+  return (
+    <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Work", path: "/work" }, { name: study.client, path: `/work/${study.slug}` }])} />
+      <JsonLd data={caseStudyJsonLd(study)} />
+      <CaseStudyView study={study} />
+    </>
+  );
 }

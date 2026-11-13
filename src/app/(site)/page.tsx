@@ -4,9 +4,11 @@ import Link from "next/link";
 import { EmberField } from "@/components/ember-field";
 import { FlowLine } from "@/components/flow-line";
 import { FreeDemoSection } from "@/components/free-demo";
+import { JsonLd } from "@/components/json-ld";
 import { Arrow, Container, ConversationButton, Eyebrow } from "@/components/ui";
 import { FOUNDERS, FOUNDERS_PROMISE } from "@/config/founders";
 import { site } from "@/config/site";
+import { websiteJsonLd } from "@/config/structured-data";
 import { CASE_STUDIES } from "@/knowledge/case-studies";
 
 // Homepage, built from the approved spec (https://claude.ai/artifact/38tzFL5QhwHXtW4RWNBJoq).
@@ -63,6 +65,7 @@ export default function HomePage() {
 
   return (
     <>
+      <JsonLd data={websiteJsonLd()} />
       {/* 1 · First screen: a centred cover. One axis down the middle balances the page on wide
           screens; a faint ember field with grain moves behind it so the paper is never flat. */}
       <section>

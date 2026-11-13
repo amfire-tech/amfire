@@ -2,10 +2,58 @@
 
 import { FOUNDERS } from "@/config/founders";
 import { site } from "@/config/site";
+import type { CaseStudy } from "@/knowledge/case-studies";
 
 export const ORGANIZATION_ID = `${site.url}/#organization`;
+export const WEBSITE_ID = `${site.url}/#website`;
 
 const absolute = (path: string) => `${site.url}${path}`;
+
+/** The site itself, on the homepage, so Google shows "amfire" as the site name in results. */
+export function websiteJsonLd() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "@id": WEBSITE_ID,
+    name: site.name,
+    alternateName: "amfire.in",
+    url: absolute("/"),
+    inLanguage: "en-IN",
+    publisher: { "@id": ORGANIZATION_ID },
+  };
+}
+
+/** Where a page sits under the homepage, shown by search engines in place of the bare URL. */
+export function breadcrumbJsonLd(trail: { name: string; path: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [{ name: "Home", path: "/" }, ...trail].map((crumb, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: crumb.name,
+      item: absolute(crumb.path),
+    })),
+  };
+}
+
+/** A case study as an article written by amfire about a client it built for. */
+export function caseStudyJsonLd(study: CaseStudy) {
+  const amfire = { "@type": "Organization", "@id": ORGANIZATION_ID, name: site.name, url: site.url };
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "@id": absolute(`/work/${study.slug}#article`),
+    headline: study.title,
+    description: study.summary,
+    image: absolute(study.cover),
+    datePublished: study.published,
+    author: amfire,
+    publisher: amfire,
+    about: { "@type": "Organization", name: study.client, url: study.url },
+    mainEntityOfPage: absolute(`/work/${study.slug}`),
+  };
+}
 
 export function organizationJsonLd() {
   return {

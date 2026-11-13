@@ -1,4 +1,4 @@
-/** Structured data for search engines. `<` is escaped so the payload can't close the script tag. */
+/** Structured data for search engines. Every `<` is written as the JSON escape <, so the payload can't close the script tag. */
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\u003c") }} />;
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, "\\u003c") }} />;
 }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { FreeDemoSection } from "@/components/free-demo";
 import { OpsDemo } from "@/components/ops-demo/ops-demo";
 import { Container, ConversationButton, Eyebrow } from "@/components/ui";
+import { JsonLd } from "@/components/json-ld";
+import { breadcrumbJsonLd } from "@/config/structured-data";
 
 // Services, version 3 (approved 12 Nov 2026; mock in docs/premium-rebuild/9-services-v3.html,
 // https://claude.ai/artifact/7x8ynXR4o26oKixLZxWn9t). Product-led and short: the system itself
@@ -48,6 +50,7 @@ const BAND = "border-t border-line py-[clamp(4rem,10vh,6.5rem)]";
 export default function ServicesPage() {
   return (
     <>
+      <JsonLd data={breadcrumbJsonLd([{ name: "Services", path: "/services" }])} />
       {/* 1 · The statement, then the system itself. */}
       <section className="relative isolate overflow-x-clip">
         <div

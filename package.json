@@ -14,7 +14,8 @@
     "vercel-build": "tsx scripts/migrate.ts && next build",
     "render:reel": "tsx scripts/render-reel.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
-    "team": "tsx scripts/team-runner.ts"
+    "team": "tsx scripts/team-runner.ts",
+    "indexnow": "tsx scripts/indexnow.ts"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.11",

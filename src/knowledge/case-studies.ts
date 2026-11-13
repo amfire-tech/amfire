@@ -14,8 +14,12 @@ export type CaseStudy = {
   sector: string;
   /** One sentence for cards and search results. */
   summary: string;
+  /** A shorter summary for search results when `summary` runs past 160 characters (results cut it off). */
+  searchDescription?: string;
   cover: string;
   coverAlt: string;
+  /** When the case study went live on the site (YYYY-MM-DD), for search engines. */
+  published: string;
   /** What the client does and what they needed from us. */
   brief: string;
   built: { title: string; items: string[] }[];
@@ -36,8 +40,11 @@ export const CASE_STUDIES: CaseStudy[] = [
     sector: "Education · AI school programme",
     summary:
       "We designed and built Skillship's complete school platform — five role-based dashboards, a quiz engine, and AI that writes questions, grades answers and guides careers.",
+    searchDescription:
+      "We designed and built Skillship's school platform: five role-based dashboards, a quiz engine, and AI that writes questions, grades answers and guides careers.",
     cover: "/work/skillship.jpg",
     coverAlt: "Skillship — AI-powered learning for Indian schools",
+    published: "2026-10-23",
     brief:
       "Skillship brings AI labs, teacher training and software to schools across India. They needed the software pillar: one platform where each school's admins, principals, teachers and students work in their own space, with AI built into the core rather than added as a tab — and one their own team could run day to day.",
     built: [
@@ -100,6 +107,7 @@ export const CASE_STUDIES: CaseStudy[] = [
       "A premium, immersive website for a smart-garden startup — a video home tour, a live air-quality check for any city and WhatsApp-first enquiries.",
     cover: "/work/mygreenhome.jpg",
     coverAlt: "MyGreenHome — a sunroom filled with plants",
+    published: "2026-10-23",
     brief:
       "MyGreenHome designs smart indoor, balcony, terrace and rooftop gardens for homes and offices, with a smart controller that waters and monitors the plants. A garden from them is a considered purchase, so the website had to feel as premium as the product — and turn visitors into WhatsApp conversations.",
     built: [

@@ -100,6 +100,7 @@ export function FlowLine({ className }: { className?: string }) {
   const num = useRef<HTMLSpanElement>(null);
   const wait = useRef<HTMLElement>(null);
   const lastKey = useRef(keyOf(discreteOf(REST)));
+  const root = useRef<HTMLElement>(null);
 
   const paint = useCallback((fr: Frame) => {
     const x = fr.p / LEN;
@@ -119,18 +120,35 @@ export function FlowLine({ className }: { className?: string }) {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const el = root.current;
+    if (!el) return;
     let raf = 0;
-    const start = performance.now();
+    let base = 0; // performance.now() at which elapsed would have been 0, so a resumed loop picks up where it paused
     const loop = (now: number) => {
-      elapsed.current = (now - start) / 1000;
+      elapsed.current = (now - base) / 1000;
       paint(frameAt(elapsed.current + offset.current));
       raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame((now) => {
-      setStill(false);
-      loop(now);
-    });
-    return () => cancelAnimationFrame(raf);
+    const run = () => {
+      if (raf) return;
+      raf = requestAnimationFrame((now) => {
+        base = now - elapsed.current * 1000;
+        setStill(false);
+        loop(now);
+      });
+    };
+    const pause = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    // Animate only while the drawing is on screen. It sits below the first screen, and frames
+    // nobody sees cost a phone's processor right when the page is loading.
+    const watch = new IntersectionObserver(([entry]) => (entry.isIntersecting ? run() : pause()));
+    watch.observe(el);
+    return () => {
+      watch.disconnect();
+      pause();
+    };
   }, [paint]);
 
   function show(m: Mode) {
@@ -145,7 +163,7 @@ export function FlowLine({ className }: { className?: string }) {
   const accent = today ? "text-ember" : "text-success";
 
   return (
-    <figure className={`relative overflow-hidden rounded-[22px] border border-line bg-white/70 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_30px_60px_-40px_rgba(11,11,12,0.25)] ${className ?? ""}`}>
+    <figure ref={root} className={`relative overflow-hidden rounded-[22px] border border-line bg-white/70 shadow-[0_1px_0_rgba(255,255,255,0.8)_inset,0_30px_60px_-40px_rgba(11,11,12,0.25)] ${className ?? ""}`}>
       <style>{`
         @keyframes fl-ring { 0% { transform: translate(-50%,-50%) scale(.6); opacity: .55 } 100% { transform: translate(-50%,-50%) scale(2.6); opacity: 0 } }
         @keyframes fl-tick { 0%,100% { opacity: 1 } 50% { opacity: .35 } }

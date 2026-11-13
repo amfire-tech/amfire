@@ -87,7 +87,8 @@ export function personaFrom(p: PersonaSource): Persona {
     company,
     companyInitials: initialsOf(company, DEFAULT_PERSONA.companyInitials),
     line: industry || DEFAULT_PERSONA.line,
-    facts: place ? `Operations in {city}` : "Your operations, run by agents",
+    // The same size line as the demo company (illustrative), in their own place.
+    facts: DEFAULT_PERSONA.facts,
     person: person || DEFAULT_PERSONA.person,
     first: person ? person.split(" ")[0] : DEFAULT_PERSONA.first,
     personInitials: person ? initialsOf(person, "") || person[0].toUpperCase() : DEFAULT_PERSONA.personInitials,

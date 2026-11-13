@@ -182,6 +182,7 @@ describe("live demo visits", () => {
     assert.equal(on.persona.role, "Director");
     assert.equal(on.persona.place, "Bhosari MIDC");
     assert.equal(on.persona.line, "Manufacturing");
+    assert.equal(on.persona.facts.replace("{city}", on.persona.place ?? ""), "240 people · 2 plants in Bhosari MIDC · 61 customers");
     const sent = JSON.stringify(on);
     assert.equal(sent.includes("9811100011"), false, "phone never reaches the page");
     assert.equal(sent.includes("rude"), false, "notes never reach the page");

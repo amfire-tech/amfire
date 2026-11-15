@@ -214,6 +214,8 @@ a{color:inherit}
 .modal p{margin:0;font-size:17px;color:#4a4a50;line-height:1.5}
 .modal .acts{display:flex;flex-direction:column;gap:10px;margin-top:22px}
 .modal .acts .btn{width:100%}
+.modal .lap{width:56px;height:56px;margin:0 auto;border-radius:18px;background:#efedfc;color:#5B47E0;display:grid;place-items:center}
+.modal .lap svg{width:28px;height:28px}
 .modal .later{background:none;border:0;font:inherit;font-size:15px;font-weight:500;color:var(--grey);padding:10px;cursor:pointer}
 
 /* Platforms */
@@ -869,8 +871,9 @@ a{color:inherit}
 
 <div class="modal" id="mobile" role="dialog" aria-modal="true" aria-label="Best on a laptop">
   <div class="box" style="text-align:center">
-    <h4 style="margin-top:0">Best on a laptop</h4>
-    <p>This proposal and its live demo are built for a bigger screen. It works on a phone, but it's at its best on a laptop or desktop.</p>
+    <span class="lap" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="4" y="5" width="16" height="11" rx="1.6"/><path d="M2 19h20"/></svg></span>
+    <h4 style="margin-top:14px">Open this on your laptop</h4>
+    <p>This proposal and its live demo are built for a bigger screen. It works on a phone, but it is at its best on a laptop or desktop.</p>
     <div class="acts">
       <button class="btn btn-ink" type="button" id="copylink">Copy the link for my laptop</button>
       <button class="later" type="button" data-close>Continue on my phone</button>
@@ -1107,8 +1110,9 @@ a{color:inherit}
   document.querySelectorAll(".modal").forEach(function(m){ m.addEventListener("click", function(e){ if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("show"); }); });
   document.querySelectorAll("#nudge .js-hi").forEach(function(a){ a.addEventListener("click", function(){ document.getElementById("nudge").classList.remove("show"); }); });
   function showNudge(){ try { if (sessionStorage.getItem("ov_nudged") === "1") return; sessionStorage.setItem("ov_nudged", "1"); } catch (e) {} openModal(document.getElementById("nudge")); note("nudge"); }
-  var phone = innerWidth < 900 && matchMedia("(pointer: coarse)").matches;
-  var ok = false; try { ok = sessionStorage.getItem("ov_mobile_ok") === "1"; } catch (e) {}
+  // Every visit from a phone or tablet starts with the laptop note.
+  var phone = innerWidth < 900 || (matchMedia("(pointer: coarse)").matches && innerWidth < 1100);
+  var ok = false;
   if (review) { document.documentElement.className = "no-js"; document.querySelectorAll("#ppl,#bars").forEach(function(e){ e.classList.add("on"); }); document.querySelectorAll("#chain div").forEach(function(e){ e.classList.add("on"); }); document.querySelector(".hi").style.display = "none"; document.querySelectorAll(".page").forEach(function(p){ if (p.id !== q.get("at")) p.style.display = "none"; }); }
   if (phone && !ok && !review) setTimeout(function(){ openModal(document.getElementById("mobile")); note("mobile"); }, 700);
   document.querySelectorAll("#mobile [data-close]").forEach(function(b){ b.addEventListener("click", function(){ try { sessionStorage.setItem("ov_mobile_ok", "1"); } catch (e) {} }); });

@@ -507,6 +507,36 @@ a{color:inherit}
 
 @media (prefers-reduced-motion:reduce){.bars i,.ppl svg{transform:none;opacity:1;transition:none}.leak2 .cost::before{animation:none}
 .js [data-r]{opacity:1;transform:none;transition:none}.glow,.cue i,.float,.leak .drip{animation:none}.draw path{stroke-dashoffset:0;transition:none}}
+
+/* ================= Phones: one column, phone screens instead of tiny laptop screens */
+@media (max-width:760px){
+.bar .btn{margin-left:auto}
+.split{grid-template-columns:1fr!important;gap:40px!important}
+.split>.iphone{justify-self:center}
+#pg08 .split>.iphone{order:2}
+.duo{padding-bottom:0}
+.duo .mac{display:none}
+.duo .iphone{display:block;position:relative;right:auto;bottom:auto;width:270px;margin:0 auto;border-radius:52px;padding:10px}
+.duo .iphone .scr{border-radius:43px}
+.duo .iphone .island{top:19px;width:84px;height:25px}
+.duo .notif{top:40px;font-size:10.5px;padding:9px 10px}
+.stage9 .browser{display:none}
+.stage9 .iphone{display:block;justify-self:center;width:270px}
+.mt{display:none}
+.ppl{grid-template-columns:repeat(11,minmax(0,1fr));gap:4px}
+.bars{gap:14px}
+.plats .plat{padding:10px 16px 10px 12px;font-size:16px}
+.mapw .map text{font-size:13px}
+.page.last .sitw{order:2;position:relative;width:auto;margin:84px calc(-1 * max(20px,6vw)) -80px auto;max-width:none}
+.page.last .sitter{width:min(100vw,520px)}
+.chat{display:flex;right:41%;bottom:61%;width:212px;font-size:12px;gap:6px}
+.cmp{padding:4px 4px 4px 11px}
+.cmp b{width:26px;height:26px}
+.cmp b svg{width:12px;height:12px}
+.msg{padding:6px 10px 5px}
+.inr>img{width:22px;height:22px}
+}
+@media (max-width:520px){.promise{grid-template-columns:1fr}.promise div{padding:20px}}
 </style>
 <script>document.documentElement.className="js";</script>
 </head>

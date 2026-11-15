@@ -10,6 +10,8 @@ import type { DB } from "@/db";
 import { demoVisits, prospects, type Prospect } from "@/db/schema";
 import { site } from "@/config/site";
 import { APPROVALS, DEFAULT_PERSONA, NAV, type Persona, type ViewId } from "@/components/ops-demo/data";
+import { NAV as OV_NAV } from "@/components/opticvyu-demo/data";
+import { proposalPageLabel } from "@/sites/proposals";
 import { assertStaff, type Actor } from "./access";
 import { isAutomatedAgent } from "./asset-links";
 import { alertOpen, OPEN_ALERT_GAP } from "./open-alerts";
@@ -21,6 +23,41 @@ const ACTION = /^[a-z]{2,16}(:[A-Za-z0-9-]{1,24})?$/;
 
 /** Every module of the demo, with the name HQ shows. */
 export const DEMO_VIEWS: Record<string, string> = Object.fromEntries(NAV.flatMap((g) => g.items.map((i) => [i.id, i.label])));
+/** Modules of the OpticVyu demo (/for/opticvyu/demo), reported with an "ov:" prefix. */
+const OV_VIEWS: Record<string, string> = Object.fromEntries(OV_NAV.flatMap((g) => g.items.map((i) => [`ov:${i.id}`, i.label])));
+
+/** Every page a visit can come from. */
+export type VisitPage = "demo" | "services" | "proposal" | "ovdemo";
+export const VISIT_PAGES: VisitPage[] = ["demo", "services", "proposal", "ovdemo"];
+const isView = (x: string) => x in DEMO_VIEWS || x in OV_VIEWS || /^pg\d{2}$/.test(x);
+
+/**
+ * Reports that replace an earlier value instead of adding to the list: "dwell:pg03-45"
+ * (seconds on page 3 so far; the largest is kept) and "at:pg07" (where they are now).
+ */
+const DWELL = /^dwell:(pg\d{2}|ov-[a-z]{2,12})-(\d{1,5})$/;
+const AT = /^at:(pg\d{2}|ov-[a-z]{2,12})$/;
+export function mergeReplacing(existing: string[], next: unknown) {
+  let out = existing.slice();
+  const rest: string[] = [];
+  if (!Array.isArray(next)) return { out, rest };
+  for (const v of next) {
+    if (typeof v !== "string") continue;
+    const d = DWELL.exec(v);
+    if (d) {
+      const key = `dwell:${d[1]}-`;
+      const old = out.find((x) => x.startsWith(key));
+      if (!old || Number(old.slice(key.length)) < Number(d[2])) out = [...out.filter((x) => !x.startsWith(key)), v];
+      continue;
+    }
+    if (AT.test(v)) {
+      out = [...out.filter((x) => !x.startsWith("at:")), v];
+      continue;
+    }
+    rest.push(v);
+  }
+  return { out, rest };
+}
 
 /** A visit is "fresh" for updates this long after its last report; later reports are ignored. */
 const UPDATE_WINDOW = 6 * 60 * 60 * 1000;
@@ -143,7 +180,7 @@ const short = (v: string | null | undefined, n = 80) => (v ? v.trim().slice(0, n
 export type StartVisit = {
   token?: string | null;
   visitorId?: string | null;
-  page: "demo" | "services";
+  page: VisitPage;
   referrer?: string | null;
   utm?: { source?: string | null; medium?: string | null; campaign?: string | null };
   geo?: { city?: string | null; region?: string | null; country?: string | null };
@@ -166,7 +203,7 @@ export async function startDemoVisit(db: DB, s: StartVisit) {
     .values({
       prospectId: before?.id ?? null,
       visitorId: s.visitorId && VISITOR.test(s.visitorId) ? s.visitorId : null,
-      page: s.page === "services" ? "services" : "demo",
+      page: VISIT_PAGES.includes(s.page) ? s.page : "demo",
       startedAt: now,
       lastSeenAt: now,
       device: deviceOf(s.userAgent),
@@ -189,8 +226,9 @@ export async function startDemoVisit(db: DB, s: StartVisit) {
     .returning();
   const alert = !before.demoLastVisitAt || now.getTime() - before.demoLastVisitAt.getTime() > OPEN_ALERT_GAP;
   if (!alert) return { id: visit.id, alerted: false };
-  const label = p.demoVisits === 1 ? "Opened the live demo for the first time" : `Opened the live demo again (visit ${p.demoVisits})`;
-  await alertOpen(db, p, label, now, "live demo");
+  const what = s.page === "proposal" ? "the proposal" : s.page === "ovdemo" ? "their demo" : "the live demo";
+  const label = p.demoVisits === 1 ? `Opened ${what} for the first time` : `Opened ${what} again (visit ${p.demoVisits})`;
+  await alertOpen(db, p, label, now, s.page === "proposal" ? "proposal" : "live demo");
   return { id: visit.id, alerted: true };
 }
 
@@ -223,8 +261,11 @@ export async function updateDemoVisit(db: DB, id: string, u: { activeSeconds?: u
     .update(demoVisits)
     .set({
       activeSeconds,
-      views: merge(v.views, u.views, (x) => x in DEMO_VIEWS, 30),
-      actions: merge(v.actions, u.actions, (x) => ACTION.test(x), 60),
+      views: merge(v.views, u.views, isView, 40),
+      actions: (() => {
+        const { out, rest } = mergeReplacing(v.actions, u.actions);
+        return merge(out, rest, (x) => ACTION.test(x), 90);
+      })(),
       lastSeenAt: now,
     })
     .where(eq(demoVisits.id, id));
@@ -263,12 +304,28 @@ export function describeAction(a: string) {
       return "Tapped Say hi on WhatsApp";
     case "unlocked":
       return "Opened the full demo with your unlock link";
+    case "dwell":
+      return `Spent ${(ref ?? "").split("-").pop()} s on ${viewLabel((ref ?? "").replace(/-\d+$/, "").replace(/^ov-/, "ov:"))}`;
+    case "at":
+      return `Last seen on ${viewLabel((ref ?? "").replace(/^ov-/, "ov:"))}`;
+    case "demo":
+      return "Opened the live demo from the proposal";
+    case "pdf":
+      return "Downloaded the PDF";
+    case "book":
+      return "Clicked to book a call";
+    case "forward":
+      return "Clicked to forward it to a colleague";
+    case "nudge":
+      return "Was shown the 'say hi' note after 2.5 minutes";
+    case "mobile":
+      return "Opened on a phone (shown the laptop note)";
     default:
       return a;
   }
 }
 
-export const viewLabel = (v: string) => DEMO_VIEWS[v as ViewId] ?? v;
+export const viewLabel = (v: string) => DEMO_VIEWS[v as ViewId] ?? OV_VIEWS[v] ?? proposalPageLabel(v) ?? v;
 
 export type VisitFilter = "all" | "prospects" | "anonymous";
 

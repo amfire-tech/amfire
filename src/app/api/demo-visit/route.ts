@@ -3,7 +3,7 @@ import { getDb } from "@/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { getActor } from "@/lib/session";
 import { isStaff } from "@/server/access";
-import { startDemoVisit, updateDemoVisit } from "@/server/demo-visits";
+import { startDemoVisit, updateDemoVisit, VISIT_PAGES, type VisitPage } from "@/server/demo-visits";
 
 // The live demo reports its visits here: "start" when it opens (or, on the Services
 // page, on the first click), then "update" every few seconds and when the tab is
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     const visit = await startDemoVisit(db, {
       token: str(body.token),
       visitorId: str(body.visitorId),
-      page: body.page === "services" ? "services" : "demo",
+      page: VISIT_PAGES.includes(body.page as VisitPage) ? (body.page as VisitPage) : "demo",
       referrer: str(body.referrer),
       utm: { source: str(utm.source), medium: str(utm.medium), campaign: str(utm.campaign) },
       geo: { city: header(req, "x-vercel-ip-city"), region: header(req, "x-vercel-ip-country-region"), country: header(req, "x-vercel-ip-country") },

@@ -9,6 +9,7 @@ import { requireStaffActor } from "@/lib/session";
 import { trackedAssetUrl } from "@/server/asset-links";
 import { DEFAULT_PERSONA } from "@/components/ops-demo/data";
 import { demoLinkFor, personaFrom, prospectDemoVisits } from "@/server/demo-visits";
+import { proposalDemoLink, proposalFor, proposalLink } from "@/sites/proposals";
 import { VisitDetails } from "../demo-visit-ui";
 import { whatsappLink } from "@/server/brain";
 import { getProspectEngine } from "@/server/engine";
@@ -40,6 +41,7 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
   const { prospect: p, history, lead, demo, responseTests, referral } = found;
   const trackedLink = trackedAssetUrl(p);
   const liveDemoLink = demoLinkFor(p);
+  const webProposal = proposalFor(p.name);
   const persona = personaFrom(p);
   const liveVisits = await prospectDemoVisits(db, actor, p.id, 5);
   const liveDemoMessage = `Hi${p.contactName ? ` ${p.contactName.split(" ")[0]}` : ""}, this is ${actor.name.split(" ")[0]} from amfire. Here's a live demo of a company run by agents: every order from enquiry to payment on one screen, and you approve only what matters. It takes two minutes and works on your phone: ${liveDemoLink}`;
@@ -193,6 +195,18 @@ export default async function ProspectPage({ params }: PageProps<"/hq/outreach/[
         </div>
 
         <aside className="space-y-6">
+          {webProposal && (
+            <Card>
+              <CardTitle aside={<span className="text-sm text-muted">{p.demoVisits} {p.demoVisits === 1 ? "open" : "opens"}</span>}>Their proposal</CardTitle>
+              <div className="space-y-3 text-sm">
+                <p className="text-muted">Send only these links to them. Opens, time on each page and where they stopped show under Live demo visits below. Your own views don&rsquo;t count while you&rsquo;re signed in.</p>
+                <p className="font-medium">Proposal</p>
+                <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{proposalLink(webProposal.slug, p.linkToken)}</code>
+                <p className="font-medium">Their demo</p>
+                <code className="block rounded bg-subtle px-2 py-1.5 text-xs break-all select-all">{proposalDemoLink(webProposal.slug, p.linkToken)}</code>
+              </div>
+            </Card>
+          )}
           <Card>
             <CardTitle aside={<span className="text-sm text-muted">{p.demoVisits} {p.demoVisits === 1 ? "visit" : "visits"}</span>}>Live demo link</CardTitle>
             <div className="space-y-3 text-sm">

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef } from "react";
 // hidden or closed. The server ignores staff and link checkers.
 
 export type TrackConfig = {
-  page: "demo" | "services";
+  page: "demo" | "services" | "proposal" | "ovdemo";
   /** A prospect's personal link token (/demo?p=…), when there is one. */
   token?: string | null;
   /** Start straight away (the /demo page) or on the first click (the Services page). */

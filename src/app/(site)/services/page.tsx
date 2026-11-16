@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Capabilities } from "@/components/capabilities";
 import { FreeDemoSection } from "@/components/free-demo";
 import { OpsDemo } from "@/components/ops-demo/ops-demo";
 import { Container, ConversationButton, Eyebrow } from "@/components/ui";
@@ -7,14 +8,15 @@ import { breadcrumbJsonLd } from "@/config/structured-data";
 
 // Services, version 3 (approved 12 Nov 2026; mock in docs/premium-rebuild/9-services-v3.html,
 // https://claude.ai/artifact/7x8ynXR4o26oKixLZxWn9t). Product-led and short: the system itself
-// is the hero, then three bands a visitor can take in while scrolling. No industry is named;
-// every company recognises itself through its departments. About 170 words of copy.
+// is the hero, then bands a visitor can take in while scrolling. 16 Nov: a compact "What we
+// build" band (icons + names, plus industries) follows the demo, so no visitor leaves thinking
+// we only serve one industry or only build one kind of system.
 
 export const metadata: Metadata = {
-  title: "AI agents and process automation for operations",
+  title: "AI agents, automation, web, app and SaaS development",
   alternates: { canonical: "/services" },
   description:
-    "Agent systems that carry work across sales, production, dispatch and accounts, from the first enquiry to the final payment. Your people approve what matters.",
+    "AI agents, workflow automation, SaaS products, web and mobile apps, custom ERP and CRM, data and integrations, for companies in every industry. Your people approve what matters.",
 };
 
 const START = "/start";
@@ -73,7 +75,16 @@ export default function ServicesPage() {
         </Container>
       </section>
 
-      {/* 2 · What makes it serious. */}
+      {/* 2 · Everything we build, for any industry, in one glance (icons and names only). */}
+      <section className={`${BAND} bg-subtle`}>
+        <Container>
+          <Eyebrow>What we build</Eyebrow>
+          <h2 className={H2}>One team for everything your company builds next.</h2>
+          <Capabilities />
+        </Container>
+      </section>
+
+      {/* 3 · What makes it serious. */}
       <section className={BAND}>
         <Container>
           <Eyebrow>How it is built</Eyebrow>
@@ -95,7 +106,7 @@ export default function ServicesPage() {
         </Container>
       </section>
 
-      {/* 3 · What it does, department by department. */}
+      {/* 4 · What it does, department by department. */}
       <section className={`${BAND} bg-subtle`}>
         <Container>
           <Eyebrow>What changes</Eyebrow>
@@ -114,7 +125,7 @@ export default function ServicesPage() {
         </Container>
       </section>
 
-      {/* 4 · How we take responsibility. */}
+      {/* 5 · How we take responsibility. */}
       <section className={BAND}>
         <Container>
           <Eyebrow>How we work</Eyebrow>
@@ -143,7 +154,7 @@ export default function ServicesPage() {
         </Container>
       </section>
 
-      {/* 5 · The shared close. */}
+      {/* 6 · The shared close. */}
       <FreeDemoSection body="Thirty minutes with the founders. You leave knowing where agents would pay back first." />
     </>
   );

@@ -118,7 +118,7 @@ function Shell({ live }: { live: boolean }) {
       {s.phone && <PhoneOverlay />}
       <Drawer />
       <Palette />
-      {live && <Engage active={visit.active} note={visit.note} />}
+      {live && <Engage active={visit.active} note={visit.note} gate={visit.gate} submitName={visit.submitName} />}
       <Toasts />
     </div>
   );

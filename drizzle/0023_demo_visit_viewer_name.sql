@@ -1,0 +1,1 @@
+ALTER TABLE "app"."demo_visits" ADD COLUMN "viewer_name" text;

@@ -10,6 +10,15 @@ import { cx } from "./ui";
 // phone they're told it's at its best on a laptop. Visits from signed-in staff aren't counted.
 
 const VISITOR_KEY = "amfire_demo_vid";
+/** The reader's name, shared with the proposal so it's asked once per device. */
+const NAME_KEY = "amfire_viewer_name";
+
+export const cleanName = (v: unknown) =>
+  String(v ?? "")
+    .replace(/[^\p{L}\p{M}\s.'-]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60);
 const NUDGE_AFTER = 150; // seconds of active viewing
 
 function visitorId() {
@@ -33,8 +42,32 @@ function post(body: Record<string, unknown>, keepalive = false) {
 
 /** Reports this visit to the demo: modules seen, seconds in each, where they are now, and actions. */
 export function useVisit(view: string, enabled: boolean) {
-  const st = useRef({ id: null as string | null, off: false, views: [] as string[], actions: new Set<string>(), dwell: {} as Record<string, number>, active: 0, view, sent: "" });
+  const st = useRef({ id: null as string | null, off: false, views: [] as string[], actions: new Set<string>(), dwell: {} as Record<string, number>, active: 0, view, sent: "", gate: false, typed: null as string | null });
   const [active, setActive] = useState(0);
+  // "Your name to continue": open until they give a name; time isn't counted meanwhile.
+  const [gate, setGate] = useState(false);
+
+  const sendName = useCallback(() => {
+    const t = st.current;
+    if (!t.id || !t.typed) return;
+    void post({ op: "name", id: t.id, name: t.typed }, true);
+    t.typed = null;
+  }, []);
+
+  const submitName = useCallback(
+    (raw: string) => {
+      const n = cleanName(raw);
+      if (n.length < 2) return;
+      try {
+        localStorage.setItem(NAME_KEY, n);
+      } catch {}
+      st.current.typed = n;
+      st.current.gate = false;
+      setGate(false);
+      sendName();
+    },
+    [sendName],
+  );
 
   const flush = useCallback((keepalive = false) => {
     const t = st.current;
@@ -57,12 +90,22 @@ export function useVisit(view: string, enabled: boolean) {
     const t = st.current;
     const q = new URLSearchParams(window.location.search);
     const token = q.get("p");
-    void post({ op: "start", page: "ovdemo", token: token && /^[a-z0-9]{6,32}$/.test(token) ? token : null, visitorId: visitorId(), referrer: document.referrer || null, utm: { source: q.get("utm_source"), medium: q.get("utm_medium"), campaign: q.get("utm_campaign") } }).then((r) => {
-      if (r?.id) t.id = r.id;
-      else t.off = true;
+    let known = "";
+    try {
+      known = cleanName(localStorage.getItem(NAME_KEY));
+    } catch {}
+    if (known.length < 2) {
+      t.gate = true;
+      window.setTimeout(() => setGate(true), 0); // the name is only known in the browser
+    }
+    void post({ op: "start", page: "ovdemo", token: token && /^[a-z0-9]{6,32}$/.test(token) ? token : null, name: known.length >= 2 ? known : null, visitorId: visitorId(), referrer: document.referrer || null, utm: { source: q.get("utm_source"), medium: q.get("utm_medium"), campaign: q.get("utm_campaign") } }).then((r) => {
+      if (r?.id) {
+        t.id = r.id;
+        sendName();
+      } else t.off = true;
     });
     const tick = window.setInterval(() => {
-      if (document.visibilityState !== "visible") return;
+      if (document.visibilityState !== "visible" || t.gate) return;
       t.active += 1;
       t.dwell[t.view] = (t.dwell[t.view] ?? 0) + 1;
       setActive(t.active);
@@ -79,7 +122,7 @@ export function useVisit(view: string, enabled: boolean) {
       window.removeEventListener("pagehide", onLeave);
       flush(true);
     };
-  }, [enabled, flush]);
+  }, [enabled, flush, sendName]);
 
   useEffect(() => {
     const t = st.current;
@@ -95,7 +138,7 @@ export function useVisit(view: string, enabled: boolean) {
     },
     [flush],
   );
-  return { active, note };
+  return { active, note, gate, submitName };
 }
 
 const first = site.outreachSender.split(" ")[0];
@@ -116,8 +159,49 @@ function WaGlyph({ className = "size-4" }: { className?: string }) {
   );
 }
 
-/** The always-there "Say hi" button, the 2.5-minute note, and the phone notice. */
-export function Engage({ active, note }: { active: number; note: (a: string) => void }) {
+/** The box shown on opening: the founder's face and one question, their name. It can't be skipped. */
+function NameGate({ onSubmit }: { onSubmit: (name: string) => void }) {
+  const [name, setName] = useState("");
+  const ready = cleanName(name).length >= 2;
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#fafaf7]/55 p-4 backdrop-blur-[14px]" role="dialog" aria-modal="true" aria-labelledby="ov-gate-h">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (ready) onSubmit(name);
+        }}
+        className="ov-in w-full max-w-[400px] rounded-[26px] bg-white px-7 pt-8 pb-7 text-center shadow-[0_40px_100px_-30px_rgba(0,0,0,0.5)]"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/team/navanish-square.jpg" alt={site.outreachSender} width={76} height={76} className="mx-auto size-[76px] rounded-full object-cover shadow-[0_0_0_4px_#fff,0_0_0_5px_#e8e7e2]" />
+        <p className="mt-3 text-[13px] text-[#8a8a90]">
+          <span className="font-semibold text-[#111113]">{site.outreachSender}</span> · Founder, amfire
+        </p>
+        <h2 id="ov-gate-h" className="mt-4 text-[22px] leading-tight font-semibold tracking-[-0.03em] text-balance text-[#111113]">
+          Before you begin, what&rsquo;s your name?
+        </h2>
+        <p className="mt-1.5 text-[14.5px] text-[#4a4e55]">Just your name. No email, no number.</p>
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          name="name"
+          autoComplete="name"
+          maxLength={60}
+          placeholder="Your name"
+          aria-label="Your name"
+          className="mt-5 w-full rounded-[14px] border border-[#e8e7e2] bg-[#fafaf7] px-4 py-3.5 text-center text-[16px] text-[#111113] outline-none transition focus:border-[#111113] focus:bg-white focus:shadow-[0_0_0_4px_rgba(11,11,12,0.06)]"
+        />
+        <button type="submit" disabled={!ready} className="mt-2.5 w-full rounded-full bg-[#111113] px-5 py-3.5 text-[15px] font-semibold text-white transition disabled:opacity-35">
+          Continue
+        </button>
+      </form>
+    </div>
+  );
+}
+
+/** The name box on opening, the always-there "Say hi" button, the 2.5-minute note, and the phone notice. */
+export function Engage({ active, note, gate, submitName }: { active: number; note: (a: string) => void; gate: boolean; submitName: (name: string) => void }) {
   const [nudge, setNudge] = useState(false);
   const [mobile, setMobile] = useState(false);
 
@@ -142,17 +226,18 @@ export function Engage({ active, note }: { active: number; note: (a: string) => 
     try {
       dismissed = sessionStorage.getItem("ov_mobile_ok") === "1";
     } catch {}
-    if (dismissed || window.innerWidth >= 900 || !window.matchMedia("(pointer: coarse)").matches) return;
+    if (gate || dismissed || window.innerWidth >= 900 || !window.matchMedia("(pointer: coarse)").matches) return;
     const t = window.setTimeout(() => {
       setMobile(true);
       note("mobile");
     }, 600);
     return () => window.clearTimeout(t);
-  }, [note]);
+  }, [note, gate]);
 
   const hi = () => note("hi");
   return (
     <>
+      {gate && <NameGate onSubmit={submitName} />}
       <a href={contact.whatsapp(waText)} target="_blank" rel="noopener noreferrer" onClick={hi} className="group fixed right-4 bottom-4 z-[45] flex items-center gap-2.5 rounded-full bg-white py-1.5 pr-4 pl-1.5 shadow-[0_12px_32px_-12px_rgba(17,17,19,0.45),0_0_0_1px_rgba(0,0,0,0.06)] transition hover:-translate-y-0.5">
         <span className="relative">
           <Face size={38} />

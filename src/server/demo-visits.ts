@@ -7,7 +7,7 @@
 
 import { and, desc, eq, gte, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import type { DB } from "@/db";
-import { demoVisits, prospects, type Prospect } from "@/db/schema";
+import { demoVisits, prospects, touches, type Prospect } from "@/db/schema";
 import { site } from "@/config/site";
 import { APPROVALS, DEFAULT_PERSONA, NAV, type Persona, type ViewId } from "@/components/ops-demo/data";
 import { NAV as OV_NAV } from "@/components/opticvyu-demo/data";
@@ -177,8 +177,23 @@ export function referrerHost(referrer: string | null | undefined) {
 
 const short = (v: string | null | undefined, n = 80) => (v ? v.trim().slice(0, n) || null : null);
 
+/** A typed name: letters, spaces and a few name marks only, single-spaced, at most 60 characters. */
+export function cleanViewerName(v: unknown) {
+  if (typeof v !== "string") return null;
+  const s = v
+    .normalize("NFC")
+    .replace(/[^\p{L}\p{M}\s.'-]/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 60)
+    .trim();
+  return s.length >= 2 ? s : null;
+}
+
 export type StartVisit = {
   token?: string | null;
+  /** The name they typed on an earlier visit, remembered in their browser. */
+  viewerName?: string | null;
   visitorId?: string | null;
   page: VisitPage;
   referrer?: string | null;
@@ -206,6 +221,7 @@ export async function startDemoVisit(db: DB, s: StartVisit) {
       page: VISIT_PAGES.includes(s.page) ? s.page : "demo",
       startedAt: now,
       lastSeenAt: now,
+      viewerName: cleanViewerName(s.viewerName),
       device: deviceOf(s.userAgent),
       city: short(s.geo?.city, 60),
       region: short(s.geo?.region, 20),
@@ -227,9 +243,29 @@ export async function startDemoVisit(db: DB, s: StartVisit) {
   const alert = !before.demoLastVisitAt || now.getTime() - before.demoLastVisitAt.getTime() > OPEN_ALERT_GAP;
   if (!alert) return { id: visit.id, alerted: false };
   const what = s.page === "proposal" ? "the proposal" : s.page === "ovdemo" ? "their demo" : "the live demo";
-  const label = p.demoVisits === 1 ? `Opened ${what} for the first time` : `Opened ${what} again (visit ${p.demoVisits})`;
+  const who = cleanViewerName(s.viewerName);
+  const opened = p.demoVisits === 1 ? `Opened ${what} for the first time` : `Opened ${what} again (visit ${p.demoVisits})`;
+  const label = who ? `${who} ${opened.charAt(0).toLowerCase()}${opened.slice(1)}` : opened;
   await alertOpen(db, p, label, now, s.page === "proposal" ? "proposal" : "live demo");
   return { id: visit.id, alerted: true };
+}
+
+/**
+ * Saves the name typed in the "your name to continue" box. On a prospect's personal link it
+ * also goes on their timeline, so the founder sees who opened it without opening the visit.
+ */
+export async function nameDemoVisit(db: DB, id: string, name: unknown, opts: { now?: Date } = {}) {
+  const viewerName = cleanViewerName(name);
+  if (!UUID.test(id) || !viewerName) return false;
+  const now = opts.now ?? new Date();
+  const [v] = await db.select().from(demoVisits).where(eq(demoVisits.id, id));
+  if (!v || now.getTime() - v.lastSeenAt.getTime() > UPDATE_WINDOW || v.viewerName === viewerName) return !!v;
+  await db.update(demoVisits).set({ viewerName, lastSeenAt: now }).where(eq(demoVisits.id, id));
+  if (v.prospectId) {
+    const what = v.page === "proposal" ? "the proposal" : v.page === "ovdemo" ? "their demo" : "the live demo";
+    await db.insert(touches).values({ prospectId: v.prospectId, channel: "note", outcome: "noted", note: `${viewerName} is reading ${what} (name typed on opening).`, loggedBy: "system", occurredAt: now });
+  }
+  return true;
 }
 
 /** Keeps the first time each item appeared, in order, up to a cap. */

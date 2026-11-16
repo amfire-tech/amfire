@@ -221,6 +221,19 @@ a{color:inherit}
 .modal .lap{width:56px;height:56px;margin:0 auto;border-radius:18px;background:#efedfc;color:#5B47E0;display:grid;place-items:center}
 .modal .lap svg{width:28px;height:28px}
 .modal .later{background:none;border:0;font:inherit;font-size:15px;font-weight:500;color:var(--grey);padding:10px;cursor:pointer}
+/* The name box shown on opening: the only thing asked, and it can't be skipped. */
+.modal.gate{z-index:95;background:rgba(250,250,247,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.gate .box{max-width:400px;text-align:center;padding:34px 30px 28px}
+.gate .face{display:block;width:76px;height:76px;margin:0 auto;border-radius:50%;object-fit:cover;box-shadow:0 0 0 4px #fff,0 0 0 5px var(--line)}
+.gate .by{display:block;margin-top:12px;font-size:13.5px;color:var(--grey)}
+.gate .by b{color:var(--ink);font-weight:600}
+.gate h4{margin:16px 0 6px;font-size:23px;text-wrap:balance}
+.gate p{font-size:15.5px}
+.gate form{display:flex;flex-direction:column;gap:10px;margin-top:20px}
+.gate input{width:100%;box-sizing:border-box;font:inherit;font-size:17px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);text-align:center;outline:none;transition:border-color .2s,box-shadow .2s}
+.gate input:focus{border-color:var(--ink);box-shadow:0 0 0 4px rgba(11,11,12,.06);background:#fff}
+.gate .btn{width:100%}
+.gate .btn[disabled]{opacity:.35;cursor:default}
 
 /* Platforms */
 .plats{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
@@ -861,6 +874,19 @@ a{color:inherit}
   <span class="t"><b>Say hi</b><small>Navanish, amfire</small></span>
 </a>
 
+<div class="modal gate" id="gate" role="dialog" aria-modal="true" aria-labelledby="gate-h">
+  <div class="box">
+    <img class="face" src="/team/navanish-square.jpg" alt="Navanish Pandey">
+    <span class="by"><b>Navanish Pandey</b> · Founder, amfire</span>
+    <h4 id="gate-h">Before you begin, what's your name?</h4>
+    <p>Just your name. No email, no number.</p>
+    <form id="gate-f" autocomplete="on">
+      <input id="gate-n" name="name" type="text" autocomplete="name" placeholder="Your name" maxlength="60" required aria-label="Your name">
+      <button class="btn btn-ink" type="submit" disabled>Continue</button>
+    </form>
+  </div>
+</div>
+
 <div class="modal" id="nudge" role="dialog" aria-modal="true" aria-label="Shall we shape it together?">
   <div class="box">
     <div class="me"><img src="/team/navanish-square.jpg" alt=""><div><b>Navanish Pandey</b><small>Founder, amfire</small></div></div>
@@ -912,10 +938,34 @@ a{color:inherit}
     var sig = JSON.stringify(body); if (sig === st.sent) return; st.sent = sig; post(body, keep);
   }
   function note(a){ if (st.actions.indexOf(a) < 0) st.actions.push(a); flush(true); }
-  if (!review) post({ op: "start", page: "proposal", token: token, visitorId: vid(), referrer: document.referrer || null, utm: { source: q.get("utm_source"), medium: q.get("utm_medium"), campaign: q.get("utm_campaign") } })
-    .then(function(r){ if (r && r.id) { st.id = r.id; flush(); } else st.off = true; });
+
+  // ---------------------------------------------------------------- Name to continue
+  // The only thing asked: a name, remembered on this device (also by the demo), so HQ knows
+  // who is reading. Time isn't counted while the box is open.
+  var NAME_KEY = "amfire_viewer_name";
+  function cleanName(v){ return String(v || "").replace(/[^\p{L}\p{M}\s.'-]/gu, "").replace(/\s+/g, " ").trim().slice(0, 60); }
+  var known = ""; try { known = cleanName(localStorage.getItem(NAME_KEY)); } catch (e) {}
+  var gateOpen = !review && known.length < 2, typed = null;
+  function sendName(){ if (st.id && typed) { post({ op: "name", id: st.id, name: typed }, true); typed = null; } }
+  if (gateOpen) {
+    var gate = document.getElementById("gate"), gf = document.getElementById("gate-f"), gn = document.getElementById("gate-n"), gb = gf.querySelector("button");
+    gate.classList.add("show"); document.documentElement.style.overflow = "hidden";
+    setTimeout(function(){ try { gn.focus({ preventScroll: true }); } catch (e) {} }, 350);
+    gn.addEventListener("input", function(){ gb.disabled = cleanName(gn.value).length < 2; });
+    gf.addEventListener("submit", function(e){
+      e.preventDefault();
+      var n = cleanName(gn.value); if (n.length < 2) return;
+      try { localStorage.setItem(NAME_KEY, n); } catch (er) {}
+      typed = n; sendName();
+      gate.classList.remove("show"); document.documentElement.style.overflow = ""; gateOpen = false;
+      afterGate();
+    });
+  }
+
+  if (!review) post({ op: "start", page: "proposal", token: token, name: known || null, visitorId: vid(), referrer: document.referrer || null, utm: { source: q.get("utm_source"), medium: q.get("utm_medium"), campaign: q.get("utm_campaign") } })
+    .then(function(r){ if (r && r.id) { st.id = r.id; sendName(); flush(); } else st.off = true; });
   setInterval(function(){
-    if (document.visibilityState !== "visible") return;
+    if (document.visibilityState !== "visible" || gateOpen) return;
     st.active++; st.dwell[st.at] = (st.dwell[st.at] || 0) + 1;
     if (st.active === 150 && !review) showNudge();
   }, 1000);
@@ -1111,14 +1161,16 @@ a{color:inherit}
 
   // ---------------------------------------------------------------- Nudge after 2.5 minutes, phone notice
   function openModal(m){ m.classList.add("show"); }
-  document.querySelectorAll(".modal").forEach(function(m){ m.addEventListener("click", function(e){ if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("show"); }); });
+  document.querySelectorAll(".modal:not(.gate)").forEach(function(m){ m.addEventListener("click", function(e){ if (e.target === m || e.target.hasAttribute("data-close")) m.classList.remove("show"); }); });
   document.querySelectorAll("#nudge .js-hi").forEach(function(a){ a.addEventListener("click", function(){ document.getElementById("nudge").classList.remove("show"); }); });
   function showNudge(){ try { if (sessionStorage.getItem("ov_nudged") === "1") return; sessionStorage.setItem("ov_nudged", "1"); } catch (e) {} openModal(document.getElementById("nudge")); note("nudge"); }
   // Every visit from a phone or tablet starts with the laptop note.
   var phone = innerWidth < 900 || (matchMedia("(pointer: coarse)").matches && innerWidth < 1100);
   var ok = false;
   if (review) { document.documentElement.className = "no-js"; document.querySelectorAll("#ppl,#bars").forEach(function(e){ e.classList.add("on"); }); document.querySelectorAll("#chain div").forEach(function(e){ e.classList.add("on"); }); document.querySelector(".hi").style.display = "none"; document.querySelectorAll(".page").forEach(function(p){ if (p.id !== q.get("at")) p.style.display = "none"; }); }
-  if (phone && !ok && !review) setTimeout(function(){ openModal(document.getElementById("mobile")); note("mobile"); }, 700);
+  // The laptop note waits until they've given their name.
+  function afterGate(){ if (phone && !ok && !review) setTimeout(function(){ openModal(document.getElementById("mobile")); note("mobile"); }, 500); }
+  if (!gateOpen) setTimeout(afterGate, 200);
   document.querySelectorAll("#mobile [data-close]").forEach(function(b){ b.addEventListener("click", function(){ try { sessionStorage.setItem("ov_mobile_ok", "1"); } catch (e) {} }); });
   document.getElementById("copylink").addEventListener("click", function(){ var b = this; try { navigator.clipboard.writeText(location.href); } catch (e) {} b.textContent = "Link copied. Open it on your laptop."; note("copylink"); setTimeout(function(){ document.getElementById("mobile").classList.remove("show"); }, 1600); });
 })();

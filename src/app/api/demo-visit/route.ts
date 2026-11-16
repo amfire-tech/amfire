@@ -3,7 +3,7 @@ import { getDb } from "@/db";
 import { rateLimit } from "@/lib/rate-limit";
 import { getActor } from "@/lib/session";
 import { isStaff } from "@/server/access";
-import { startDemoVisit, updateDemoVisit, VISIT_PAGES, type VisitPage } from "@/server/demo-visits";
+import { nameDemoVisit, startDemoVisit, updateDemoVisit, VISIT_PAGES, type VisitPage } from "@/server/demo-visits";
 
 // The live demo reports its visits here: "start" when it opens (or, on the Services
 // page, on the first click), then "update" every few seconds and when the tab is
@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     const utm = (body.utm && typeof body.utm === "object" ? body.utm : {}) as Record<string, unknown>;
     const visit = await startDemoVisit(db, {
       token: str(body.token),
+      viewerName: str(body.name),
       visitorId: str(body.visitorId),
       page: VISIT_PAGES.includes(body.page as VisitPage) ? (body.page as VisitPage) : "demo",
       referrer: str(body.referrer),
@@ -50,6 +51,14 @@ export async function POST(req: NextRequest) {
     if (!(await rateLimit("demo-visit-update", 400, 60 * 60 * 1000))) return Response.json({ ok: false }, { status: 429 });
     const id = str(body.id);
     const ok = id ? await updateDemoVisit(db, id, { activeSeconds: body.activeSeconds, views: body.views, actions: body.actions }) : false;
+    return Response.json({ ok });
+  }
+
+  // The name typed in the box shown when the OpticVyu proposal or demo opens.
+  if (body.op === "name") {
+    if (!(await rateLimit("demo-visit-name", 30, 60 * 60 * 1000))) return Response.json({ ok: false }, { status: 429 });
+    const id = str(body.id);
+    const ok = id ? await nameDemoVisit(db, id, body.name) : false;
     return Response.json({ ok });
   }
 

@@ -1063,6 +1063,8 @@ export const demoVisits = appSchema.table(
     views: jsonb("views").$type<string[]>().notNull().default([]),
     /** What they did, e.g. ["approve:price", "order:SO-1182", "fullscreen", "cta"]. */
     actions: jsonb("actions").$type<string[]>().notNull().default([]),
+    /** The name the reader typed when the proposal or its demo opened (the only thing asked). */
+    viewerName: text("viewer_name"),
     /** "phone", "tablet" or "desktop". */
     device: text("device"),
     city: text("city"),

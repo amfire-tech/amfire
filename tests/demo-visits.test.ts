@@ -17,6 +17,8 @@ import {
   demoUnlockCode,
   demoUnlockLink,
   isDemoUnlockCode,
+  cleanViewerName,
+  nameDemoVisit,
   personaFrom,
   setDemoPersonal,
   demoVisitStats,
@@ -205,6 +207,36 @@ describe("live demo visits", () => {
     assert.ok(odd.person.length <= 40 && odd.person.endsWith("…"));
     assert.equal(odd.role, "Owner");
     assert.equal(odd.place, "Chakan", "area before city");
+  });
+
+  test("the reader's typed name is cleaned, saved on the visit and noted on the prospect once", async () => {
+    assert.equal(cleanViewerName("  Ananya   Rao "), "Ananya Rao");
+    assert.equal(cleanViewerName("<script>x</script>"), "scriptxscript");
+    assert.equal(cleanViewerName("1"), null);
+    assert.equal(cleanViewerName(42), null);
+    assert.equal(cleanViewerName("José O'Neil-Ng"), "José O'Neil-Ng");
+    assert.ok((cleanViewerName("A".repeat(200)) ?? "").length <= 60);
+
+    const [p] = (await addProspects(db, owner, [{ name: "OpticVyu Test Co", phone: "9811100077", contactName: "Founder" }])).created;
+    const t0 = new Date("2026-11-16T09:00:00Z");
+    const v = await startDemoVisit(db, { token: p.linkToken, page: "proposal", userAgent: LAPTOP, now: t0 });
+    assert.ok(v);
+    assert.equal(await nameDemoVisit(db, v.id, "Ananya Rao", { now: new Date(t0.getTime() + MIN) }), true);
+    assert.equal(await nameDemoVisit(db, v.id, "Ananya Rao", { now: new Date(t0.getTime() + 2 * MIN) }), true, "same name again is fine");
+    assert.equal(await nameDemoVisit(db, v.id, "x"), false, "too short");
+    assert.equal(await nameDemoVisit(db, "not-a-uuid", "Ananya Rao"), false);
+    const [row] = await db.select().from(demoVisits).where(eq(demoVisits.id, v.id));
+    assert.equal(row.viewerName, "Ananya Rao");
+    const notes = (await db.select().from(touches).where(eq(touches.prospectId, p.id))).filter((t) => t.note?.includes("Ananya Rao is reading"));
+    assert.equal(notes.length, 1, "noted once, not on every repeat");
+
+    // A remembered name comes with the next visit and names the call-now alert.
+    const again = await startDemoVisit(db, { token: p.linkToken, page: "ovdemo", viewerName: "Ananya Rao", userAgent: LAPTOP, now: new Date(t0.getTime() + 3 * 60 * MIN) });
+    assert.ok(again?.alerted);
+    const [row2] = await db.select().from(demoVisits).where(eq(demoVisits.id, again.id));
+    assert.equal(row2.viewerName, "Ananya Rao");
+    const alert = (await db.select().from(touches).where(eq(touches.prospectId, p.id))).some((t) => t.note?.startsWith("Ananya Rao opened their demo again"));
+    assert.ok(alert, "the alert says who opened it");
   });
 
   test("only the exact unlock code opens the demo", () => {

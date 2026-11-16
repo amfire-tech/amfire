@@ -75,6 +75,10 @@ a{color:inherit}
 .who{display:flex;flex-wrap:wrap;gap:16px 48px;font-size:16px;color:var(--grey)}
 .who b{display:block;color:var(--ink);font-weight:600}
 .cue{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--grey)}
+/* Centred opening: every line of the cover sits on the middle axis, with the glow behind the title */
+.cover .in{align-items:center;text-align:center}
+.cover .who,.cover .plats.sm{justify-content:center}
+.cover .glow:not(.b){right:auto;left:50%;top:50%;margin:calc(-1 * min(39vw,540px)) 0 0 calc(-1 * min(39vw,540px))}
 .cue i{width:1px;height:30px;background:linear-gradient(var(--grey),transparent);animation:cue 2s ease-in-out infinite}
 @keyframes cue{50%{transform:translateY(6px);opacity:.4}}
 

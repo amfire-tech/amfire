@@ -201,7 +201,7 @@ export async function addMilestone(db: DB, actor: Actor | null, projectId: strin
 }
 
 /** First goal for each service, so a project added by hand reads like a booking. */
-const GOAL_FOR_PATH = { build: "customer-portal", automate: "reduce-manual-work", operate: "keep-running" } as const;
+export const GOAL_FOR_PATH = { build: "customer-portal", automate: "reduce-manual-work", operate: "keep-running" } as const;
 
 export const OutsideProjectInput = z
   .object({

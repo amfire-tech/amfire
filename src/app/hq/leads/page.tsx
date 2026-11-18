@@ -7,6 +7,8 @@ import { GOALS, URGENCY, labelFor } from "@/knowledge/catalog";
 import { LEAD_SOURCES, sourceLabel } from "@/lib/attribution";
 import { requireStaffActor } from "@/lib/session";
 import { listLeads } from "@/server/hq";
+import { deleteLeadAction } from "../actions";
+import { DeleteButton } from "../delete-button";
 
 export const metadata = { title: "Leads" };
 
@@ -16,6 +18,11 @@ export default async function LeadsPage({ searchParams }: PageProps<"/hq/leads">
   const source = LEAD_SOURCES.find((s) => s.id === rawSource)?.id;
   const { leads, bySource } = await listLeads(await getDb(), actor, { source });
   const total = bySource.reduce((s, r) => s + r.total, 0);
+  const isOwner = actor.internalRole === "owner";
+  const confirmText = (l: { company: string; name: string; clientOrgId: string | null }) =>
+    l.clientOrgId
+      ? `Delete ${l.company}? This lead became a client: unless the client account has other leads, the account goes too, with its projects, invoices and logins. This can't be undone.`
+      : `Delete the lead ${l.company} (${l.name})? This can't be undone.`;
 
   return (
     <div className="space-y-6">
@@ -81,6 +88,7 @@ export default async function LeadsPage({ searchParams }: PageProps<"/hq/leads">
                   <th>Score</th>
                   <th>Status</th>
                   <th>Next action</th>
+                  {isOwner && <th className="sr-only">Delete</th>}
                 </tr>
               </thead>
               <tbody>
@@ -113,6 +121,11 @@ export default async function LeadsPage({ searchParams }: PageProps<"/hq/leads">
                       <StatusBadge status={l.status} />
                     </td>
                     <td className="text-muted">{l.nextAction ?? "—"}</td>
+                    {isOwner && (
+                      <td className="text-right">
+                        <DeleteButton action={deleteLeadAction.bind(null, l.id)} confirm={confirmText(l)} variant="ghost" />
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

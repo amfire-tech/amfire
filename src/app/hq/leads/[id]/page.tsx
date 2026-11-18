@@ -25,10 +25,12 @@ import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
 import { aiConfigured } from "@/server/agents/solution-architect";
 import { dealValueOf, getLeadCrm } from "@/server/crm";
+import { leadDeletionImpact } from "@/server/clients";
 import { getLeadDetail } from "@/server/leads";
 import { proposalTotal } from "@/server/proposals";
 import {
   createDraftAction,
+  deleteLeadAction,
   markLostAction,
   qualifyLeadAction,
   rejectRecommendationAction,
@@ -36,6 +38,7 @@ import {
   updateDealAction,
 } from "../../actions";
 import { ConversationsCard, DossierCard } from "../../crm-panels";
+import { DeleteButton } from "../../delete-button";
 import { ContactForm } from "./contact-form";
 
 export const metadata = { title: "Lead" };
@@ -49,6 +52,7 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
   if (!detail) notFound();
   const { lead, recommendations, runs, proposals } = detail;
   const crm = await getLeadCrm(db, actor, lead);
+  const impact = actor.internalRole === "owner" ? await leadDeletionImpact(db, lead) : null;
   const value = dealValueOf(lead, proposals[0]);
   const open = ["new", "qualified", "proposal_sent"].includes(lead.status);
   const latest = recommendations[0];
@@ -313,6 +317,31 @@ export default async function LeadPage({ params }: PageProps<"/hq/leads/[id]">) 
           </tbody>
         </Table>
       </Card>
+      {impact && (
+        <Card>
+          <CardTitle>Delete this lead</CardTitle>
+          <p className="-mt-2 mb-4 text-sm text-muted">
+            For test entries and duplicates. Removes the lead with its recommendations, proposals, conversations and notes.
+            {impact.deletesClient && (
+              <strong className="mt-1 block font-medium text-danger">
+                This lead is the client {impact.clientName}: their account goes too, with {impact.projects} project{impact.projects === 1 ? "" : "s"}, {impact.invoices}{" "}
+                invoice{impact.invoices === 1 ? "" : "s"} and {impact.logins} login{impact.logins === 1 ? "" : "s"}.
+              </strong>
+            )}{" "}
+            This can&apos;t be undone.
+          </p>
+          <DeleteButton
+            action={deleteLeadAction.bind(null, lead.id)}
+            label="Delete lead"
+            redirectTo="/hq/leads"
+            confirm={
+              impact.deletesClient
+                ? `Delete ${lead.company} AND their client account (${impact.projects} project(s), ${impact.invoices} invoice(s)${impact.paidInvoices ? `, ${impact.paidInvoices} paid` : ""}, ${impact.logins} login(s))? This can't be undone.`
+                : `Delete the lead ${lead.company} (${lead.name})? This can't be undone.`
+            }
+          />
+        </Card>
+      )}
     </div>
   );
 }

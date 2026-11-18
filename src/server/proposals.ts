@@ -425,6 +425,33 @@ export async function reviseProposal(db: DB, actor: Actor | null, proposalId: st
   });
 }
 
+/** An agreed proposal becomes a project, with its milestones due one after another from today. */
+export async function startProjectFromProposal(
+  tx: Pick<DB, "insert">,
+  p: Proposal,
+  orgId: string,
+  opts: { authorId: string; now: Date; update: string },
+) {
+  const [project] = await tx.insert(projects).values({ orgId, proposalId: p.id, name: p.title, currency: p.currency }).returning();
+  let weeks = 0;
+  await tx.insert(milestones).values(
+    p.milestones.map((m, i) => {
+      weeks += m.weeks;
+      return {
+        projectId: project.id,
+        orgId,
+        position: i,
+        title: m.title,
+        description: m.description,
+        amount: m.amount,
+        dueDate: new Date(opts.now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
+      };
+    }),
+  );
+  await tx.insert(projectUpdates).values({ projectId: project.id, orgId, authorId: opts.authorId, body: opts.update });
+  return { project, weeks };
+}
+
 // --- Client decisions -------------------------------------------------------
 
 export async function getClientProposal(db: DB, actor: Actor | null, proposalId: string) {
@@ -469,28 +496,10 @@ export async function clientDecideProposal(
       return { project: null };
     }
 
-    // Accepted: the project and its milestones come straight from the agreed proposal.
-    const [project] = await tx.insert(projects).values({ orgId, proposalId: p.id, name: p.title, currency: p.currency }).returning();
-    let weeks = 0;
-    await tx.insert(milestones).values(
-      p.milestones.map((m, i) => {
-        weeks += m.weeks;
-        return {
-          projectId: project.id,
-          orgId,
-          position: i,
-          title: m.title,
-          description: m.description,
-          amount: m.amount,
-          dueDate: new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
-        };
-      }),
-    );
-    await tx.insert(projectUpdates).values({
-      projectId: project.id,
-      orgId,
+    const { project, weeks } = await startProjectFromProposal(tx, p, orgId, {
       authorId: actor.userId,
-      body: "Proposal accepted. amfire will confirm the kick-off date and first tasks here.",
+      now,
+      update: "Proposal accepted. amfire will confirm the kick-off date and first tasks here.",
     });
     await tx
       .update(leads)

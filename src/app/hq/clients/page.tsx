@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { HealthPill, Money } from "@/components/hq";
-import { EmptyState, PageHeader, Table, timeAgo } from "@/components/ui";
+import { ButtonLink, EmptyState, PageHeader, Table, timeAgo } from "@/components/ui";
 import { getDb } from "@/db";
 import { requireStaffActor } from "@/lib/session";
 import { listClients } from "@/server/crm";
@@ -18,9 +18,10 @@ export default async function ClientsPage() {
       <PageHeader
         title="Clients"
         description="Every client with what they've paid, what they owe and how the relationship is going. Lowest health first."
+        actions={actor.internalRole === "owner" && <ButtonLink href="/hq/clients/new">Add a client</ButtonLink>}
       />
       {clients.length === 0 ? (
-        <EmptyState title="No clients yet.">A lead becomes a client when you send their first proposal.</EmptyState>
+        <EmptyState title="No clients yet.">A lead becomes a client when you send their first proposal, or add one you signed in person.</EmptyState>
       ) : (
         <Table>
           <thead>

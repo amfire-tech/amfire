@@ -7,8 +7,17 @@ import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
 import { requireStaffActor } from "@/lib/session";
+import { clientDeletionImpact, listClientLogins } from "@/server/clients";
 import { getClientAccount } from "@/server/crm";
-import { createInvoiceAction, createSubscriptionAction, setSubscriptionStatusAction, updateBillingAction } from "../../actions";
+import {
+  createInvoiceAction,
+  createSubscriptionAction,
+  deleteClientAction,
+  setSubscriptionStatusAction,
+  updateBillingAction,
+} from "../../actions";
+import { DeleteButton } from "../../delete-button";
+import { LoginsCard } from "./logins-card";
 import { ConversationsCard, DossierCard } from "../../crm-panels";
 import { InvoiceList } from "../../money/invoice-list";
 
@@ -18,8 +27,11 @@ export default async function ClientPage({ params }: PageProps<"/hq/clients/[id]
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const actor = await requireStaffActor();
-  const a = await getClientAccount(await getDb(), actor, id);
+  const db = await getDb();
+  const a = await getClientAccount(db, actor, id);
   if (!a) notFound();
+  const isOwner = actor.internalRole === "owner";
+  const [logins, impact] = await Promise.all([listClientLogins(db, actor, id), isOwner ? clientDeletionImpact(db, id) : null]);
   const currency = a.projects[0]?.project.currency ?? a.leads[0]?.currency ?? "INR";
   const avgRating = a.feedback.length ? a.feedback.reduce((s, f) => s + f.rating, 0) / a.feedback.length : null;
 
@@ -210,6 +222,8 @@ export default async function ClientPage({ params }: PageProps<"/hq/clients/[id]
         <DossierCard subject={{ type: "organization", id: a.org.id }} facts={a.facts} />
       </div>
 
+      <LoginsCard orgId={a.org.id} logins={logins} canManage={isOwner} />
+
       {a.feedback.length > 0 && (
         <Card>
           <CardTitle>Feedback</CardTitle>
@@ -222,6 +236,21 @@ export default async function ClientPage({ params }: PageProps<"/hq/clients/[id]
               </li>
             ))}
           </ul>
+        </Card>
+      )}
+      {impact && (
+        <Card>
+          <CardTitle>Delete this client</CardTitle>
+          <p className="-mt-2 mb-4 text-sm text-muted">
+            For test accounts and mistakes. Removes the account with its {impact.projects} project{impact.projects === 1 ? "" : "s"}, {impact.invoices} invoice
+            {impact.invoices === 1 ? "" : "s"}, monthly plans, requests, conversations, {impact.logins} login{impact.logins === 1 ? "" : "s"} and its leads. This can&apos;t be undone.
+          </p>
+          <DeleteButton
+            action={deleteClientAction.bind(null, a.org.id)}
+            label="Delete client"
+            redirectTo="/hq/clients"
+            confirm={`Delete ${a.org.name} and everything in it: ${impact.projects} project(s), ${impact.invoices} invoice(s)${impact.paidInvoices ? ` (${impact.paidInvoices} paid)` : ""}, ${impact.logins} login(s) and its leads? This can't be undone.`}
+          />
         </Card>
       )}
     </div>

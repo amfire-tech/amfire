@@ -26,6 +26,7 @@ import {
   updateMilestone,
 } from "@/server/projects";
 import { assertOwner, assertStaff } from "@/server/access";
+import { addClientLogin, addSignedClient, deleteClient, deleteLead, resetClientLogin, type LoginShare } from "@/server/clients";
 import { latestBrief, runTeam } from "@/server/agents/team";
 import { briefEmails, deliverBrief } from "@/server/notify";
 import { approve, draftInvestorUpdate, reject, shareInvoice, updateAgentSetting, updateBriefEmails } from "@/server/brain";
@@ -545,4 +546,66 @@ export async function createPostAction(_prev: ActionState, formData: FormData) {
 
 export async function logTimeAction(projectId: string, _prev: ActionState, formData: FormData) {
   return run(({ db, actor }) => logTime(db, actor, projectId, formText(formData, ["hours", "note"]) as never), "Time logged.");
+}
+
+// --- Clients signed in person, their logins, and deleting ----------------------
+
+export type LoginState = (ActionState & { login?: LoginShare; orgId?: string }) | undefined;
+
+export async function addSignedClientAction(formData: FormData): Promise<LoginState> {
+  const { db, actor } = await ctx();
+  try {
+    const input = JSON.parse(String(formData.get("data") ?? "{}"));
+    const file = formData.get("file");
+    const pdf = file instanceof File && file.size > 0 ? { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) } : null;
+    const { orgId, login } = await addSignedClient(db, actor, input, pdf);
+    revalidatePath("/hq", "layout");
+    return { ok: "Client added.", orgId, login };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function addClientLoginAction(orgId: string, _prev: LoginState, formData: FormData): Promise<LoginState> {
+  const { db, actor } = await ctx();
+  try {
+    const login = await addClientLogin(db, actor, orgId, formText(formData, ["name", "email", "role"]) as never);
+    revalidatePath(`/hq/clients/${orgId}`);
+    return { ok: "Login added.", login };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function resetClientLoginAction(orgId: string, userId: string): Promise<LoginState> {
+  const { db, actor } = await ctx();
+  try {
+    const login = await resetClientLogin(db, actor, orgId, userId);
+    revalidatePath(`/hq/clients/${orgId}`);
+    return { ok: "New one-time password made.", login };
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
+export async function deleteLeadAction(leadId: string): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    await deleteLead(db, actor, leadId);
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hq", "layout");
+  return { ok: "Lead deleted." };
+}
+
+export async function deleteClientAction(orgId: string): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    await deleteClient(db, actor, orgId);
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath("/hq", "layout");
+  return { ok: "Client deleted." };
 }

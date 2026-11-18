@@ -10,13 +10,14 @@ import { breadcrumbJsonLd } from "@/config/structured-data";
 // https://claude.ai/artifact/7x8ynXR4o26oKixLZxWn9t). Product-led and short: the system itself
 // is the hero, then bands a visitor can take in while scrolling. 16 Nov: a compact "What we
 // build" band (icons + names, plus industries) follows the demo, so no visitor leaves thinking
-// we only serve one industry or only build one kind of system.
+// we only serve one industry or only build one kind of system. 18 Nov: the band also lists the
+// marketing we deliver ("We grow"), so its heading now covers building and growth.
 
 export const metadata: Metadata = {
   title: "AI agents, automation, web, app and SaaS development",
   alternates: { canonical: "/services" },
   description:
-    "AI agents, workflow automation, SaaS products, web and mobile apps, custom ERP and CRM, data and integrations, for companies in every industry. Your people approve what matters.",
+    "AI agents, workflow automation, SaaS products, web and mobile apps, custom ERP and CRM, plus SEO, AI search (GEO), performance ads and marketing automation, for companies in every industry.",
 };
 
 const START = "/start";
@@ -79,7 +80,7 @@ export default function ServicesPage() {
       <section className={`${BAND} bg-subtle`}>
         <Container>
           <Eyebrow>What we build</Eyebrow>
-          <h2 className={H2}>One team for everything your company builds next.</h2>
+          <h2 className={H2}>One team to build your systems and bring you customers.</h2>
           <Capabilities />
         </Container>
       </section>

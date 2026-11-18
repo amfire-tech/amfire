@@ -3,6 +3,8 @@ import type { ReactNode } from "react";
 // What we build and who for (Services, added 16 Nov 2026). Icon + name only, so a visitor who
 // arrives through the demo sees in one glance that amfire builds far more than one system, for
 // any industry. Icons are hand-drawn 24px line glyphs (1.5 stroke) so they match the site's type.
+// 18 Nov: a second group, "Grow", adds the marketing we deliver (search, AI search, local, ads,
+// conversion, automation), so a visitor sees we build the systems and bring the demand.
 
 type Item = { name: string; icon: ReactNode };
 
@@ -19,6 +21,15 @@ const CAPABILITIES: Item[] = [
   { name: "Integrations & APIs", icon: <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M13.5 4.5l-3 15" /> },
   { name: "Cloud & DevOps", icon: <path d="M7 19h10.5a4 4 0 0 0 .6-7.95A6.5 6.5 0 0 0 5.6 10.1 4.5 4.5 0 0 0 7 19z" /> },
   { name: "Product & UX design", icon: <><path d="M4 20l1.2-4.6L15.6 5a2.1 2.1 0 0 1 3 3L8.2 18.4z" /><path d="M13.5 7l3.5 3.5" /></> },
+];
+
+const GROWTH: Item[] = [
+  { name: "Search (SEO)", icon: <><circle cx="10.5" cy="10.5" r="6" /><path d="M15 15l5.5 5.5" /></> },
+  { name: "AI search (GEO)", icon: <><circle cx="10" cy="11" r="5.5" /><path d="M14.2 15.2l5.3 5.3M18 3l.8 2.2L21 6l-2.2.8L18 9l-.8-2.2L15 6l2.2-.8z" /></> },
+  { name: "Local search & maps", icon: <><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.25" /></> },
+  { name: "Performance ads", icon: <><circle cx="12" cy="12" r="8.5" /><circle cx="12" cy="12" r="4.5" /><path d="M12 12h.01" /></> },
+  { name: "Conversion (CRO)", icon: <path d="M3.5 4.5h17l-6.5 8v6l-4 2v-8z" /> },
+  { name: "Marketing automation", icon: <><rect x="3" y="5.5" width="18" height="13" rx="2" /><path d="M3.5 7l8.5 6 8.5-6" /></> },
 ];
 
 const SECTORS: Item[] = [
@@ -51,11 +62,12 @@ function Glyph({ children, className }: { children: ReactNode; className: string
   );
 }
 
-export function Capabilities() {
+function Grid({ label, items, cols }: { label: string; items: Item[]; cols: string }) {
   return (
-    <>
-      <ul className="mt-10 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-card)] border border-line bg-line sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-        {CAPABILITIES.map((c) => (
+    <div>
+      <p className="mb-3 font-mono text-[13px] tracking-[0.04em] text-muted">{label}</p>
+      <ul className={`grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-card)] border border-line bg-line sm:grid-cols-3 ${cols}`}>
+        {items.map((c) => (
           <li
             key={c.name}
             className="group flex flex-col gap-3 bg-surface px-4 py-[1.15rem] transition-colors duration-300 hover:bg-page max-sm:flex-row max-sm:items-center max-sm:gap-3 max-sm:py-3.5"
@@ -67,6 +79,17 @@ export function Capabilities() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+export function Capabilities() {
+  return (
+    <>
+      <div className="mt-10 flex flex-col gap-8">
+        <Grid label="We build" items={CAPABILITIES} cols="md:grid-cols-4 lg:grid-cols-6" />
+        <Grid label="We grow" items={GROWTH} cols="md:grid-cols-3 lg:grid-cols-6" />
+      </div>
 
       <div className="mt-8 flex flex-col gap-4 md:flex-row md:items-start md:gap-8">
         <p className="shrink-0 pt-[7px] font-mono text-[13px] tracking-[0.04em] text-muted md:w-[9.5rem]">For every industry</p>

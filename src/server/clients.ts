@@ -181,7 +181,7 @@ export async function addSignedClient(
       await tx.insert(proposalFiles).values({ proposalId: proposal.id, name, size: file.bytes.length, content: file.bytes, uploadedBy: actor.userId });
     }
 
-    const { project, weeks } = await startProjectFromProposal(tx, proposal, org.id, {
+    const { project, lastDue } = await startProjectFromProposal(tx, proposal, org.id, {
       authorId: actor.userId,
       now,
       update: "Agreement signed. Welcome to your Client Hub: progress, approvals and invoices for this project all appear here.",
@@ -194,7 +194,7 @@ export async function addSignedClient(
         amount: d.monthlyAmount,
         currency: d.currency,
         startedAt: now,
-        nextInvoiceAt: d.monthlyStartsOn ? firstBillOnOrAfter(d.monthlyStartsOn, now) : new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
+        nextInvoiceAt: d.monthlyStartsOn ? firstBillOnOrAfter(d.monthlyStartsOn, now) : lastDue,
       });
     }
     await audit(tx, {

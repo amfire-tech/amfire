@@ -22,6 +22,7 @@ import { AccessDenied, assertClientOrg, assertStaff, type Actor } from "./access
 import { audit } from "./audit";
 import { afterResponse, notifyClient } from "./client-notify";
 import { createMilestoneInvoice, recordPastPayment } from "./money";
+import { dayStart } from "./proposals";
 
 export class ProjectError extends Error {
   constructor(message: string) {
@@ -162,7 +163,13 @@ export async function getProjectForStaff(db: DB, actor: Actor | null, projectId:
   return { project, milestones: ms, tasks: ts, updates: ups, requests: reqs, changeRequests: crs, checklist: items };
 }
 
-export const MilestoneInput = z.object({
+/** A date from a date field ("2026-11-25"), as that day in India; empty clears it. */
+const optionalDay = z
+  .union([z.literal("").transform(() => null), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date.").transform(dayStart)])
+  .optional();
+
+export const MilestoneInput = z
+  .object({
   title: z.string().trim().min(3, "Give the milestone a short title.").max(200),
   description: z
     .string()
@@ -170,10 +177,12 @@ export const MilestoneInput = z.object({
     .max(2000)
     .transform((v) => v || "")
     .optional(),
-  dueDate: z.union([z.literal("").transform(() => null), z.coerce.date()]).optional(),
+  startDate: optionalDay,
+  dueDate: optionalDay,
   /** Major units (₹ or $); invoiced when the client approves the milestone. */
   amount: z.union([z.literal("").transform(() => 0), z.coerce.number().min(0)]).optional(),
-});
+  })
+  .refine((d) => !d.startDate || !d.dueDate || d.dueDate >= d.startDate, { message: "The end date is before the start date.", path: ["dueDate"] });
 
 export async function addMilestone(db: DB, actor: Actor | null, projectId: string, input: z.input<typeof MilestoneInput>) {
   assertStaff(actor);
@@ -190,6 +199,7 @@ export async function addMilestone(db: DB, actor: Actor | null, projectId: strin
         position: (last ?? -1) + 1,
         title: data.title,
         description: data.description ?? "",
+        startDate: data.startDate ?? null,
         dueDate: data.dueDate ?? null,
         amount: Math.round((data.amount ?? 0) * 100),
       })
@@ -309,6 +319,33 @@ export async function addOutsideProject(db: DB, actor: Actor | null, input: z.in
     }
     await audit(tx, { actorId: actor.userId, orgId, action: "project.added", subjectType: "project", subjectId: project.id, data: { status: d.status } });
     return project;
+  });
+}
+
+export const MilestoneDates = z
+  .object({ startDate: optionalDay, dueDate: optionalDay })
+  .refine((d) => !d.startDate || !d.dueDate || d.dueDate >= d.startDate, { message: "The end date is before the start date.", path: ["dueDate"] });
+
+/** Staff move a milestone's dates (what was agreed, or when it was really delivered). The client sees the new range. */
+export async function setMilestoneDates(db: DB, actor: Actor | null, milestoneId: string, input: z.input<typeof MilestoneDates>) {
+  assertStaff(actor);
+  const data = MilestoneDates.parse(input);
+  return db.transaction(async (tx) => {
+    const [m] = await tx
+      .update(milestones)
+      .set({ startDate: data.startDate ?? null, dueDate: data.dueDate ?? null })
+      .where(eq(milestones.id, milestoneId))
+      .returning();
+    if (!m) throw new ProjectError("Milestone not found");
+    await audit(tx, {
+      actorId: actor.userId,
+      orgId: m.orgId,
+      action: "milestone.dates_changed",
+      subjectType: "milestone",
+      subjectId: m.id,
+      data: { startDate: m.startDate, dueDate: m.dueDate },
+    });
+    return m;
   });
 }
 

@@ -10,7 +10,8 @@ import { AccessDenied, loadActor, type Actor } from "@/server/access";
 import { bootstrap, DEFAULT_OWNER_EMAIL } from "@/server/bootstrap";
 import { addClientLogin, addSignedClient, deleteClient, deleteLead, leadDeletionImpact, listClientLogins, resetClientLogin } from "@/server/clients";
 import { addManualLead } from "@/server/leads";
-import { clientApproveMilestone, getClientHome, updateMilestone } from "@/server/projects";
+import { clientApproveMilestone, getClientHome, setMilestoneDates, updateMilestone } from "@/server/projects";
+import { dayStart } from "@/server/proposals";
 
 let db: DB;
 let owner: Actor;
@@ -67,6 +68,39 @@ describe("a client signed in person", () => {
     const home = await getClientHome(db, client);
     assert.equal(home.projects.length, 1);
     assert.equal(home.proposals[0].status, "accepted");
+  });
+
+  test("keeps the dates agreed for each stage, and they can be moved later", async () => {
+    const { projectId, orgId } = await addSignedClient(db, owner, {
+      ...signed("Harshal Test Travels", "h@travels.test"),
+      monthlyAmount: null,
+      milestones: [
+        { title: "Website live", description: "", weeks: 1, amount: 9_999_00, startsOn: "2026-11-25", endsOn: "2026-11-28" },
+        { title: "WhatsApp agent", description: "", weeks: 3, amount: 0, startsOn: "2026-11-29", endsOn: "2026-12-13" },
+      ],
+    });
+    const ms = await db.select().from(milestones).where(eq(milestones.projectId, projectId)).orderBy(milestones.position);
+    assert.deepEqual(
+      ms.map((m) => [m.startDate?.toISOString(), m.dueDate?.toISOString()]),
+      [
+        [dayStart("2026-11-25").toISOString(), dayStart("2026-11-28").toISOString()],
+        [dayStart("2026-11-29").toISOString(), dayStart("2026-12-13").toISOString()],
+      ],
+    );
+    const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+    assert.equal(project.startedAt.toISOString(), dayStart("2026-11-25").toISOString(), "the project starts when the first stage does");
+    assert.equal(project.orgId, orgId);
+
+    const moved = await setMilestoneDates(db, owner, ms[0].id, { startDate: "2026-11-26", dueDate: "2026-12-01" });
+    assert.equal(moved.dueDate?.toISOString(), dayStart("2026-12-01").toISOString());
+    await assert.rejects(setMilestoneDates(db, owner, ms[0].id, { startDate: "2026-12-05", dueDate: "2026-12-01" }), /before the start/);
+    await assert.rejects(
+      addSignedClient(db, owner, {
+        ...signed("Backwards Ltd", "b@back.test"),
+        milestones: [{ title: "Oops", description: "", weeks: 1, amount: 0, startsOn: "2026-12-10", endsOn: "2026-12-01" }],
+      }),
+      /ends before it starts/,
+    );
   });
 
   test("only the owner can add one", async () => {

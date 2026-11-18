@@ -122,6 +122,7 @@ export async function createProposalDraft(
 }
 
 const line = z.string().trim().min(1).max(500);
+const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Choose a date.");
 export const ProposalEdit = z.object({
   title: z.string().trim().min(3).max(200),
   summary: z.string().trim().min(10).max(4000),
@@ -135,7 +136,9 @@ export const ProposalEdit = z.object({
         description: z.string().trim().max(1000),
         weeks: z.number().int().min(1).max(104),
         amount: z.number().int().min(0).max(100_000_000_00),
-      }),
+        startsOn: isoDay.optional(),
+        endsOn: isoDay.optional(),
+      }).refine((m) => !m.startsOn || !m.endsOn || m.endsOn >= m.startsOn, { message: "A milestone ends before it starts.", path: ["endsOn"] }),
     )
     .min(1, "Add at least one milestone.")
     .max(12),
@@ -425,31 +428,34 @@ export async function reviseProposal(db: DB, actor: Actor | null, proposalId: st
   });
 }
 
-/** An agreed proposal becomes a project, with its milestones due one after another from today. */
+/**
+ * An agreed proposal becomes a project. Milestones keep the dates agreed with
+ * the client; without dates they run one after another from today.
+ */
 export async function startProjectFromProposal(
   tx: Pick<DB, "insert">,
   p: Proposal,
   orgId: string,
   opts: { authorId: string; now: Date; update: string },
 ) {
-  const [project] = await tx.insert(projects).values({ orgId, proposalId: p.id, name: p.title, currency: p.currency }).returning();
-  let weeks = 0;
-  await tx.insert(milestones).values(
-    p.milestones.map((m, i) => {
-      weeks += m.weeks;
-      return {
-        projectId: project.id,
-        orgId,
-        position: i,
-        title: m.title,
-        description: m.description,
-        amount: m.amount,
-        dueDate: new Date(opts.now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
-      };
-    }),
-  );
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+  let cursor = opts.now;
+  const rows = p.milestones.map((m, i) => {
+    const startDate = m.startsOn ? dayStart(m.startsOn) : cursor;
+    const dueDate = m.endsOn ? dayStart(m.endsOn) : new Date(startDate.getTime() + m.weeks * WEEK);
+    cursor = dueDate;
+    return { position: i, title: m.title, description: m.description, amount: m.amount, startDate, dueDate };
+  });
+  const startedAt = rows[0]?.startDate ?? opts.now;
+  const [project] = await tx.insert(projects).values({ orgId, proposalId: p.id, name: p.title, currency: p.currency, startedAt }).returning();
+  await tx.insert(milestones).values(rows.map((r) => ({ ...r, projectId: project.id, orgId })));
   await tx.insert(projectUpdates).values({ projectId: project.id, orgId, authorId: opts.authorId, body: opts.update });
-  return { project, weeks };
+  return { project, lastDue: cursor };
+}
+
+/** "2026-11-25" → that day at 00:00 in India, so the date never shifts a day in either timezone. */
+export function dayStart(isoDay: string): Date {
+  return new Date(`${isoDay}T00:00:00+05:30`);
 }
 
 // --- Client decisions -------------------------------------------------------
@@ -496,7 +502,7 @@ export async function clientDecideProposal(
       return { project: null };
     }
 
-    const { project, weeks } = await startProjectFromProposal(tx, p, orgId, {
+    const { project, lastDue } = await startProjectFromProposal(tx, p, orgId, {
       authorId: actor.userId,
       now,
       update: "Proposal accepted. amfire will confirm the kick-off date and first tasks here.",
@@ -519,7 +525,7 @@ export async function clientDecideProposal(
         startedAt: now,
         nextInvoiceAt: p.monthlyStartsOn
           ? firstBillOnOrAfter(p.monthlyStartsOn, now)
-          : new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000),
+          : lastDue,
       });
     }
     await audit(tx, { actorId: actor.userId, orgId, action: "proposal.accepted", subjectType: "proposal", subjectId: p.id, data: { projectId: project.id } });

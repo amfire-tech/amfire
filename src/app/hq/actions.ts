@@ -22,6 +22,7 @@ import {
   addTask,
   postProjectUpdate,
   resolveSupportRequest,
+  setMilestoneDates,
   setTaskStatus,
   updateMilestone,
 } from "@/server/projects";
@@ -322,7 +323,7 @@ export async function updateBillingAction(orgId: string, _prev: ActionState, for
 }
 
 export async function addMilestoneAction(projectId: string, _prev: ActionState, formData: FormData) {
-  return run(({ db, actor }) => addMilestone(db, actor, projectId, formText(formData, ["title", "description", "dueDate", "amount"]) as never), "Milestone added.");
+  return run(({ db, actor }) => addMilestone(db, actor, projectId, formText(formData, ["title", "description", "startDate", "dueDate", "amount"]) as never), "Milestone added.");
 }
 
 export async function addProjectAction(_prev: ActionState, formData: FormData): Promise<ActionState> {
@@ -608,4 +609,15 @@ export async function deleteClientAction(orgId: string): Promise<ActionState> {
   }
   revalidatePath("/hq", "layout");
   return { ok: "Client deleted." };
+}
+
+export async function setMilestoneDatesAction(projectId: string, milestoneId: string, _prev: ActionState, formData: FormData): Promise<ActionState> {
+  const { db, actor } = await ctx();
+  try {
+    await setMilestoneDates(db, actor, milestoneId, formText(formData, ["startDate", "dueDate"]) as never);
+  } catch (err) {
+    return toActionError(err);
+  }
+  revalidatePath(`/hq/projects/${projectId}`);
+  return { ok: "Dates saved." };
 }

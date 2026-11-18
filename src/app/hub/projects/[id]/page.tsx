@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ActionForm } from "@/components/action-form";
-import { Card, CardTitle, EmptyState, Notice, PageHeader, ProgressBar, StatusBadge, formatDate, formatDateTime, inputClass } from "@/components/ui";
+import { Card, CardTitle, EmptyState, Notice, PageHeader, ProgressBar, StatusBadge, formatDate, formatDateRange, formatDateTime, inputClass } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
 import { isUuid } from "@/lib/ids";
@@ -177,7 +177,7 @@ export default async function HubProjectPage({ params }: PageProps<"/hub/project
                     <StatusBadge status={m.status} />
                   </div>
                   <p className="text-sm text-muted">
-                    {m.status === "done" ? `Approved ${formatDate(m.completedAt)}` : `Planned for ${formatDate(m.dueDate)}`}
+                    {m.status === "done" ? `Approved ${formatDate(m.completedAt)}` : m.startDate ? formatDateRange(m.startDate, m.dueDate) : `Planned for ${formatDate(m.dueDate)}`}
                   </p>
                   {mTasks.length > 0 && (
                     <ul className="mt-2 space-y-1 text-sm">

@@ -12,8 +12,10 @@ import {
   ProgressBar,
   StatusBadge,
   formatDate,
+  formatDateRange,
   formatDateTime,
   inputClass,
+  toDateInput,
 } from "@/components/ui";
 import { getDb } from "@/db";
 import { formatMoney } from "@/knowledge/pricing";
@@ -26,7 +28,15 @@ import {
   deleteChecklistItemAction,
   reopenChecklistItemAction,
 } from "../../actions";
-import { addMilestoneAction, addTaskAction, estimateChangeAction, logTimeAction, resolveRequestAction, setTaskStatusAction } from "../../actions";
+import {
+  addMilestoneAction,
+  addTaskAction,
+  estimateChangeAction,
+  logTimeAction,
+  resolveRequestAction,
+  setMilestoneDatesAction,
+  setTaskStatusAction,
+} from "../../actions";
 import { InvoiceList } from "../../money/invoice-list";
 import { MilestoneForm } from "./milestone-form";
 import { UpdateForm } from "./update-form";
@@ -156,7 +166,7 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
                       {m.position + 1}. {m.title}
                     </p>
                     <p className="text-sm text-muted">
-                      Due {formatDate(m.dueDate)} · {formatMoney(m.amount, project.currency)}
+                      {m.startDate ? formatDateRange(m.startDate, m.dueDate) : `Due ${formatDate(m.dueDate)}`} · {formatMoney(m.amount, project.currency)}
                     </p>
                   </div>
                   <StatusBadge status={m.status} />
@@ -175,6 +185,20 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
                 ) : (
                   <MilestoneForm projectId={project.id} milestoneId={m.id} status={m.status} blockerNote={m.blockerNote} />
                 )}
+
+                <details className="mt-3 text-sm">
+                  <summary className="cursor-pointer text-muted">Change dates</summary>
+                  <div className="mt-2">
+                    <ActionForm action={setMilestoneDatesAction.bind(null, project.id, m.id)} submitLabel="Save dates" size="sm" inline>
+                      <Field label="Starts" htmlFor={`ms-start-${m.id}`}>
+                        <input id={`ms-start-${m.id}`} name="startDate" type="date" defaultValue={toDateInput(m.startDate)} className={`${inputClass} sm:!w-44`} />
+                      </Field>
+                      <Field label="Ends" htmlFor={`ms-end-${m.id}`}>
+                        <input id={`ms-end-${m.id}`} name="dueDate" type="date" defaultValue={toDateInput(m.dueDate)} className={`${inputClass} sm:!w-44`} />
+                      </Field>
+                    </ActionForm>
+                  </div>
+                </details>
 
                 <div className="mt-4 border-t border-line pt-3">
                   <p className="text-xs font-medium tracking-wide text-muted uppercase">Tasks</p>
@@ -234,7 +258,10 @@ export default async function HqProjectPage({ params }: PageProps<"/hq/projects/
                     <input id="ms-title" name="title" required className={inputClass} placeholder="Admin dashboard" />
                   </Field>
                 </div>
-                <Field label="Planned for" htmlFor="ms-due" optional>
+                <Field label="Starts" htmlFor="ms-start" optional>
+                  <input id="ms-start" name="startDate" type="date" className={inputClass} />
+                </Field>
+                <Field label="Ends" htmlFor="ms-due" optional>
                   <input id="ms-due" name="dueDate" type="date" className={inputClass} />
                 </Field>
                 <Field label={`Amount (${project.currency})`} htmlFor="ms-amount" hint="Invoiced when the client approves it">

@@ -404,9 +404,25 @@ export function Field({
 
 // --- Formatting --------------------------------------------------------------
 
+// Dates are shown on India time, so a day picked in a date field reads the same on the server and in the browser.
+const TZ = "Asia/Kolkata";
+
 export function formatDate(d: Date | string | null | undefined) {
   if (!d) return "—";
-  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d));
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: TZ }).format(new Date(d));
+}
+
+/** "25 Nov – 4 Dec 2026", or just the end date when there's no start. */
+export function formatDateRange(start: Date | string | null | undefined, end: Date | string | null | undefined) {
+  if (!start) return formatDate(end);
+  if (!end) return `from ${formatDate(start)}`;
+  const short = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", timeZone: TZ });
+  return `${short.format(new Date(start))} – ${formatDate(end)}`;
+}
+
+/** The value a date field expects ("2026-11-25") for a stored date, on India time. */
+export function toDateInput(d: Date | string | null | undefined) {
+  return d ? new Intl.DateTimeFormat("en-CA", { timeZone: TZ }).format(new Date(d)) : "";
 }
 
 export function formatDateTime(d: Date | string | null | undefined) {

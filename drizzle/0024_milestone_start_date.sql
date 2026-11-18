@@ -1,0 +1,1 @@
+ALTER TABLE "app"."milestones" ADD COLUMN "start_date" timestamp with time zone;

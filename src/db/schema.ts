@@ -214,6 +214,9 @@ export type ProposalMilestone = {
   weeks: number;
   /** Amount in minor units (pence/cents). */
   amount: number;
+  /** Dates agreed with the client (YYYY-MM-DD). Without them, milestones run one after another for `weeks`. */
+  startsOn?: string;
+  endsOn?: string;
 };
 
 export const proposals = appSchema.table("proposals", {
@@ -299,6 +302,8 @@ export const milestones = appSchema.table(
     position: integer("position").notNull(),
     title: text("title").notNull(),
     description: text("description").notNull().default(""),
+    /** When work on it starts; with dueDate, the date range shown to the client. */
+    startDate: timestamp("start_date", { withTimezone: true }),
     dueDate: timestamp("due_date", { withTimezone: true }),
     status: milestoneStatus("status").notNull().default("not_started"),
     /** Plain-language reason shown to the client when blocked. */

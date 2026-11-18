@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, useTransition, type FormEvent } from "react";
 import type { ProposalMilestone } from "@/db/schema";
-import { Button, Card, CardTitle, Field, Notice, buttonClass, inputClass } from "@/components/ui";
+import { Button, Card, CardTitle, Field, Notice, buttonClass, formatDateRange, inputClass, toDateInput } from "@/components/ui";
 import { BUSINESS_TYPES } from "@/knowledge/catalog";
 import { formatMoney } from "@/knowledge/pricing";
 import { MANUAL_SOURCES, sourceLabel } from "@/lib/attribution";
@@ -25,18 +25,33 @@ const toLines = (s: string) =>
 /** Rupees/dollars typed in a field → minor units. */
 const toMinor = (v: string) => Math.max(0, Math.round((Number(v) || 0) * 100));
 
-const blank: ProposalMilestone = { title: "", description: "", weeks: 2, amount: 0 };
+type Stage = ProposalMilestone & { startsOn: string; endsOn: string };
+
+/** "2026-11-25" plus some days. */
+const addDays = (day: string, n: number) => {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+const daysBetween = (a: string, b: string) => Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86_400_000);
+
+/** A new stage starts the day after the previous one ends and runs two weeks, until you change it. */
+const stageAfter = (prev: Stage | undefined, title = ""): Stage => {
+  const startsOn = prev?.endsOn ? addDays(prev.endsOn, 1) : toDateInput(new Date());
+  return { title, description: "", weeks: 2, amount: 0, startsOn, endsOn: addDays(startsOn, 13) };
+};
 
 export function ClientForm() {
   const [currency, setCurrency] = useState<"INR" | "USD">("INR");
-  const [milestones, setMilestones] = useState<ProposalMilestone[]>([{ ...blank, title: "Kick-off and first delivery" }]);
+  const [milestones, setMilestones] = useState<Stage[]>(() => [stageAfter(undefined, "Kick-off and first delivery")]);
   const [monthly, setMonthly] = useState(false);
   const [result, setResult] = useState<LoginState>();
   const [pending, start] = useTransition();
 
   const total = milestones.reduce((s, m) => s + m.amount, 0);
-  const weeks = milestones.reduce((s, m) => s + m.weeks, 0);
-  const setMilestone = (i: number, patch: Partial<ProposalMilestone>) => setMilestones(milestones.map((m, j) => (j === i ? { ...m, ...patch } : m)));
+  const first = milestones[0]?.startsOn;
+  const last = milestones.at(-1)?.endsOn;
+  const setMilestone = (i: number, patch: Partial<Stage>) => setMilestones(milestones.map((m, j) => (j === i ? { ...m, ...patch } : m)));
 
   function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -55,7 +70,13 @@ export function ClientForm() {
       title: text("title"),
       summary: text("summary"),
       scope: toLines(text("scope")),
-      milestones: milestones.map((m) => ({ ...m, title: m.title.trim(), description: m.description.trim() })),
+      milestones: milestones.map((m) => ({
+        ...m,
+        title: m.title.trim(),
+        description: m.description.trim(),
+        // Kept for the proposal record; the dates are what the project uses.
+        weeks: m.startsOn && m.endsOn ? Math.min(104, Math.max(1, Math.ceil((daysBetween(m.startsOn, m.endsOn) + 1) / 7))) : 1,
+      })),
       currency,
       monthlyAmount: monthly ? toMinor(text("monthlyAmount")) || null : null,
       monthlyStartsOn: monthly && text("monthlyStartsOn") ? text("monthlyStartsOn") : null,
@@ -169,30 +190,22 @@ export function ClientForm() {
         <CardTitle
           aside={
             <span className="text-sm text-muted">
-              {weeks} weeks · {formatMoney(total, currency)}
+              {first && last ? `${formatDateRange(`${first}T00:00:00+05:30`, `${last}T00:00:00+05:30`)} · ` : ""}
+              {formatMoney(total, currency)}
             </span>
           }
         >
           Milestones and price
         </CardTitle>
-        <p className="-mt-2 mb-4 text-sm text-muted">The client approves each milestone in their Hub, and its invoice is drafted then.</p>
+        <p className="-mt-2 mb-4 text-sm text-muted">
+          Pick the dates you agreed for each stage. The client sees them in their Hub and approves each milestone there; its invoice is drafted then. You can change the dates later on the project page.
+        </p>
         <ol className="space-y-4">
           {milestones.map((m, i) => (
             <li key={i} className="rounded-xl p-4 ring-1 ring-line">
-              <div className="grid gap-3 md:grid-cols-[1fr_110px_150px]">
+              <div className="grid gap-3 md:grid-cols-[1fr_150px]">
                 <Field label={`Milestone ${i + 1}`} htmlFor={`m-title-${i}`}>
                   <input id={`m-title-${i}`} required value={m.title} onChange={(e) => setMilestone(i, { title: e.target.value })} className={inputClass} />
-                </Field>
-                <Field label="Weeks" htmlFor={`m-weeks-${i}`}>
-                  <input
-                    id={`m-weeks-${i}`}
-                    type="number"
-                    min={1}
-                    inputMode="numeric"
-                    value={m.weeks}
-                    onChange={(e) => setMilestone(i, { weeks: Math.max(1, Number(e.target.value) || 1) })}
-                    className={inputClass}
-                  />
                 </Field>
                 <Field label={`Price (${currency})`} htmlFor={`m-amount-${i}`}>
                   <input
@@ -208,6 +221,37 @@ export function ClientForm() {
                   />
                 </Field>
               </div>
+              <div className="mt-3 grid gap-3 sm:grid-cols-[180px_180px_1fr] sm:items-end">
+                <Field label="Starts" htmlFor={`m-start-${i}`}>
+                  <input
+                    id={`m-start-${i}`}
+                    type="date"
+                    required
+                    value={m.startsOn}
+                    onChange={(e) => {
+                      const startsOn = e.target.value;
+                      // Moving the start keeps the stage's length.
+                      const length = m.startsOn && m.endsOn ? daysBetween(m.startsOn, m.endsOn) : 13;
+                      setMilestone(i, { startsOn, endsOn: startsOn ? addDays(startsOn, Math.max(0, length)) : m.endsOn });
+                    }}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Ends" htmlFor={`m-end-${i}`}>
+                  <input
+                    id={`m-end-${i}`}
+                    type="date"
+                    required
+                    min={m.startsOn || undefined}
+                    value={m.endsOn}
+                    onChange={(e) => setMilestone(i, { endsOn: e.target.value })}
+                    className={inputClass}
+                  />
+                </Field>
+                <p className="pb-3 text-sm text-muted">
+                  {m.startsOn && m.endsOn && m.endsOn >= m.startsOn ? `${daysBetween(m.startsOn, m.endsOn) + 1} days` : ""}
+                </p>
+              </div>
               <div className="mt-3">
                 <Field label="Description" htmlFor={`m-desc-${i}`} optional>
                   <input id={`m-desc-${i}`} value={m.description} onChange={(e) => setMilestone(i, { description: e.target.value })} className={inputClass} />
@@ -221,7 +265,7 @@ export function ClientForm() {
             </li>
           ))}
         </ol>
-        <Button type="button" variant="secondary" size="sm" className="mt-4" onClick={() => setMilestones([...milestones, { ...blank }])}>
+        <Button type="button" variant="secondary" size="sm" className="mt-4" onClick={() => setMilestones([...milestones, stageAfter(milestones.at(-1))])}>
           Add milestone
         </Button>
 
@@ -235,7 +279,7 @@ export function ClientForm() {
               <Field label={`Monthly amount (${currency}, before GST)`} htmlFor="monthlyAmount">
                 <input id="monthlyAmount" name="monthlyAmount" type="number" min={1} step="any" required className={inputClass} />
               </Field>
-              <Field label="First monthly bill on" htmlFor="monthlyStartsOn" optional hint="Then the same day every month. Empty: after the last milestone.">
+              <Field label="First monthly bill on" htmlFor="monthlyStartsOn" optional hint="Then the same day every month. Empty: when the last milestone ends.">
                 <input id="monthlyStartsOn" name="monthlyStartsOn" type="date" className={inputClass} />
               </Field>
             </div>
